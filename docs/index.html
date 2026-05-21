@@ -139,6 +139,25 @@
     .admin-btn:hover { opacity: 0.85; }
     .admin-btn.danger { background: #cc2222; }
 
+    /* ── 다음 배틀 상대 투표 ── */
+    .next-vote-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .nv-desc { padding: 11px 16px; font-size: 0.8rem; color: var(--muted); border-bottom: 1px solid var(--border); text-align: center; }
+    .nv-desc strong { color: var(--text); }
+    .nv-item { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+    .nv-item:last-child { border-bottom: none; }
+    .nv-item:hover { background: rgba(255,255,255,0.04); }
+    .nv-item.my-pick { background: rgba(124,77,255,0.1); }
+    .nv-item.nv-top { background: rgba(255,215,0,0.06); }
+    .nv-emoji { font-size: 1.2rem; flex-shrink: 0; }
+    .nv-name { font-size: 0.88rem; font-weight: 700; min-width: 110px; }
+    .nv-bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .nv-bar { height: 100%; border-radius: 4px; transition: width 0.5s cubic-bezier(.4,0,.2,1); }
+    .nv-pct { font-size: 0.75rem; font-weight: 700; color: var(--muted); min-width: 34px; text-align: right; }
+    .nv-check { font-size: 0.8rem; margin-left: 2px; }
+
+    /* ── 챔피언 카드 ── */
+    .champ-card-wrap { text-align: center; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+
     /* ── 공유 힌트 (투표 전) ── */
     .share-hint { padding: 11px 16px; text-align: center; font-size: 0.78rem; color: var(--muted); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 8px; }
     .share-btn-inline { padding: 5px 13px; border-radius: 14px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.75rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.15s; }
@@ -172,6 +191,12 @@
     <div class="loading"><div class="spinner"></div><div>배틀 불러오는 중...</div></div>
   </div>
 
+  <!-- 다음 배틀 상대 결정 -->
+  <div id="nextVoteSection" style="display:none">
+    <div class="section-title" style="margin-top:24px">🎯 다음 배틀 상대 결정 <span style="font-size:.72rem;font-weight:400;color:var(--muted)">이긴 팀이 결정해요!</span></div>
+    <div class="next-vote-card" id="nextVoteGrid"></div>
+  </div>
+
   <!-- 광고 -->
   <div class="section-title" style="margin-top:24px">AD</div>
   <div class="ad-slot"><!-- Google AdSense 광고 영역 --><span>광고 영역</span></div>
@@ -186,6 +211,18 @@
   <div id="historySection" style="display:none">
     <div class="section-title">📜 역대 배틀 기록</div>
     <div class="history-list" id="historyList"></div>
+  </div>
+
+  <!-- 챔피언 카드 -->
+  <div id="champCardSection" style="display:none">
+    <div class="section-title">🏆 현재 배틀 챔피언 카드</div>
+    <div class="champ-card-wrap">
+      <canvas id="champCanvas" width="600" height="320" style="width:100%;border-radius:12px;display:block"></canvas>
+      <div class="share-row" style="margin-top:10px">
+        <button class="share-btn" onclick="downloadChampCard()">⬇ 카드 저장</button>
+        <button class="share-btn" onclick="shareToX()">𝕏 트위터 공유</button>
+      </div>
+    </div>
   </div>
 
   <!-- 관리자 패널 (URL에 ?admin=1 추가 시 표시) -->
@@ -288,6 +325,7 @@ function init() {
     db = firebase.database();
     listenBattle();
     listenRankings();
+    listenNextVote();
     if (isAdmin) {
       const pw = prompt("관리자 패스워드:");
       if (pw === ADMIN_PW) setupAdmin();
@@ -309,6 +347,8 @@ function listenBattle() {
   db.ref("current_battle").on("value", snap => {
     battleData = snap.val();
     renderBattle(battleData);
+    showChampCard();
+    if (allRankingsData) renderRankings(allRankingsData);
   });
 }
 
@@ -512,6 +552,142 @@ function toggleAllRankings() {
   if (allRankingsData) renderRankings(allRankingsData);
 }
 
+// ── 다음 배틀 상대 투표 ──
+function listenNextVote() {
+  db.ref("next_vote").on("value", snap => renderNextVote(snap.val() || {}));
+}
+
+function renderNextVote(data) {
+  const sec = document.getElementById("nextVoteSection");
+  const grid = document.getElementById("nextVoteGrid");
+  const battleGroups = battleData ? [battleData.groupA, battleData.groupB] : [];
+  const eligible = ALL_GROUPS.filter(g => !battleGroups.includes(g));
+  const sorted = eligible.map(g => [g, data[g] || 0]).sort((a, b) => b[1] - a[1]);
+  const totalVotes = sorted.reduce((s, [, v]) => s + v, 0);
+  const myPick = localStorage.getItem("next_voted_" + getWeekLabel());
+  const topGroup = sorted[0]?.[0];
+
+  grid.innerHTML = `<div class="nv-desc">⚔️ 다음 배틀 상대는? <strong>지금 가장 많이 뽑힌 그룹이 다음 주 등장해요!</strong></div>` +
+    sorted.slice(0, 8).map(([group, votes]) => {
+      const pct = totalVotes ? Math.round(votes / totalVotes * 100) : 0;
+      const meta = GROUP_META[group] || { emoji: "🌟", color: "#7c4dff" };
+      const isMyPick = myPick === group;
+      const isTop = group === topGroup && votes > 0;
+      return `<div class="nv-item ${isMyPick ? "my-pick" : ""} ${isTop ? "nv-top" : ""}" onclick="voteNext('${escAttr(group)}')">
+        <span class="nv-emoji">${meta.emoji}</span>
+        <span class="nv-name">${escHtml(group)}${isTop ? " 🔥" : ""}</span>
+        <div class="nv-bar-wrap"><div class="nv-bar" style="width:${pct}%;background:${meta.color}"></div></div>
+        <span class="nv-pct">${pct > 0 ? pct + "%" : "—"}</span>
+        ${isMyPick ? '<span class="nv-check">✅</span>' : ""}
+      </div>`;
+    }).join("");
+
+  sec.style.display = "block";
+}
+
+function voteNext(group) {
+  const key = "next_voted_" + getWeekLabel();
+  if (localStorage.getItem(key)) { showToast("다음 배틀 상대 투표는 1번만 가능해요!"); return; }
+  if (!db) return;
+  db.ref("next_vote/" + group).transaction(cur => (cur || 0) + 1);
+  localStorage.setItem(key, group);
+  showToast("✅ " + group + " 투표! 결과를 기다려봐 🔥");
+}
+
+// ── 챔피언 카드 ──
+function rrect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+function drawChampCard() {
+  const canvas = document.getElementById("champCanvas");
+  if (!canvas || !battleData) return;
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  const vA = battleData.votesA || 0, vB = battleData.votesB || 0;
+  const total = vA + vB;
+  const pctA = total ? Math.round(vA / total * 100) : 50;
+  const pctB = 100 - pctA;
+  const mA = GROUP_META[battleData.groupA] || { color: "#7c4dff", emoji: "🌟" };
+  const mB = GROUP_META[battleData.groupB] || { color: "#4d9eff", emoji: "🌟" };
+
+  // 배경
+  const bg = ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,"#0d0d1a"); bg.addColorStop(0.5,"#16162a"); bg.addColorStop(1,"#0d0d1a");
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+  // 양쪽 글로우
+  [[W*0.22,mA.color],[W*0.78,mB.color]].forEach(([cx,col]) => {
+    const g = ctx.createRadialGradient(cx,H*0.5,0,cx,H*0.5,W*0.38);
+    g.addColorStop(0,col+"55"); g.addColorStop(1,"transparent");
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  });
+
+  ctx.textAlign = "center";
+
+  // 상단 타이틀
+  ctx.fillStyle = "#ffffff88"; ctx.font = "bold 15px sans-serif";
+  ctx.fillText("⚔️  팬덤배틀 이번 주 빅매치  ⚔️", W/2, 38);
+
+  // 그룹 A
+  ctx.font = "40px sans-serif"; ctx.fillStyle = mA.color;
+  ctx.fillText(mA.emoji, W*0.22, 120);
+  ctx.font = "bold 22px sans-serif"; ctx.fillStyle = "#fff";
+  ctx.fillText(battleData.groupA, W*0.22, 158);
+  ctx.font = "bold 36px sans-serif"; ctx.fillStyle = mA.color;
+  ctx.fillText(pctA + "%", W*0.22, 204);
+  ctx.font = "13px sans-serif"; ctx.fillStyle = "#ffffff66";
+  ctx.fillText(vA.toLocaleString() + "표", W*0.22, 224);
+
+  // VS
+  ctx.font = "bold 22px sans-serif"; ctx.fillStyle = "#ffffff33";
+  ctx.fillText("VS", W/2, 178);
+
+  // 그룹 B
+  ctx.font = "40px sans-serif"; ctx.fillStyle = mB.color;
+  ctx.fillText(mB.emoji, W*0.78, 120);
+  ctx.font = "bold 22px sans-serif"; ctx.fillStyle = "#fff";
+  ctx.fillText(battleData.groupB, W*0.78, 158);
+  ctx.font = "bold 36px sans-serif"; ctx.fillStyle = mB.color;
+  ctx.fillText(pctB + "%", W*0.78, 204);
+  ctx.font = "13px sans-serif"; ctx.fillStyle = "#ffffff66";
+  ctx.fillText(vB.toLocaleString() + "표", W*0.78, 224);
+
+  // 투표 바
+  const bx=50, by=250, bw=W-100, bh=14;
+  rrect(ctx,bx,by,bw,bh,7); ctx.fillStyle="#ffffff18"; ctx.fill();
+  const bwA = Math.max(0, Math.round(bw*pctA/100));
+  if (bwA>0) { rrect(ctx,bx,by,bwA,bh,7); ctx.fillStyle=mA.color; ctx.fill(); }
+  if (bw-bwA>0) { rrect(ctx,bx+bwA,by,bw-bwA,bh,7); ctx.fillStyle=mB.color; ctx.fill(); }
+
+  // 총 참여
+  ctx.fillStyle="#ffffff55"; ctx.font="13px sans-serif";
+  ctx.fillText("총 "+total.toLocaleString()+"명 참여", W/2, 290);
+  ctx.fillStyle="#ffffff33"; ctx.font="12px sans-serif";
+  ctx.fillText("fandomkorea.github.io/fandom-battle", W/2, 312);
+}
+
+function showChampCard() {
+  const sec = document.getElementById("champCardSection");
+  const total = (battleData?.votesA||0)+(battleData?.votesB||0);
+  if (!battleData || total < 2) { sec.style.display="none"; return; }
+  sec.style.display = "block";
+  setTimeout(drawChampCard, 50);
+}
+
+function downloadChampCard() {
+  drawChampCard();
+  const a = document.createElement("a");
+  a.download = "팬덤배틀_챔피언카드.png";
+  a.href = document.getElementById("champCanvas").toDataURL("image/png");
+  a.click();
+  showToast("카드 저장됨! SNS에 공유해봐 💜");
+}
+
 // ── 역대 기록 ──
 function loadHistory() {
   db.ref("battle_history").limitToLast(5).once("value", snap => {
@@ -586,6 +762,7 @@ async function adminSetBattle() {
   }
 
   await db.ref("current_battle").set({ groupA, groupB, endDate, votesA: 0, votesB: 0, week: getWeekLabel() });
+  await db.ref("next_vote").remove(); // 새 배틀 시작 시 다음 상대 투표 초기화
 
   // 랭킹에 새 그룹 없으면 0으로 초기화
   const snap = await db.ref("rankings").once("value");
