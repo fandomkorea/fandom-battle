@@ -7,6 +7,15 @@
   <meta name="description" content="BTS, 블랙핑크, 에스파, 뉴진스! 매주 새로운 빅매치 투표와 실시간 팬덤 파워 랭킹. 내 최애 그룹을 1등으로!" />
   <meta property="og:title" content="팬덤배틀 - 아이돌 팬덤 파워 대결" />
   <meta property="og:description" content="매주 빅매치 투표! 내 최애 그룹 팬덤 파워를 증명해봐 💪" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://fandomkorea.github.io/fandom-battle/" />
+  <meta property="og:image" content="https://fandomkorea.github.io/fandom-battle/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="팬덤배틀 - 아이돌 팬덤 파워 대결" />
+  <meta name="twitter:description" content="매주 빅매치 투표! 내 최애 그룹 팬덤 파워를 증명해봐 💪" />
+  <meta name="twitter:image" content="https://fandomkorea.github.io/fandom-battle/og-image.png" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
@@ -116,9 +125,19 @@
     .history-score { font-size: 0.72rem; color: var(--muted); }
 
     /* ── 공유 버튼 ── */
-    .share-row { display: flex; gap: 8px; justify-content: center; margin-top: 6px; }
-    .share-btn { padding: 9px 20px; border-radius: 24px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.82rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.15s; }
+    .share-row { display: flex; gap: 8px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
+    .share-btn { padding: 9px 18px; border-radius: 24px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.82rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.15s; }
     .share-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .share-btn.kakao { background: #FEE500; color: #3C1E1E; border-color: #FEE500; }
+    .share-btn.kakao:hover { background: #f0d800; border-color: #f0d800; color: #3C1E1E; }
+    .share-btn.x-btn { background: #000; color: #fff; border-color: #000; }
+    .share-btn.x-btn:hover { background: #222; border-color: #222; color: #fff; }
+    .share-btn.native { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .share-btn.native:hover { background: #6a3de8; border-color: #6a3de8; color: #fff; }
+    /* ── 배틀 종료 배너 ── */
+    .battle-ended-banner { padding: 18px 16px; text-align: center; background: rgba(255,215,0,0.07); border-top: 1px solid rgba(255,215,0,0.2); }
+    .battle-ended-title { font-size: 1rem; font-weight: 900; color: var(--gold); }
+    .battle-ended-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
 
     /* ── 토스트 ── */
     .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1a1a3e; color: var(--text); padding: 12px 24px; border-radius: 12px; font-size: 0.88rem; font-weight: 600; z-index: 9999; transition: transform 0.3s; pointer-events: none; white-space: nowrap; border: 1px solid var(--border); }
@@ -272,7 +291,9 @@
       <canvas id="champCanvas" width="600" height="320" style="width:100%;border-radius:12px;display:block"></canvas>
       <div class="share-row" style="margin-top:10px">
         <button class="share-btn" onclick="downloadChampCard()">⬇ 카드 저장</button>
-        <button class="share-btn" onclick="shareToX()">𝕏 트위터 공유</button>
+        <button class="share-btn native" onclick="shareNative()">📤 공유하기</button>
+        <button class="share-btn kakao" onclick="shareKakao()">💛 카카오</button>
+        <button class="share-btn x-btn" onclick="shareToX()">𝕏 트위터</button>
       </div>
     </div>
   </div>
@@ -422,6 +443,7 @@ function renderBattle(data) {
   const pctB = 100 - pctA;
   const myVote = getMyVote();
   const alreadyVoted = !!myVote;
+  const isBattleOver = data.endDate && new Date(data.endDate) < new Date();
 
   // 투표 후 감성 메시지
   let votedMsg = "오늘 투표 완료! 💜", votedSub = "내일 또 투표할 수 있어요";
@@ -445,9 +467,9 @@ function renderBattle(data) {
           <div class="fighter-emoji">${metaA.emoji}</div>
           <div class="fighter-name">${escHtml(data.groupA)}</div>
           <div class="fighter-votes">${votesA.toLocaleString()}표</div>
-          <button class="vote-btn" id="btnA" onclick="vote('A')" ${alreadyVoted?"disabled":""}
+          <button class="vote-btn" id="btnA" onclick="vote('A')" ${(alreadyVoted||isBattleOver)?"disabled":""}
             style="background:linear-gradient(135deg,${metaA.color},${darken(metaA.color)});box-shadow:0 4px 14px ${hexToRgba(metaA.color,0.4)}">
-            ${myVote==="A"?"✅ 투표함":metaA.emoji+" 투표"}
+            ${isBattleOver?"🔒 종료":myVote==="A"?"✅ 투표함":metaA.emoji+" 투표"}
           </button>
         </div>
         <div class="vs-center"><div class="vs-text">VS</div></div>
@@ -455,9 +477,9 @@ function renderBattle(data) {
           <div class="fighter-emoji">${metaB.emoji}</div>
           <div class="fighter-name">${escHtml(data.groupB)}</div>
           <div class="fighter-votes">${votesB.toLocaleString()}표</div>
-          <button class="vote-btn" id="btnB" onclick="vote('B')" ${alreadyVoted?"disabled":""}
+          <button class="vote-btn" id="btnB" onclick="vote('B')" ${(alreadyVoted||isBattleOver)?"disabled":""}
             style="background:linear-gradient(135deg,${metaB.color},${darken(metaB.color)});box-shadow:0 4px 14px ${hexToRgba(metaB.color,0.4)}">
-            ${myVote==="B"?"✅ 투표함":metaB.emoji+" 투표"}
+            ${isBattleOver?"🔒 종료":myVote==="B"?"✅ 투표함":metaB.emoji+" 투표"}
           </button>
         </div>
       </div>
@@ -471,23 +493,33 @@ function renderBattle(data) {
           <span style="color:${metaB.color};font-weight:700">${pctB}%</span>
         </div>
       </div>
-      ${alreadyVoted ? `
+      ${isBattleOver ? `
+        <div class="battle-ended-banner">
+          <div class="battle-ended-title">⏰ 이번 배틀이 종료됐어요!</div>
+          <div class="battle-ended-sub">최종 결과 — ${data.groupA} ${pctA}% : ${data.groupB} ${pctB}%</div>
+          <div class="share-row" style="margin-top:12px">
+            <button class="share-btn native" onclick="shareNative()">📤 결과 공유</button>
+            <button class="share-btn kakao" onclick="shareKakao()">💛 카카오 공유</button>
+          </div>
+        </div>` :
+      alreadyVoted ? `
         <div class="voted-overlay show">
           <div class="voted-msg">${votedMsg}</div>
           <div class="voted-sub">${votedSub}</div>
-          <canvas id="proofCanvas" width="480" height="128" class="proof-canvas" onclick="downloadVoteProof('${escAttr(myVote==='A'?data.groupA:data.groupB)}')"></canvas>
-          <div class="proof-hint">👆 이미지 클릭 시 저장 — SNS에 공유해봐!</div>
+          <canvas id="proofCanvas" width="600" height="300" class="proof-canvas" onclick="downloadVoteProof('${escAttr(myVote==='A'?data.groupA:data.groupB)}')"></canvas>
+          <div class="proof-hint">👆 이미지 클릭 시 저장 — 인스타/트위터에 공유해봐!</div>
           <div class="share-row" style="margin-top:8px">
-            <button class="share-btn" onclick="shareResult()">🔗 공유하기</button>
-            <button class="share-btn" onclick="shareToX()">𝕏 트위터 공유</button>
+            <button class="share-btn native" onclick="shareNative()">📤 공유하기</button>
+            <button class="share-btn kakao" onclick="shareKakao()">💛 카카오</button>
+            <button class="share-btn x-btn" onclick="shareToX()">𝕏 트위터</button>
           </div>
         </div>` : `
         <div class="share-hint">💬 친구한테 알려서 같이 응원해!
-          <button class="share-btn-inline" onclick="shareResult()">🔗 공유</button>
+          <button class="share-btn-inline" onclick="shareNative()">📤 공유</button>
         </div>`}
     </div>`;
 
-  if (alreadyVoted) {
+  if (alreadyVoted && !isBattleOver) {
     const proofGroup = myVote === "A" ? data.groupA : data.groupB;
     setTimeout(() => drawVoteProof(proofGroup), 80);
   }
@@ -497,6 +529,7 @@ function renderBattle(data) {
 // ── 투표 실행 ──
 function vote(side) {
   if (!db || !battleData) return;
+  if (battleData.endDate && new Date(battleData.endDate) < new Date()) { showToast("이미 종료된 배틀이에요!"); return; }
   if (getMyVote()) { showToast("오늘은 이미 투표했어요!"); return; }
 
   const key = side === "A" ? "votesA" : "votesB";
@@ -780,18 +813,65 @@ function loadHistory() {
 }
 
 // ── 공유 ──
-function shareResult() {
-  if (!battleData) return;
-  const url = location.href.split("?")[0];
-  navigator.clipboard.writeText(url).then(() => showToast("링크 복사됨! 친구한테 공유해줘 💜"));
+const SITE_URL = "https://fandomkorea.github.io/fandom-battle/";
+
+function getShareText() {
+  if (!battleData) return { title: "팬덤배틀", text: "아이돌 팬덤 파워 대결!", url: SITE_URL };
+  const vA = battleData.votesA || 0, vB = battleData.votesB || 0;
+  const total = vA + vB;
+  const pctA = total ? Math.round(vA / total * 100) : 50;
+  const myVote = getMyVote();
+  const myGroup = myVote === "A" ? battleData.groupA : myVote === "B" ? battleData.groupB : null;
+  const tagA = battleData.groupA.replace(/\s/g, "");
+  const tagB = battleData.groupB.replace(/\s/g, "");
+  const title = `⚔️ ${battleData.groupA} vs ${battleData.groupB} 팬덤배틀!`;
+  const text = myGroup
+    ? `나는 ${myGroup}에 투표했어! 현재 ${battleData.groupA} ${pctA}% vs ${battleData.groupB} ${100 - pctA}% #팬덤배틀 #${tagA} #${tagB}`
+    : `${battleData.groupA} vs ${battleData.groupB} — 지금 투표 중! #팬덤배틀 #${tagA} #${tagB}`;
+  return { title, text, url: SITE_URL };
 }
+
+async function shareNative() {
+  const { title, text, url } = getShareText();
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text: text + "\n" + url });
+      return;
+    } catch (e) { /* 취소 시 무시 */ }
+  }
+  // fallback: 클립보드 복사
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast("링크 복사됨! 친구한테 공유해줘 💜");
+  } catch {
+    // 구형 브라우저 fallback
+    const ta = document.createElement("textarea");
+    ta.value = url; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    showToast("링크 복사됨! 💜");
+  }
+}
+
+function shareKakao() {
+  const { text, url } = getShareText();
+  // Kakao SDK 없이 카카오톡 URL 스킴 + 웹 fallback
+  const kakaoShareUrl = "https://sharer.kakao.com/talk/friends/picker/link?app_key=undefined&validation_action=default&validation_params={}";
+  // 실용적 방법: 카카오 오픈채팅 or 링크 공유
+  // navigator.share가 있으면 카카오도 목록에 뜸
+  if (navigator.share) {
+    navigator.share({ title: "팬덤배틀", text: text.replace(/#\S+/g, "").trim(), url });
+    return;
+  }
+  // 없으면 링크 복사
+  shareNative();
+}
+
 function shareToX() {
-  if (!battleData) return;
-  const votesA = battleData.votesA || 0, votesB = battleData.votesB || 0;
-  const total = votesA + votesB;
-  const pctA = total ? Math.round(votesA/total*100) : 50;
-  const text = `⚔️ 팬덤배틀 이번 주 매치!\n${battleData.groupA} ${pctA}% vs ${battleData.groupB} ${100-pctA}%\n내 팀 응원하러 👉 ${location.href.split("?")[0]}`;
-  window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(text), "_blank");
+  const { text, url } = getShareText();
+  const tweetText = text + " 👉 " + url;
+  window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(tweetText), "_blank", "width=600,height=400");
 }
 
 // ── 관리자 ──
@@ -903,7 +983,22 @@ function cheer(group) {
 // ── 응원 댓글 ──
 const BAD = ["시발","씨발","병신","개새","지랄","fuck","shit","bitch"];
 function filterBad(t) { return BAD.some(w => t.toLowerCase().includes(w)); }
-function anonName() { return "팬#" + Math.floor(Math.random()*9000+1000); }
+function anonName() {
+  const key = "my_anon_name";
+  let name = localStorage.getItem(key);
+  if (!name) { name = "팬#" + Math.floor(Math.random()*9000+1000); localStorage.setItem(key, name); }
+  return name;
+}
+function canPostComment() {
+  const key = "comment_ts";
+  const history = JSON.parse(localStorage.getItem(key) || "[]");
+  const now = Date.now();
+  const recent = history.filter(t => now - t < 60000); // 1분 내
+  if (recent.length >= 3) return false;
+  recent.push(now);
+  localStorage.setItem(key, JSON.stringify(recent));
+  return true;
+}
 
 function listenComments() {
   db.ref("comments").limitToLast(30).on("value", snap => {
@@ -934,6 +1029,7 @@ function postComment() {
   const group = document.getElementById("commentGroup").value;
   if (!text) { showToast("응원 메시지를 입력해줘!"); return; }
   if (filterBad(text)) { showToast("부적절한 표현이 포함되어 있어요"); return; }
+  if (!canPostComment()) { showToast("1분에 3개까지만 쓸 수 있어요 ⏳"); return; }
   if (!db) return;
   const ref = db.ref("comments").push();
   ref.set({ text, group, anon: anonName(), time: Date.now() });
@@ -960,23 +1056,65 @@ function drawVoteProof(group) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
-  const meta = GROUP_META[group] || { color:"#7c4dff", emoji:"🌟" };
-  const bg = ctx.createLinearGradient(0,0,W,H);
-  bg.addColorStop(0,"#0d0d1a"); bg.addColorStop(1,meta.color+"44");
-  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
-  ctx.textAlign = "center";
-  ctx.font = "32px sans-serif"; ctx.fillText(meta.emoji, W/2, 52);
-  ctx.fillStyle = meta.color; ctx.font = "bold 20px sans-serif";
-  ctx.fillText("나는 오늘 " + group + "에 투표했어!", W/2, 86);
-  ctx.fillStyle = "#ffffff55"; ctx.font = "13px sans-serif";
-  ctx.fillText("팬덤배틀 · fandomkorea.github.io/fandom-battle", W/2, 112);
+  const meta = GROUP_META[group] || { color: "#7c4dff", emoji: "🌟" };
+  const c2 = darken(meta.color);
+
+  // 배경 그라디언트
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, "#0d0d1a");
+  bg.addColorStop(0.6, meta.color + "33");
+  bg.addColorStop(1, c2 + "55");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // 장식 원
+  ctx.beginPath(); ctx.arc(W - 60, 60, 90, 0, Math.PI * 2);
+  ctx.fillStyle = meta.color + "18"; ctx.fill();
+  ctx.beginPath(); ctx.arc(60, H - 40, 70, 0, Math.PI * 2);
+  ctx.fillStyle = meta.color + "12"; ctx.fill();
+
+  // 상단 배지
+  ctx.fillStyle = meta.color + "33";
+  roundRect(ctx, W/2 - 80, 18, 160, 28, 14); ctx.fill();
+  ctx.fillStyle = meta.color; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center";
+  ctx.fillText("✅  투표 인증", W / 2, 37);
+
+  // 이모지
+  ctx.font = "64px sans-serif";
+  ctx.fillText(meta.emoji, W / 2, 130);
+
+  // 메인 텍스트
+  ctx.fillStyle = "#ffffff"; ctx.font = "bold 24px 'Noto Sans KR', sans-serif";
+  ctx.fillText("나는 오늘", W / 2, 178);
+  ctx.fillStyle = meta.color; ctx.font = "bold 30px 'Noto Sans KR', sans-serif";
+  ctx.fillText(group + " 에 투표했어!", W / 2, 216);
+
+  // 날짜
+  const today = new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
+  ctx.fillStyle = "#ffffff66"; ctx.font = "13px sans-serif";
+  ctx.fillText(today + "  ·  팬덤배틀", W / 2, 254);
+
+  // URL
+  ctx.fillStyle = "#ffffff33"; ctx.font = "11px sans-serif";
+  ctx.fillText("fandomkorea.github.io/fandom-battle", W / 2, 280);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
 
 function downloadVoteProof(group) {
   const canvas = document.getElementById("proofCanvas");
   drawVoteProof(group);
-  const a = document.createElement("a"); a.download = "투표인증.png";
+  const a = document.createElement("a"); a.download = "팬덤배틀_투표인증.png";
   a.href = canvas.toDataURL("image/png"); a.click();
+  showToast("저장됨! 인스타/트위터에 공유해봐 💜");
 }
 
 // ── 다음 배틀 예고 ──
@@ -1014,6 +1152,7 @@ function fmtVotes(n) {
   return n.toLocaleString();
 }
 function escHtml(s) { if (!s) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function escAttr(s) { if (!s) return ""; return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
 function showToast(msg) {
   const t = document.getElementById("toast"); t.textContent = msg;
   t.classList.add("show"); clearTimeout(t._t);
