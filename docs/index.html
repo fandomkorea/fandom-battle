@@ -368,7 +368,10 @@ function vote(side) {
 
   setMyVote(side);
   showToast("💜 " + group + " 투표 완료!");
-  renderBattle({ ...battleData, [key]: (battleData[key] || 0) + 1 });
+  // 버튼만 즉시 비활성화, 숫자는 Firebase 리스너가 자동 업데이트
+  document.querySelectorAll(".vote-btn").forEach(b => b.disabled = true);
+  const votedBtn = document.getElementById(side === "A" ? "btnA" : "btnB");
+  if (votedBtn) votedBtn.textContent = "✅ 투표함";
 }
 
 // ── 카운트다운 ──
