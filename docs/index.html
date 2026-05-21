@@ -139,6 +139,16 @@
     .admin-btn:hover { opacity: 0.85; }
     .admin-btn.danger { background: #cc2222; }
 
+    /* ── 공유 힌트 (투표 전) ── */
+    .share-hint { padding: 11px 16px; text-align: center; font-size: 0.78rem; color: var(--muted); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .share-btn-inline { padding: 5px 13px; border-radius: 14px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.75rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.15s; }
+    .share-btn-inline:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ── 랭킹 더보기 ── */
+    .rank-show-more { margin-top: 4px; }
+    .show-all-btn { width: 100%; padding: 10px; background: none; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: 0.8rem; font-family: inherit; cursor: pointer; transition: all 0.15s; }
+    .show-all-btn:hover { border-color: var(--primary); color: var(--primary); }
+
     /* ── 모바일 ── */
     @media (max-width: 480px) {
       header h1 { font-size: 1.7rem; }
@@ -158,7 +168,6 @@
 
 <main>
   <!-- 이번 주 빅매치 -->
-  <div class="section-title">🔥 이번 주 빅매치</div>
   <div id="battleArea">
     <div class="loading"><div class="spinner"></div><div>배틀 불러오는 중...</div></div>
   </div>
@@ -258,7 +267,20 @@ const ALL_GROUPS = Object.keys(GROUP_META);
 // ── 초기화 ──
 let db = null;
 let battleData = null;
+let allRankingsData = null;
+let showAllRankings = false;
+const ADMIN_PW = "fandom1234"; // 변경 가능
 const isAdmin = new URLSearchParams(location.search).has("admin");
+
+// ── 컬러 헬퍼 ──
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function darken(hex) {
+  const r = Math.max(0,parseInt(hex.slice(1,3),16)-50), g = Math.max(0,parseInt(hex.slice(3,5),16)-50), b = Math.max(0,parseInt(hex.slice(5,7),16)-50);
+  return `#${r.toString(16).padStart(2,"0")}${g.toString(16).padStart(2,"0")}${b.toString(16).padStart(2,"0")}`;
+}
 
 function init() {
   try {
@@ -266,7 +288,11 @@ function init() {
     db = firebase.database();
     listenBattle();
     listenRankings();
-    if (isAdmin) setupAdmin();
+    if (isAdmin) {
+      const pw = prompt("관리자 패스워드:");
+      if (pw === ADMIN_PW) setupAdmin();
+      else alert("패스워드가 틀렸습니다.");
+    }
   } catch (e) {
     document.getElementById("battleArea").innerHTML =
       '<div class="loading" style="color:#ff6b6b">Firebase 설정이 필요합니다.<br><small style="color:var(--muted)">firebaseConfig 값을 채워주세요</small></div>';
@@ -293,7 +319,7 @@ function renderBattle(data) {
     return;
   }
   const metaA = GROUP_META[data.groupA] || { emoji: "🌟", color: "#7c4dff" };
-  const metaB = GROUP_META[data.groupB] || { emoji: "🌟", color: "#7c4dff" };
+  const metaB = GROUP_META[data.groupB] || { emoji: "🌟", color: "#4d9eff" };
   const votesA = data.votesA || 0;
   const votesB = data.votesB || 0;
   const total = votesA + votesB;
@@ -301,6 +327,16 @@ function renderBattle(data) {
   const pctB = 100 - pctA;
   const myVote = getMyVote();
   const alreadyVoted = !!myVote;
+
+  // 투표 후 감성 메시지
+  let votedMsg = "오늘 투표 완료! 💜", votedSub = "내일 또 투표할 수 있어요";
+  if (alreadyVoted && total > 1) {
+    const myGroup = myVote === "A" ? data.groupA : data.groupB;
+    const myPct  = myVote === "A" ? pctA : pctB;
+    if (myPct > 55)      { votedMsg = `🎉 ${myGroup}가 앞서고 있어! 이대로 가자!`;   votedSub = "친구 불러서 격차 더 벌리자!"; }
+    else if (myPct < 45) { votedMsg = `💪 지금 역전 가능해! ${myGroup} 화이팅!`;     votedSub = "친구한테 공유해서 지금 당장 역전해!"; }
+    else                 { votedMsg = `⚡ 너무 팽팽해! 한 표 한 표가 소중해!`;        votedSub = "내일도 투표하러 다시 와줘!"; }
+  }
 
   el.innerHTML = `
     <div class="battle-card">
@@ -310,43 +346,48 @@ function renderBattle(data) {
         <div class="total-votes-label">총 <strong>${total.toLocaleString()}</strong>명 참여</div>
       </div>
       <div class="battle-arena">
-        <div class="fighter side-a">
+        <div class="fighter side-a" style="background:linear-gradient(135deg,${hexToRgba(metaA.color,0.2)} 0%,transparent 70%)">
           <div class="fighter-emoji">${metaA.emoji}</div>
           <div class="fighter-name">${escHtml(data.groupA)}</div>
           <div class="fighter-votes">${votesA.toLocaleString()}표</div>
-          <button class="vote-btn vote-btn-a" id="btnA" onclick="vote('A')" ${alreadyVoted ? "disabled" : ""}>
-            ${myVote === "A" ? "✅ 투표함" : metaA.emoji + " 투표"}
+          <button class="vote-btn" id="btnA" onclick="vote('A')" ${alreadyVoted?"disabled":""}
+            style="background:linear-gradient(135deg,${metaA.color},${darken(metaA.color)});box-shadow:0 4px 14px ${hexToRgba(metaA.color,0.4)}">
+            ${myVote==="A"?"✅ 투표함":metaA.emoji+" 투표"}
           </button>
         </div>
         <div class="vs-center"><div class="vs-text">VS</div></div>
-        <div class="fighter side-b">
+        <div class="fighter side-b" style="background:linear-gradient(225deg,${hexToRgba(metaB.color,0.2)} 0%,transparent 70%)">
           <div class="fighter-emoji">${metaB.emoji}</div>
           <div class="fighter-name">${escHtml(data.groupB)}</div>
           <div class="fighter-votes">${votesB.toLocaleString()}표</div>
-          <button class="vote-btn vote-btn-b" id="btnB" onclick="vote('B')" ${alreadyVoted ? "disabled" : ""}>
-            ${myVote === "B" ? "✅ 투표함" : metaB.emoji + " 투표"}
+          <button class="vote-btn" id="btnB" onclick="vote('B')" ${alreadyVoted?"disabled":""}
+            style="background:linear-gradient(135deg,${metaB.color},${darken(metaB.color)});box-shadow:0 4px 14px ${hexToRgba(metaB.color,0.4)}">
+            ${myVote==="B"?"✅ 투표함":metaB.emoji+" 투표"}
           </button>
         </div>
       </div>
       <div class="battle-bar-wrap">
         <div class="battle-bar">
-          <div class="bar-a" style="width:${pctA}%"></div>
-          <div class="bar-b" style="width:${pctB}%"></div>
+          <div class="bar-a" style="width:${pctA}%;background:linear-gradient(90deg,${hexToRgba(metaA.color,0.7)},${metaA.color})"></div>
+          <div class="bar-b" style="width:${pctB}%;background:linear-gradient(90deg,${metaB.color},${hexToRgba(metaB.color,0.7)});flex:unset"></div>
         </div>
         <div class="bar-labels">
-          <span class="pct-a">${pctA}%</span>
-          <span class="pct-b">${pctB}%</span>
+          <span style="color:${metaA.color};font-weight:700">${pctA}%</span>
+          <span style="color:${metaB.color};font-weight:700">${pctB}%</span>
         </div>
       </div>
       ${alreadyVoted ? `
         <div class="voted-overlay show">
-          <div class="voted-msg">오늘 투표 완료! 💜 내일 또 투표할 수 있어요</div>
-          <div class="voted-sub">친구에게 공유해서 내 팀 응원해줘!</div>
+          <div class="voted-msg">${votedMsg}</div>
+          <div class="voted-sub">${votedSub}</div>
           <div class="share-row" style="margin-top:10px">
             <button class="share-btn" onclick="shareResult()">🔗 공유하기</button>
             <button class="share-btn" onclick="shareToX()">𝕏 트위터 공유</button>
           </div>
-        </div>` : ""}
+        </div>` : `
+        <div class="share-hint">💬 친구한테 알려서 같이 응원해!
+          <button class="share-btn-inline" onclick="shareResult()">🔗 공유</button>
+        </div>`}
     </div>`;
 
   startCountdown(data.endDate);
@@ -395,38 +436,80 @@ function startCountdown(endDateStr) {
 // ── 랭킹 실시간 리슨 ──
 function listenRankings() {
   db.ref("rankings").on("value", snap => {
-    const data = snap.val() || {};
-    renderRankings(data);
+    allRankingsData = snap.val() || {};
+    renderRankings(allRankingsData);
   });
 }
 
 function renderRankings(data) {
   const el = document.getElementById("rankingList");
+  const battleGroups = battleData ? [battleData.groupA, battleData.groupB] : [];
   const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
-  if (!sorted.length) {
-    el.innerHTML = '<div class="loading" style="padding:20px">투표가 시작되면 랭킹이 집계돼요!</div>';
+  const withVotes = sorted.filter(([, v]) => v > 0);
+  const zeroGroups = sorted.filter(([g, v]) => v === 0 && !battleGroups.includes(g));
+
+  // 배틀 중인 그룹은 투표 0이어도 항상 포함
+  const toShow = [...withVotes];
+  battleGroups.forEach(g => {
+    if (!toShow.find(([k]) => k === g)) toShow.unshift([g, data[g] || 0]);
+  });
+  toShow.sort((a, b) => b[1] - a[1]);
+
+  if (!toShow.length) {
+    el.innerHTML = '<div class="loading" style="padding:20px">배틀에 투표하면 랭킹이 집계돼요!</div>';
     return;
   }
 
-  const rankNums = ["", "👑", "🥈", "🥉"];
-  const rankClasses = ["", "gold", "silver", "bronze"];
-  const battleGroups = battleData ? [battleData.groupA, battleData.groupB] : [];
+  const rankNums = ["","👑","🥈","🥉"];
+  const rankClasses = ["","gold","silver","bronze"];
 
-  el.innerHTML = sorted.map(([group, votes], i) => {
+  let html = toShow.map(([group, votes], i) => {
     const rank = i + 1;
     const meta = GROUP_META[group] || { emoji: "🌟" };
     const isBattle = battleGroups.includes(group);
     return `
-      <div class="rank-item ${isBattle ? "battle-now" : ""}">
-        <div class="rank-num ${rankClasses[rank] || ""}">${rankNums[rank] || rank}</div>
+      <div class="rank-item ${isBattle?"battle-now":""}">
+        <div class="rank-num ${rankClasses[rank]||""}">${rankNums[rank]||rank}</div>
         <div class="rank-emoji">${meta.emoji}</div>
         <div class="rank-info">
-          <div class="rank-name">${escHtml(group)} ${isBattle ? '<span class="battle-now-tag">배틀 중</span>' : ""}</div>
+          <div class="rank-name">${escHtml(group)} ${isBattle?'<span class="battle-now-tag">배틀 중</span>':""}</div>
           <div class="rank-sub">누적 ${votes.toLocaleString()}표</div>
         </div>
         <div class="rank-votes">${fmtVotes(votes)}</div>
       </div>`;
   }).join("");
+
+  if (showAllRankings) {
+    html += zeroGroups.map(([group], i) => {
+      const rank = toShow.length + i + 1;
+      const meta = GROUP_META[group] || { emoji: "🌟" };
+      return `
+        <div class="rank-item" style="opacity:0.45">
+          <div class="rank-num">${rank}</div>
+          <div class="rank-emoji">${meta.emoji}</div>
+          <div class="rank-info">
+            <div class="rank-name">${escHtml(group)}</div>
+            <div class="rank-sub">아직 배틀 참전 전</div>
+          </div>
+          <div class="rank-votes" style="color:var(--muted)">—</div>
+        </div>`;
+    }).join("");
+  }
+
+  if (zeroGroups.length) {
+    html += `<div class="rank-show-more">
+      <button class="show-all-btn" onclick="toggleAllRankings()">
+        ${showAllRankings ? "▲ 접기" : `▼ 아직 참전 안 한 그룹 ${zeroGroups.length}개 보기`}
+      </button>
+    </div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+function toggleAllRankings() {
+  showAllRankings = !showAllRankings;
+  if (allRankingsData) renderRankings(allRankingsData);
 }
 
 // ── 역대 기록 ──
