@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>팬덤배틀 - 아이돌 팬덤 파워 대결</title>
+  <meta name="description" content="BTS, 블랙핑크, 에스파, 뉴진스! 매주 새로운 빅매치 투표와 실시간 팬덤 파워 랭킹. 내 최애 그룹을 1등으로!" />
+  <meta property="og:title" content="팬덤배틀 - 아이돌 팬덤 파워 대결" />
+  <meta property="og:description" content="매주 빅매치 투표! 내 최애 그룹 팬덤 파워를 증명해봐 💪" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+  <style>
+    :root {
+      --bg: #0d0d1a;
+      --card: #16162a;
+      --border: #2a2a4a;
+      --primary: #7c4dff;
+      --pink: #ff4d8d;
+      --blue: #4d9eff;
+      --gold: #ffd700;
+      --text: #f0f0ff;
+      --muted: #8888aa;
+      --radius: 16px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── 헤더 ── */
+    header { text-align: center; padding: 32px 16px 24px; background: linear-gradient(180deg, #1a0a2e 0%, var(--bg) 100%); }
+    header h1 { font-size: 2.2rem; font-weight: 900; letter-spacing: -1px; background: linear-gradient(135deg, var(--pink), var(--primary), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    header p { margin-top: 6px; font-size: 0.9rem; color: var(--muted); }
+    .live-badge { display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; padding: 4px 12px; border-radius: 20px; background: rgba(255,77,141,0.15); border: 1px solid rgba(255,77,141,0.3); font-size: 0.75rem; color: var(--pink); }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pink); animation: pulse 1.4s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* ── 메인 ── */
+    main { max-width: 680px; margin: 0 auto; padding: 0 16px 80px; }
+
+    /* ── 섹션 제목 ── */
+    .section-title { font-size: 1rem; font-weight: 700; color: var(--muted); margin: 28px 0 14px; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 1px; font-size: 0.82rem; }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── 빅매치 카드 ── */
+    .battle-card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+    .battle-header { text-align: center; padding: 14px 16px 12px; background: linear-gradient(135deg, rgba(255,77,141,0.1), rgba(124,77,255,0.1), rgba(77,158,255,0.1)); border-bottom: 1px solid var(--border); }
+    .battle-label { font-size: 0.72rem; font-weight: 700; color: var(--primary); letter-spacing: 2px; text-transform: uppercase; }
+    .countdown { font-size: 1.05rem; font-weight: 700; margin-top: 4px; color: var(--text); }
+    .countdown span { color: var(--pink); }
+    .total-votes-label { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+
+    .battle-arena { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; align-items: stretch; }
+    .fighter { padding: 24px 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: background 0.2s; }
+    .fighter.side-a { background: linear-gradient(135deg, rgba(255,77,141,0.08) 0%, transparent 60%); border-right: 1px solid var(--border); }
+    .fighter.side-b { background: linear-gradient(225deg, rgba(77,158,255,0.08) 0%, transparent 60%); }
+    .fighter-emoji { font-size: 2.8rem; line-height: 1; }
+    .fighter-name { font-size: 1.15rem; font-weight: 900; text-align: center; line-height: 1.2; }
+    .fighter-votes { font-size: 0.8rem; color: var(--muted); }
+    .vote-btn { padding: 10px 22px; border-radius: 24px; border: none; font-size: 0.92rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.18s; white-space: nowrap; }
+    .vote-btn-a { background: linear-gradient(135deg, var(--pink), #c0004d); color: #fff; box-shadow: 0 4px 14px rgba(255,77,141,0.35); }
+    .vote-btn-b { background: linear-gradient(135deg, var(--blue), #0055cc); color: #fff; box-shadow: 0 4px 14px rgba(77,158,255,0.35); }
+    .vote-btn:hover { transform: translateY(-2px) scale(1.04); }
+    .vote-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .voted-badge { font-size: 0.72rem; color: var(--muted); text-align: center; }
+
+    .vs-center { display: flex; align-items: center; justify-content: center; padding: 0 6px; }
+    .vs-text { font-size: 1.3rem; font-weight: 900; color: var(--border); letter-spacing: -1px; }
+
+    /* ── 투표 바 ── */
+    .battle-bar-wrap { padding: 14px 16px 16px; border-top: 1px solid var(--border); }
+    .battle-bar { height: 10px; border-radius: 6px; background: var(--border); overflow: hidden; display: flex; }
+    .bar-a { background: linear-gradient(90deg, var(--pink), #ff80b0); transition: width 0.6s cubic-bezier(.4,0,.2,1); border-radius: 6px 0 0 6px; }
+    .bar-b { background: linear-gradient(90deg, #80bfff, var(--blue)); transition: width 0.6s cubic-bezier(.4,0,.2,1); border-radius: 0 6px 6px 0; flex: 1; }
+    .bar-labels { display: flex; justify-content: space-between; margin-top: 7px; font-size: 0.78rem; font-weight: 700; }
+    .bar-labels .pct-a { color: var(--pink); }
+    .bar-labels .pct-b { color: var(--blue); }
+
+    /* ── 투표 완료 오버레이 ── */
+    .voted-overlay { padding: 18px 16px; text-align: center; background: rgba(124,77,255,0.08); border-top: 1px solid var(--border); display: none; }
+    .voted-overlay.show { display: block; }
+    .voted-msg { font-size: 0.88rem; color: var(--primary); font-weight: 700; }
+    .voted-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── 광고 자리 ── */
+    .ad-slot { background: var(--card); border: 1px dashed var(--border); border-radius: var(--radius); padding: 20px; text-align: center; color: var(--muted); font-size: 0.78rem; min-height: 80px; display: flex; align-items: center; justify-content: center; }
+
+    /* ── 랭킹 ── */
+    .ranking-list { display: flex; flex-direction: column; gap: 8px; }
+    .rank-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 13px 16px; display: flex; align-items: center; gap: 14px; transition: border-color 0.15s; }
+    .rank-item:hover { border-color: var(--primary); }
+    .rank-item.battle-now { border-color: rgba(255,77,141,0.5); background: rgba(255,77,141,0.05); }
+    .rank-num { font-size: 1rem; font-weight: 900; min-width: 28px; text-align: center; }
+    .rank-num.gold { color: var(--gold); }
+    .rank-num.silver { color: #c0c0c0; }
+    .rank-num.bronze { color: #cd7f32; }
+    .rank-emoji { font-size: 1.5rem; }
+    .rank-info { flex: 1; min-width: 0; }
+    .rank-name { font-weight: 700; font-size: 0.95rem; }
+    .rank-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .rank-votes { font-weight: 700; font-size: 0.92rem; color: var(--primary); white-space: nowrap; }
+    .battle-now-tag { font-size: 0.65rem; background: rgba(255,77,141,0.2); color: var(--pink); border-radius: 6px; padding: 2px 6px; font-weight: 700; }
+
+    /* ── 역대 기록 ── */
+    .history-list { display: flex; flex-direction: column; gap: 8px; }
+    .history-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-size: 0.84rem; }
+    .history-week { font-size: 0.7rem; color: var(--muted); min-width: 60px; }
+    .history-match { flex: 1; display: flex; align-items: center; gap: 8px; }
+    .history-winner { font-weight: 700; color: var(--gold); }
+    .history-loser { color: var(--muted); }
+    .history-score { font-size: 0.72rem; color: var(--muted); }
+
+    /* ── 공유 버튼 ── */
+    .share-row { display: flex; gap: 8px; justify-content: center; margin-top: 6px; }
+    .share-btn { padding: 9px 20px; border-radius: 24px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.82rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.15s; }
+    .share-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ── 토스트 ── */
+    .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1a1a3e; color: var(--text); padding: 12px 24px; border-radius: 12px; font-size: 0.88rem; font-weight: 600; z-index: 9999; transition: transform 0.3s; pointer-events: none; white-space: nowrap; border: 1px solid var(--border); }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── 로딩 ── */
+    .loading { text-align: center; padding: 40px 0; color: var(--muted); font-size: 0.9rem; }
+    .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── 관리자 패널 ── */
+    .admin-panel { background: var(--card); border: 1px solid #ff4d4d55; border-radius: var(--radius); padding: 20px; margin-top: 28px; }
+    .admin-panel h3 { color: #ff4d4d; font-size: 0.85rem; margin-bottom: 14px; letter-spacing: 1px; }
+    .admin-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+    .admin-row label { font-size: 0.78rem; color: var(--muted); min-width: 80px; }
+    .admin-row select, .admin-row input { padding: 7px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 0.82rem; flex: 1; min-width: 120px; }
+    .admin-btn { padding: 9px 18px; border-radius: 10px; border: none; background: var(--primary); color: #fff; font-weight: 700; font-family: inherit; font-size: 0.82rem; cursor: pointer; transition: opacity 0.15s; }
+    .admin-btn:hover { opacity: 0.85; }
+    .admin-btn.danger { background: #cc2222; }
+
+    /* ── 모바일 ── */
+    @media (max-width: 480px) {
+      header h1 { font-size: 1.7rem; }
+      .fighter-name { font-size: 0.98rem; }
+      .vote-btn { padding: 9px 16px; font-size: 0.84rem; }
+      .fighter-emoji { font-size: 2.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚔️ 팬덤배틀</h1>
+  <p>내 최애 그룹의 팬덤 파워를 증명해봐!</p>
+  <div class="live-badge"><span class="live-dot"></span> LIVE 투표 중</div>
+</header>
+
+<main>
+  <!-- 이번 주 빅매치 -->
+  <div class="section-title">🔥 이번 주 빅매치</div>
+  <div id="battleArea">
+    <div class="loading"><div class="spinner"></div><div>배틀 불러오는 중...</div></div>
+  </div>
+
+  <!-- 광고 -->
+  <div class="section-title" style="margin-top:24px">AD</div>
+  <div class="ad-slot"><!-- Google AdSense 광고 영역 --><span>광고 영역</span></div>
+
+  <!-- 전체 랭킹 -->
+  <div class="section-title">🏆 팬덤 파워 랭킹</div>
+  <div class="ranking-list" id="rankingList">
+    <div class="loading"><div class="spinner"></div><div>랭킹 불러오는 중...</div></div>
+  </div>
+
+  <!-- 역대 배틀 기록 -->
+  <div id="historySection" style="display:none">
+    <div class="section-title">📜 역대 배틀 기록</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <!-- 관리자 패널 (URL에 ?admin=1 추가 시 표시) -->
+  <div class="admin-panel" id="adminPanel" style="display:none">
+    <h3>🔧 관리자 — 배틀 설정</h3>
+    <div class="admin-row">
+      <label>그룹 A</label>
+      <select id="adminGroupA"></select>
+    </div>
+    <div class="admin-row">
+      <label>그룹 B</label>
+      <select id="adminGroupB"></select>
+    </div>
+    <div class="admin-row">
+      <label>종료 일시</label>
+      <input type="datetime-local" id="adminEndDate" />
+    </div>
+    <div class="admin-row">
+      <button class="admin-btn" onclick="adminSetBattle()">새 배틀 시작</button>
+      <button class="admin-btn danger" onclick="adminResetRankings()">랭킹 초기화</button>
+    </div>
+    <div id="adminMsg" style="font-size:.78rem;color:var(--muted);margin-top:6px"></div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Firebase 설정 — 아래 값을 본인 프로젝트 값으로 교체하세요
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+// 그룹 이모지/색상 메타데이터
+const GROUP_META = {
+  "BTS":           { emoji: "💜", color: "#4a148c" },
+  "BLACKPINK":     { emoji: "🖤", color: "#e91e63" },
+  "aespa":         { emoji: "💚", color: "#00796b" },
+  "NewJeans":      { emoji: "🩵", color: "#0288d1" },
+  "IVE":           { emoji: "🤍", color: "#546e7a" },
+  "LE SSERAFIM":   { emoji: "🧡", color: "#e65100" },
+  "SEVENTEEN":     { emoji: "💎", color: "#1565c0" },
+  "Stray Kids":    { emoji: "🖤", color: "#263238" },
+  "TXT":           { emoji: "🌙", color: "#4527a0" },
+  "ENHYPEN":       { emoji: "🖤", color: "#212121" },
+  "TWICE":         { emoji: "🎀", color: "#ad1457" },
+  "EXO":           { emoji: "⭐", color: "#f57f17" },
+  "NCT 127":       { emoji: "🔴", color: "#c62828" },
+  "NCT Dream":     { emoji: "🌈", color: "#2e7d32" },
+  "WayV":          { emoji: "💛", color: "#f9a825" },
+  "ITZY":          { emoji: "💥", color: "#b71c1c" },
+  "NMIXX":         { emoji: "🫧", color: "#0d47a1" },
+  "ZEROBASEONE":   { emoji: "🔵", color: "#1565c0" },
+  "RIIZE":         { emoji: "🌹", color: "#880e4f" },
+  "ATEEZ":         { emoji: "🏴‍☠️", color: "#37474f" },
+  "THE BOYZ":      { emoji: "🫐", color: "#283593" },
+  "Red Velvet":    { emoji: "🍎", color: "#b71c1c" },
+  "Girls' Generation": { emoji: "☀️", color: "#f57f17" },
+  "MAMAMOO":       { emoji: "🌻", color: "#827717" },
+  "SHINEE":        { emoji: "💙", color: "#1565c0" },
+  "Super Junior":  { emoji: "💙", color: "#0d47a1" },
+  "MONSTA X":      { emoji: "🔥", color: "#bf360c" },
+  "BIGBANG":       { emoji: "👑", color: "#212121" },
+  "GOT7":          { emoji: "🌿", color: "#1b5e20" },
+  "IU":            { emoji: "🌸", color: "#880e4f" },
+  "MAMAMOO":       { emoji: "🌻", color: "#f9a825" },
+};
+
+const ALL_GROUPS = Object.keys(GROUP_META);
+
+// ── 초기화 ──
+let db = null;
+let battleData = null;
+const isAdmin = new URLSearchParams(location.search).has("admin");
+
+function init() {
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    listenBattle();
+    listenRankings();
+    if (isAdmin) setupAdmin();
+  } catch (e) {
+    document.getElementById("battleArea").innerHTML =
+      '<div class="loading" style="color:#ff6b6b">Firebase 설정이 필요합니다.<br><small style="color:var(--muted)">firebaseConfig 값을 채워주세요</small></div>';
+  }
+}
+
+// ── 투표 제한 (하루 1표) ──
+function getTodayKey() { return "voted_" + new Date().toISOString().slice(0, 10); }
+function getMyVote() { return localStorage.getItem(getTodayKey()); }
+function setMyVote(side) { localStorage.setItem(getTodayKey(), side); }
+
+// ── 배틀 실시간 리슨 ──
+function listenBattle() {
+  db.ref("current_battle").on("value", snap => {
+    battleData = snap.val();
+    renderBattle(battleData);
+  });
+}
+
+function renderBattle(data) {
+  const el = document.getElementById("battleArea");
+  if (!data || !data.groupA || !data.groupB) {
+    el.innerHTML = '<div class="loading">아직 배틀이 시작되지 않았어요 👀</div>';
+    return;
+  }
+  const metaA = GROUP_META[data.groupA] || { emoji: "🌟", color: "#7c4dff" };
+  const metaB = GROUP_META[data.groupB] || { emoji: "🌟", color: "#7c4dff" };
+  const votesA = data.votesA || 0;
+  const votesB = data.votesB || 0;
+  const total = votesA + votesB;
+  const pctA = total ? Math.round(votesA / total * 100) : 50;
+  const pctB = 100 - pctA;
+  const myVote = getMyVote();
+  const alreadyVoted = !!myVote;
+
+  el.innerHTML = `
+    <div class="battle-card">
+      <div class="battle-header">
+        <div class="battle-label">⚔️ 이번 주 빅매치</div>
+        <div class="countdown" id="countdownEl">계산 중...</div>
+        <div class="total-votes-label">총 <strong>${total.toLocaleString()}</strong>명 참여</div>
+      </div>
+      <div class="battle-arena">
+        <div class="fighter side-a">
+          <div class="fighter-emoji">${metaA.emoji}</div>
+          <div class="fighter-name">${escHtml(data.groupA)}</div>
+          <div class="fighter-votes">${votesA.toLocaleString()}표</div>
+          <button class="vote-btn vote-btn-a" id="btnA" onclick="vote('A')" ${alreadyVoted ? "disabled" : ""}>
+            ${myVote === "A" ? "✅ 투표함" : metaA.emoji + " 투표"}
+          </button>
+        </div>
+        <div class="vs-center"><div class="vs-text">VS</div></div>
+        <div class="fighter side-b">
+          <div class="fighter-emoji">${metaB.emoji}</div>
+          <div class="fighter-name">${escHtml(data.groupB)}</div>
+          <div class="fighter-votes">${votesB.toLocaleString()}표</div>
+          <button class="vote-btn vote-btn-b" id="btnB" onclick="vote('B')" ${alreadyVoted ? "disabled" : ""}>
+            ${myVote === "B" ? "✅ 투표함" : metaB.emoji + " 투표"}
+          </button>
+        </div>
+      </div>
+      <div class="battle-bar-wrap">
+        <div class="battle-bar">
+          <div class="bar-a" style="width:${pctA}%"></div>
+          <div class="bar-b" style="width:${pctB}%"></div>
+        </div>
+        <div class="bar-labels">
+          <span class="pct-a">${pctA}%</span>
+          <span class="pct-b">${pctB}%</span>
+        </div>
+      </div>
+      ${alreadyVoted ? `
+        <div class="voted-overlay show">
+          <div class="voted-msg">오늘 투표 완료! 💜 내일 또 투표할 수 있어요</div>
+          <div class="voted-sub">친구에게 공유해서 내 팀 응원해줘!</div>
+          <div class="share-row" style="margin-top:10px">
+            <button class="share-btn" onclick="shareResult()">🔗 공유하기</button>
+            <button class="share-btn" onclick="shareToX()">𝕏 트위터 공유</button>
+          </div>
+        </div>` : ""}
+    </div>`;
+
+  startCountdown(data.endDate);
+}
+
+// ── 투표 실행 ──
+function vote(side) {
+  if (!db || !battleData) return;
+  if (getMyVote()) { showToast("오늘은 이미 투표했어요!"); return; }
+
+  const key = side === "A" ? "votesA" : "votesB";
+  const group = side === "A" ? battleData.groupA : battleData.groupB;
+
+  // 배틀 투표 증가 (transaction으로 안전하게)
+  db.ref("current_battle/" + key).transaction(cur => (cur || 0) + 1);
+
+  // 랭킹 누적 증가
+  db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
+
+  setMyVote(side);
+  showToast("💜 " + group + " 투표 완료!");
+  renderBattle({ ...battleData, [key]: (battleData[key] || 0) + 1 });
+}
+
+// ── 카운트다운 ──
+let _cdTimer = null;
+function startCountdown(endDateStr) {
+  if (_cdTimer) clearInterval(_cdTimer);
+  function update() {
+    const el = document.getElementById("countdownEl");
+    if (!el || !endDateStr) return;
+    const diff = new Date(endDateStr) - Date.now();
+    if (diff <= 0) { el.innerHTML = "배틀 종료!"; clearInterval(_cdTimer); return; }
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    el.innerHTML = (d > 0 ? `<span>${d}일</span> ` : "") + `<span>${h}시간</span> <span>${m}분</span> 남음`;
+  }
+  update();
+  _cdTimer = setInterval(update, 30000);
+}
+
+// ── 랭킹 실시간 리슨 ──
+function listenRankings() {
+  db.ref("rankings").on("value", snap => {
+    const data = snap.val() || {};
+    renderRankings(data);
+  });
+}
+
+function renderRankings(data) {
+  const el = document.getElementById("rankingList");
+  const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
+  if (!sorted.length) {
+    el.innerHTML = '<div class="loading" style="padding:20px">투표가 시작되면 랭킹이 집계돼요!</div>';
+    return;
+  }
+
+  const rankNums = ["", "👑", "🥈", "🥉"];
+  const rankClasses = ["", "gold", "silver", "bronze"];
+  const battleGroups = battleData ? [battleData.groupA, battleData.groupB] : [];
+
+  el.innerHTML = sorted.map(([group, votes], i) => {
+    const rank = i + 1;
+    const meta = GROUP_META[group] || { emoji: "🌟" };
+    const isBattle = battleGroups.includes(group);
+    return `
+      <div class="rank-item ${isBattle ? "battle-now" : ""}">
+        <div class="rank-num ${rankClasses[rank] || ""}">${rankNums[rank] || rank}</div>
+        <div class="rank-emoji">${meta.emoji}</div>
+        <div class="rank-info">
+          <div class="rank-name">${escHtml(group)} ${isBattle ? '<span class="battle-now-tag">배틀 중</span>' : ""}</div>
+          <div class="rank-sub">누적 ${votes.toLocaleString()}표</div>
+        </div>
+        <div class="rank-votes">${fmtVotes(votes)}</div>
+      </div>`;
+  }).join("");
+}
+
+// ── 역대 기록 ──
+function loadHistory() {
+  db.ref("battle_history").limitToLast(5).once("value", snap => {
+    const data = snap.val();
+    if (!data) return;
+    const sec = document.getElementById("historySection");
+    const list = document.getElementById("historyList");
+    const items = Object.values(data).reverse();
+    list.innerHTML = items.map(h => {
+      const winner = (h.votesA || 0) >= (h.votesB || 0) ? h.groupA : h.groupB;
+      const loser  = winner === h.groupA ? h.groupB : h.groupA;
+      const wVotes = winner === h.groupA ? (h.votesA||0) : (h.votesB||0);
+      const lVotes = winner === h.groupA ? (h.votesB||0) : (h.votesA||0);
+      return `<div class="history-item">
+        <div class="history-week">${h.week || ""}</div>
+        <div class="history-match">
+          <span class="history-winner">🏆 ${escHtml(winner)}</span>
+          <span style="color:var(--muted)">vs</span>
+          <span class="history-loser">${escHtml(loser)}</span>
+        </div>
+        <div class="history-score">${wVotes.toLocaleString()} : ${lVotes.toLocaleString()}</div>
+      </div>`;
+    }).join("");
+    sec.style.display = "block";
+  });
+}
+
+// ── 공유 ──
+function shareResult() {
+  if (!battleData) return;
+  const url = location.href.split("?")[0];
+  navigator.clipboard.writeText(url).then(() => showToast("링크 복사됨! 친구한테 공유해줘 💜"));
+}
+function shareToX() {
+  if (!battleData) return;
+  const votesA = battleData.votesA || 0, votesB = battleData.votesB || 0;
+  const total = votesA + votesB;
+  const pctA = total ? Math.round(votesA/total*100) : 50;
+  const text = `⚔️ 팬덤배틀 이번 주 매치!\n${battleData.groupA} ${pctA}% vs ${battleData.groupB} ${100-pctA}%\n내 팀 응원하러 👉 ${location.href.split("?")[0]}`;
+  window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(text), "_blank");
+}
+
+// ── 관리자 ──
+function setupAdmin() {
+  document.getElementById("adminPanel").style.display = "block";
+  const selA = document.getElementById("adminGroupA");
+  const selB = document.getElementById("adminGroupB");
+  ALL_GROUPS.forEach(g => {
+    selA.innerHTML += `<option value="${g}">${g}</option>`;
+    selB.innerHTML += `<option value="${g}">${g}</option>`;
+  });
+  selB.selectedIndex = 1;
+
+  // 기본 종료일: 7일 후
+  const d = new Date(); d.setDate(d.getDate() + 7);
+  document.getElementById("adminEndDate").value = d.toISOString().slice(0, 16);
+
+  loadHistory();
+}
+
+async function adminSetBattle() {
+  const groupA = document.getElementById("adminGroupA").value;
+  const groupB = document.getElementById("adminGroupB").value;
+  const endDate = document.getElementById("adminEndDate").value;
+  if (groupA === groupB) { adminMsg("같은 그룹은 안 돼요!"); return; }
+  if (!endDate) { adminMsg("종료 일시를 선택해주세요"); return; }
+
+  // 현재 배틀을 역대 기록에 저장
+  if (battleData && battleData.groupA) {
+    const week = getWeekLabel();
+    await db.ref("battle_history/" + week).set({ ...battleData, week });
+  }
+
+  await db.ref("current_battle").set({ groupA, groupB, endDate, votesA: 0, votesB: 0, week: getWeekLabel() });
+
+  // 랭킹에 새 그룹 없으면 0으로 초기화
+  const snap = await db.ref("rankings").once("value");
+  const existing = snap.val() || {};
+  const updates = {};
+  ALL_GROUPS.forEach(g => { if (!(g in existing)) updates[g] = 0; });
+  if (Object.keys(updates).length) await db.ref("rankings").update(updates);
+
+  adminMsg("✅ 새 배틀 시작됨!");
+}
+
+async function adminResetRankings() {
+  if (!confirm("랭킹을 전부 초기화할까요?")) return;
+  const updates = {};
+  ALL_GROUPS.forEach(g => { updates[g] = 0; });
+  await db.ref("rankings").set(updates);
+  adminMsg("🔄 랭킹 초기화 완료");
+}
+
+function adminMsg(msg) { document.getElementById("adminMsg").textContent = msg; }
+function getWeekLabel() {
+  const d = new Date();
+  const jan1 = new Date(d.getFullYear(), 0, 1);
+  const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+  return d.getFullYear() + "-W" + String(week).padStart(2, "0");
+}
+
+// ── 유틸 ──
+function fmtVotes(n) {
+  if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, "") + "만";
+  return n.toLocaleString();
+}
+function escHtml(s) { if (!s) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function showToast(msg) {
+  const t = document.getElementById("toast"); t.textContent = msg;
+  t.classList.add("show"); clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+init();
+</script>
+</body>
+</html>
