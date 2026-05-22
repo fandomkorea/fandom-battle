@@ -556,15 +556,8 @@
     </div>
   </div>
 
-  <!-- 투표 완료 상태 (조건부 표시) -->
-  <div id="myVotedBar" style="display:none" class="voted-overlay show;margin-bottom:12px">
-    <div class="voted-msg" id="myVotedMsg"></div>
-    <div class="voted-sub" id="myVotedSub"></div>
-    <div class="share-row" style="margin-top:8px">
-      <button class="share-btn kakao" onclick="shareKakao()">🟨 카카오톡</button>
-      <button class="share-btn" onclick="shareToX()" style="background:#000;border-color:#000;color:#fff">𝕏</button>
-    </div>
-  </div>
+  <!-- 투표 완료 상태 - 투표인증하기 버튼 -->
+  <button id="myVotedBar" style="display:none;width:100%;margin-bottom:12px;padding:12px 14px;background:#000;border:1px solid #000;border-radius:var(--radius);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.15s" onclick="shareToX()">𝕏 투표인증하기</button>
 
   <!-- 실시간 팬덤 파워 랭킹 + 투표 -->
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
