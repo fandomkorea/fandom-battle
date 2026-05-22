@@ -301,7 +301,7 @@
     .rank-fandom { font-size: 0.65rem; color: var(--muted); margin-top: 1px; }
 
     /* ── 오늘 투표 진행바 ── */
-    .vote-progress-wrap { margin-top: 10px; }
+    .vote-progress-wrap { display: none; margin-top: 10px; }
     .vote-progress-label { font-size: 0.72rem; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: 600; }
     .vote-progress-bar-bg { height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
     .vote-progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--pink)); border-radius: 4px; transition: width 0.5s cubic-bezier(.4,0,.2,1); }
@@ -543,9 +543,6 @@
     <div id="myVotedBar" style="display:none" class="voted-overlay show">
       <div class="voted-msg" id="myVotedMsg"></div>
       <div class="voted-sub" id="myVotedSub"></div>
-      <button class="ad-vote-cta" id="adVoteCta" onclick="watchAd()" style="display:none">
-        📺 광고 보고 +1표 추가
-      </button>
       <div class="share-row" style="margin-top:8px">
         <button class="share-btn native" onclick="shareNative()">📤 공유하기</button>
         <button class="share-btn native" onclick="shareToX()" style="background:#000;border-color:#000">𝕏</button>
@@ -563,6 +560,11 @@
       🎯 하루 1표 무료 + 📺 광고로 최대 9표 더
     </div>
   </div>
+
+  <!-- 광고 시청 추가 투표 버튼 -->
+  <button class="ad-vote-cta" id="adVoteCta" onclick="watchAd()" style="display:none;width:100%;margin-bottom:12px;padding:12px;background:linear-gradient(135deg,rgba(77,158,255,0.2),rgba(124,77,255,0.2));border:1px solid rgba(77,158,255,0.4);border-radius:var(--radius);color:var(--blue);font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.15s">
+    📺 광고 보고 +1표 추가
+  </button>
 
   <!-- 실시간 투표 활동 피드 -->
   <div class="activity-feed" id="activityFeed" style="display:none;max-height:80px;overflow-y:auto;margin-bottom:12px">
