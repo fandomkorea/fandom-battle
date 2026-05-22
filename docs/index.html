@@ -644,7 +644,7 @@
   </div>
 
   <!-- 광고 시청 추가 투표 버튼 -->
-  <button class="ad-vote-cta" id="adVoteCta" onclick="watchAd()" style="display:none;width:100%;margin-bottom:12px;padding:12px;background:linear-gradient(135deg,rgba(77,158,255,0.2),rgba(124,77,255,0.2));border:1px solid rgba(77,158,255,0.4);border-radius:var(--radius);color:var(--blue);font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.15s">
+  <button class="ad-vote-cta" id="adVoteCta" onclick="watchAdWithLoginCheck()" style="display:none;width:100%;margin-bottom:12px;padding:12px;background:linear-gradient(135deg,rgba(77,158,255,0.2),rgba(124,77,255,0.2));border:1px solid rgba(77,158,255,0.4);border-radius:var(--radius);color:var(--blue);font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.15s">
     📺 광고 보고 +1표 추가
   </button>
 
@@ -1169,7 +1169,8 @@ function init() {
     setMonthLabel();
     renderNickDisplay();
     handleShareRef();
-    restoreVotedState(); // 페이지 로드 시 투표 상태 복원 (광고 버튼 포함)
+    restoreVotedState(); // 페이지 로드 시 투표 상태 복원
+    showAdButtonAlways(); // 광고 버튼 항상 표시
     setTimeout(showFavBar, 1500);
     if (isAdmin) {
       const pw = prompt("관리자 패스워드:");
@@ -1421,7 +1422,7 @@ function showMyVotedBar(group) {
     } else if (remaining > 0) {
       adCtaEl.innerHTML = `📺 광고 보고 +1표 추가 <span style="font-size:.7rem;opacity:.75">(오늘 ${todayCount}/${MAX_VOTES_PER_DAY}표)</span>`;
       adCtaEl.disabled = false;
-      adCtaEl.onclick = watchAd;
+      adCtaEl.onclick = watchAdWithLoginCheck;
     } else {
       adCtaEl.innerHTML = `✅ 오늘 최대 투표 완료 (${MAX_VOTES_PER_DAY}/${MAX_VOTES_PER_DAY}표)`;
       adCtaEl.disabled = true;
@@ -1441,6 +1442,37 @@ function showMyVotedBar(group) {
   shareCtaEl.innerHTML = `🌟 지금 공유하면 우리 팀이 1위 될 확률 UP! 친구들을 초대해봐 ${meta.emoji} 💪`;
 
   bar.style.display = "block";
+}
+
+// ── 광고 버튼 항상 표시 ──
+function showAdButtonAlways() {
+  const adCtaEl = document.getElementById("adVoteCta");
+  if (!adCtaEl) return;
+
+  const todayCount = getTodayVoteCount();
+  const remaining = MAX_VOTES_PER_DAY - todayCount;
+
+  if (remaining > 0) {
+    adCtaEl.innerHTML = `📺 광고 보고 +1표 추가 <span style="font-size:.7rem;opacity:.75">(오늘 ${todayCount}/${MAX_VOTES_PER_DAY}표)</span>`;
+    adCtaEl.disabled = false;
+    adCtaEl.onclick = watchAdWithLoginCheck;
+  } else {
+    adCtaEl.innerHTML = `✅ 오늘 최대 투표 완료 (${MAX_VOTES_PER_DAY}/${MAX_VOTES_PER_DAY}표)`;
+    adCtaEl.disabled = true;
+  }
+  adCtaEl.style.display = "flex";
+}
+
+// ── 로그인 여부 확인 후 광고 시청 ──
+function watchAdWithLoginCheck() {
+  if (!isLoggedIn) {
+    showToast("🔐 광고를 보시려면 로그인이 필요합니다!");
+    showVoteLoginModal(null); // 로그인 모달만 띄우기
+    return;
+  }
+
+  // 기존 광고 시청 로직
+  watchAd();
 }
 
 // ── 광고 시청 → 추가 투표권 ──
