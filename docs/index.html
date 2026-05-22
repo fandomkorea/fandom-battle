@@ -72,9 +72,14 @@
     .voted-sub { font-size: 0.75rem; color: var(--muted); margin-top: 6px; line-height: 1.5; }
 
     @media (max-width: 480px) {
-      .voted-overlay { padding: 14px 12px; }
-      .voted-msg { font-size: 0.8rem; }
-      .voted-sub { font-size: 0.7rem; margin-top: 4px; }
+      .voted-overlay { padding: 10px 10px; }
+      .voted-msg { font-size: 0.8rem; line-height: 1.2; margin-bottom: 2px; }
+      .voted-sub { font-size: 0.7rem; margin-top: 2px; line-height: 1.3; }
+      .share-row { margin-top: 4px; gap: 6px; }
+      .share-btn { padding: 8px 14px; font-size: 0.75rem; }
+
+      /* 광고 버튼 */
+      #adVoteCta { margin-bottom: 8px !important; padding: 10px !important; font-size: 0.8rem !important; }
     }
 
     /* ── 광고 자리 ── */
@@ -374,9 +379,9 @@
       .live-badge { margin-top: 8px; font-size: 0.7rem; padding: 3px 10px; }
 
       /* 주요 배너들 */
-      #todayVoteCountBanner { padding: 12px; margin-bottom: 10px; font-size: 0.75rem; flex-direction: column; gap: 6px; text-align: center; }
-      #todayVoteCountBanner > div { width: 100%; }
-      #todayVoteDisplay { font-size: 0.85rem; }
+      #todayVoteCountBanner { padding: 10px; margin-bottom: 8px; font-size: 0.75rem; flex-direction: column; gap: 4px; text-align: center; }
+      #todayVoteCountBanner > div { width: 100%; font-size: 0.7rem; }
+      #todayVoteDisplay { font-size: 0.8rem; font-weight: 700; }
 
       /* 상품 배너 */
       .prize-banner { padding: 16px 12px; margin-top: 12px; }
@@ -395,12 +400,12 @@
       .vote-guide-sub { font-size: 0.68rem; line-height: 1.4; }
 
       /* 활동 피드 */
-      .activity-feed { padding: 8px 10px; margin-bottom: 8px; max-height: 90px; }
-      .activity-item { font-size: 0.7rem; padding: 3px 0; }
+      .activity-feed { padding: 6px 8px; margin-bottom: 6px; max-height: 80px; }
+      .activity-item { font-size: 0.7rem; padding: 2px 0; }
       .activity-emoji { font-size: 0.85rem; }
 
       /* 랭킹 섹션 */
-      .section-title { font-size: 0.75rem; margin: 14px 0 8px; letter-spacing: 0.5px; }
+      .section-title { font-size: 0.75rem; margin: 10px 0 6px; letter-spacing: 0.5px; }
 
       /* 검색 입력창 */
       #groupSearchInput {
