@@ -519,21 +519,27 @@
 </header>
 
 <main>
-  <!-- 🎁 이달의 상품 배너 -->
-  <div class="prize-banner">
-    <div class="prize-label">🏆 이달의 1등 팬덤에게</div>
-    <div class="prize-amount"><span>100만원</span> 상당 포토카드 증정</div>
-    <div class="prize-sub">매월 1일 투표 초기화 · 월말 1위 팬덤이 상품을 받아요!</div>
-    <div class="prize-notice" id="prizeNotice"></div>
-  </div>
-
-  <!-- 이번 달 투표 카운트다운 헤더 -->
+  <!-- 🎁 이달의 상품 & 투표 카운트다운 통합 배너 -->
   <div class="battle-card" style="margin-top:12px">
+    <!-- 상품 배너 영역 -->
+    <div style="background:linear-gradient(135deg,rgba(255,215,0,0.1),rgba(124,77,255,0.12));border-bottom:1px solid var(--border);padding:18px 16px;text-align:center;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(255,215,0,0.08) 50%,transparent 60%);background-size:200% 100%;animation:shimmer 4s ease-in-out infinite;pointer-events:none"></div>
+      <div style="position:relative;z-index:1">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">🏆 이달의 1등 팬덤에게</div>
+        <div style="font-size:1.6rem;font-weight:900;color:#fff;margin-bottom:6px"><span style="color:var(--gold);text-shadow:0 0 14px rgba(255,215,0,0.6)">100만원</span> 상당 포토카드 증정</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px">매월 1일 투표 초기화 · 월말 1위 팬덤이 상품을 받아요!</div>
+        <div class="prize-notice" id="prizeNotice" style="font-size:0.78rem;color:var(--gold);font-weight:600;min-height:0"></div>
+      </div>
+    </div>
+
+    <!-- 투표 카운트다운 영역 -->
     <div class="battle-header">
       <div class="battle-label">🗳️ <span id="monthLabel">이번 달</span> 팬덤 파워 투표</div>
       <div class="countdown" id="countdownEl">계산 중...</div>
       <div class="total-votes-label">총 <strong id="totalVotesEl">0</strong>명 참여 · 하루 1표 무료 + 광고시청 시 최대 10표</div>
     </div>
+
+    <!-- 투표 완료 상태 (조건부 표시) -->
     <div id="myVotedBar" style="display:none" class="voted-overlay show">
       <div class="voted-msg" id="myVotedMsg"></div>
       <div class="voted-sub" id="myVotedSub"></div>
@@ -558,14 +564,8 @@
     </div>
   </div>
 
-  <!-- 투표 방법 가이드 배너 -->
-  <div id="voteGuideBanner" class="vote-guide-banner" style="display:none">
-    <div class="vote-guide-title">📱 투표하고 100만원 포토카드 우승팬이 되자!</div>
-    <div class="vote-guide-sub">🎯 <span class="vote-guide-highlight">하루 1표 무료</span> + 📺 <span class="vote-guide-highlight">광고시청 시 최대 9표 추가</span> (총 10표/일)</div>
-  </div>
-
   <!-- 실시간 투표 활동 피드 -->
-  <div class="activity-feed" id="activityFeed" style="display:none;max-height:80px;overflow-y:auto">
+  <div class="activity-feed" id="activityFeed" style="display:none;max-height:80px;overflow-y:auto;margin-bottom:12px">
     <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:6px">🔥 실시간 투표 중</div>
     <div id="activityList" style="display:flex;flex-direction:column;gap:3px"></div>
   </div>
@@ -589,11 +589,11 @@
     </div>
   </div>
 
-  <!-- 응원 한 마디 -->
-  <div class="section-title">💬 응원 한 마디 <span id="nickDisplay" style="font-size:.7rem;font-weight:400;color:var(--muted)"></span></div>
+  <!-- 팬덤 응원 메시지 -->
+  <div class="section-title">💬 팬덤 응원 메시지 <span id="nickDisplay" style="font-size:.7rem;font-weight:400;color:var(--muted)"></span></div>
   <div class="comment-input-row">
     <select class="comment-group-sel" id="commentGroup"></select>
-    <input class="comment-input" id="commentInput" placeholder="우리 팀 응원 한 마디!" maxlength="60" />
+    <input class="comment-input" id="commentInput" placeholder="팬덤을 응원해주세요!" maxlength="60" />
     <button class="comment-submit" onclick="postComment()">등록</button>
   </div>
   <div class="comment-filter-row" id="commentFilterRow">
