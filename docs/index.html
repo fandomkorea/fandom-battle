@@ -138,7 +138,7 @@
 
     /* ── 응원 댓글 ── */
     .comment-input-row { display: flex; gap: 8px; margin-bottom: 10px; }
-    .comment-group-sel { padding: 8px 10px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: inherit; font-size: 0.8rem; outline: none; cursor: pointer; }
+    .comment-group-sel { padding: 10px 12px; background: var(--card); border: 1px solid var(--primary); border-radius: 10px; color: var(--text); font-family: inherit; font-size: 0.82rem; outline: none; cursor: pointer; flex: 0.35; }
     .comment-group-sel:focus { border-color: var(--primary); }
     .comment-input { flex: 1; padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: inherit; font-size: 0.84rem; outline: none; }
     .comment-input:focus { border-color: var(--primary); }
@@ -157,6 +157,11 @@
     /* ── 내 최애 랭킹 하이라이트 ── */
     .rank-item.my-fav-rank { border-color: var(--primary); background: rgba(124,77,255,0.07); }
     .my-fav-star { font-size: 0.65rem; margin-right: 3px; }
+
+    /* ── 내가 투표한 팀 강조 ── */
+    .rank-item.my-voted { border-color: var(--primary); background: rgba(124,77,255,0.12); border-width: 2px; }
+    .rank-item.my-voted .rank-name { color: var(--primary); font-weight: 900; }
+    .my-voted-badge { display: inline-block; font-size: 0.6rem; background: var(--primary); color: #fff; border-radius: 10px; padding: 2px 8px; margin-left: 5px; font-weight: 700; animation: pulse 1.5s infinite; }
 
     /* ── 내 팀 배틀 참여 배너 ── */
     .my-team-banner { background: linear-gradient(135deg,rgba(124,77,255,0.15),rgba(255,77,141,0.1)); border: 1px solid rgba(124,77,255,0.35); border-radius: 10px; padding: 9px 14px; margin-bottom: 10px; font-size: 0.82rem; font-weight: 700; color: var(--primary); text-align: center; animation: glowPulse 2s ease-in-out infinite; }
@@ -252,8 +257,8 @@
     .ad-pending-badge { display: inline-block; background: var(--gold); color: #1a1000; font-size: 0.65rem; font-weight: 900; padding: 2px 7px; border-radius: 8px; animation: pulse 1s infinite; }
 
     /* ── 추가 투표 활성 상태 버튼 ── */
-    .vote-rank-btn.ad-active { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1000; border-color: #ffd700; }
-    .vote-rank-btn.ad-active:hover:not(:disabled) { opacity: 0.85; }
+    .vote-rank-btn.ad-active { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1000; border-color: #ffd700; font-weight: 900; animation: pulse 1s infinite; }
+    .vote-rank-btn.ad-active:hover:not(:disabled) { opacity: 0.9; transform: scale(1.1); }
 
     /* ── 1위 그룹 특별 강조 ── */
     @keyframes goldGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(255,215,0,0); border-color: rgba(255,215,0,0.5); } 50% { box-shadow: 0 0 18px 4px rgba(255,215,0,0.22); border-color: rgba(255,215,0,0.9); } }
@@ -376,6 +381,16 @@
     </div>
   </div>
 
+
+  <!-- 오늘 투표권 상태 배너 (항상 표시) -->
+  <div id="todayVoteCountBanner" style="background:linear-gradient(135deg,rgba(124,77,255,0.12),rgba(255,77,141,0.08));border:1px solid rgba(124,77,255,0.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;text-align:center;display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:.8rem;color:var(--text);font-weight:700">
+      <span id="todayVoteDisplay">오늘 투표: 0/10</span>
+    </div>
+    <div style="font-size:.7rem;color:var(--muted)">
+      🎯 하루 1표 무료 + 📺 광고로 최대 9표 더
+    </div>
+  </div>
 
   <!-- 투표 방법 가이드 배너 -->
   <div id="voteGuideBanner" class="vote-guide-banner" style="display:none">
@@ -531,6 +546,7 @@ function init() {
     loadMonthlyHistory();
     renderFavChip();
     renderMyVotingHistory();
+    updateTodayVoteDisplay();
     buildCommentSelect();
     startMonthlyCountdown();
     setMonthLabel();
@@ -812,7 +828,10 @@ function watchAd() {
 
   modal.innerHTML = `
     <div class="ad-modal-box">
-      <div class="ad-modal-title">📺 광고 시청 중...</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="ad-modal-title" style="margin:0">📺 광고 시청 중...</div>
+        <button onclick="document.getElementById('adModal')?.remove()" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;padding:0;line-height:1">✕</button>
+      </div>
       <div class="ad-modal-desc">광고를 보면 투표권 1개를 드려요!<br>하루 최대 ${MAX_VOTES_PER_DAY}표까지 가능해요</div>
       <div class="ad-countdown-wrap">
         <div class="ad-countdown-ring" id="adRing"></div>
@@ -966,6 +985,22 @@ function scrollToMyGroup(group) {
   setTimeout(() => el.classList.remove("highlight-flash"), 1800);
 }
 
+// ── 오늘 투표권 상태 업데이트 ──
+function updateTodayVoteDisplay() {
+  const el = document.getElementById("todayVoteDisplay");
+  if (!el) return;
+  const count = getTodayVoteCount();
+  const remaining = MAX_VOTES_PER_DAY - count;
+
+  if (count === 0) {
+    el.innerHTML = `📊 오늘 투표: <span style="color:var(--gold);font-weight:900">${count}/${MAX_VOTES_PER_DAY}</span> (광고로 최대 9표 더!)`;
+  } else if (count === MAX_VOTES_PER_DAY) {
+    el.innerHTML = `✅ 오늘 투표: <span style="color:var(--gold);font-weight:900">${count}/${MAX_VOTES_PER_DAY}</span> (최대 사용!)`;
+  } else {
+    el.innerHTML = `📊 오늘 투표: <span style="color:var(--primary);font-weight:900">${count}/${MAX_VOTES_PER_DAY}</span> (광고로 <span style="color:var(--pink)">${remaining}표</span> 더 가능!)`;
+  }
+}
+
 // ── 투표 가이드 배너 표시 ──
 function showVoteGuideBanner() {
   const banner = document.getElementById("voteGuideBanner");
@@ -1059,6 +1094,7 @@ function listenRankings() {
 
     lastRankingData = { ...allRankingsData };
     updateTrending();
+    updateTodayVoteDisplay();
     renderRankings(allRankingsData);
     updatePageTitle(allRankingsData);
   });
@@ -1132,9 +1168,9 @@ function renderRankings(data) {
     if (!isFirst && votes > 0 && firstPlaceVotes > 0) {
       const gap = firstPlaceVotes - votes;
       const distancePct = Math.min(100, Math.round((votes / firstPlaceVotes) * 100));
-      distanceBar = `<div style="margin-top:5px;font-size:.65rem;color:var(--muted);margin-bottom:3px">1위까지 ${gap.toLocaleString()}표 차이</div>
-        <div class="rank-pct-bar-wrap" style="height:5px">
-          <div class="rank-pct-bar" style="width:${distancePct}%;background:linear-gradient(90deg,${meta.color},${meta.color}88)"></div>
+      distanceBar = `<div style="margin-top:6px;font-size:.73rem;color:var(--primary);margin-bottom:4px;font-weight:700">🎯 1위까지 <span style="color:var(--pink);font-size:.8rem">${gap.toLocaleString()}표</span> 남음!</div>
+        <div class="rank-pct-bar-wrap" style="height:6px">
+          <div class="rank-pct-bar" style="width:${distancePct}%;background:linear-gradient(90deg,${meta.color},${meta.color}dd)"></div>
         </div>`;
     }
 
@@ -1143,14 +1179,15 @@ function renderRankings(data) {
     const trendingBadge = isTrending(group) ? `<span class="record-badge" style="background:rgba(255,107,53,0.2);color:#ff6b35;animation:pulse 1s infinite">🔥 핫</span>` : "";
     const closeRaceApplies = isCloseRace && rank <= 3;
     const closeRaceBadge = closeRaceApplies ? `<span class="close-race-badge">⚡경쟁 중</span>` : "";
+    const votedBadge = isVoted ? `<span class="my-voted-badge">✅ 내 투표</span>` : "";
     const firstCrown = isFirst ? `<span class="rank-first-crown">1위</span>` : "";
     const fadedStyle = faded ? 'style="opacity:0.5"' : "";
     return `
-      <div class="rank-item ${isFirst ? "rank-first" : ""} ${closeRaceApplies ? "close-race" : ""} ${isFav ? "my-fav-rank" : ""}" data-group="${escAttr(group)}" ${fadedStyle}>
+      <div class="rank-item ${isFirst ? "rank-first" : ""} ${closeRaceApplies ? "close-race" : ""} ${isVoted ? "my-voted" : ""} ${isFav ? "my-fav-rank" : ""}" data-group="${escAttr(group)}" ${fadedStyle}>
         <div class="rank-num ${rankClasses[rank] || ""}">${rankNums[rank] || rank}</div>
         <div class="rank-emoji">${meta.emoji}</div>
         <div class="rank-info">
-          <div class="rank-name">${isFav ? '<span class="my-fav-star">⭐</span>' : ""}${escHtml(group)}${firstCrown}${closeRaceBadge}${trendingBadge}${recBadge}</div>
+          <div class="rank-name">${isFav ? '<span class="my-fav-star">⭐</span>' : ""}${escHtml(group)}${firstCrown}${votedBadge}${closeRaceBadge}${trendingBadge}${recBadge}</div>
           ${meta.fandom ? `<div class="rank-fandom">${escHtml(meta.fandom)}</div>` : ""}
           <div class="rank-vote-meta">
             <div class="rank-pct-bar-wrap">
@@ -1165,7 +1202,7 @@ function renderRankings(data) {
           <button class="vote-rank-btn ${isVoted ? "voted" : ""} ${isAdPending ? "ad-active" : ""}"
             onclick="voteForGroup('${escAttr(group)}')"
             ${(alreadyVoted && !isAdPending) ? "disabled" : ""}>
-            ${isAdPending ? "🎁 추가 투표" : isVoted ? "✅ 투표함" : meta.emoji + " 투표"}
+            ${isAdPending ? "⚡ 추가 투표!" : isVoted ? "✅ 투표함" : meta.emoji + " 투표"}
           </button>
         </div>
       </div>`;
