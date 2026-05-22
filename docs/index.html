@@ -937,8 +937,30 @@ function showConfetti(baseColor) {
 function scrollToMyGroup(group) {
   const target = group || getMyFav() || getMyVote();
   if (!target) { showToast("먼저 최애 그룹을 설정해봐! 💜"); return; }
-  const el = document.querySelector(`.rank-item[data-group="${CSS.escape(target)}"]`);
-  if (!el) { showToast("랭킹을 불러오는 중이에요. 잠시 후 다시 시도해봐!"); return; }
+
+  let el = document.querySelector(`.rank-item[data-group="${CSS.escape(target)}"]`);
+
+  // 엘리먼트를 찾지 못했으면 (투표 0인 경우) 모든 그룹을 표시하고 다시 찾기
+  if (!el) {
+    if (!showAllRankings) {
+      showAllRankings = true;
+      if (allRankingsData) renderRankings(allRankingsData);
+      // 렌더링 후 다시 찾기
+      setTimeout(() => {
+        el = document.querySelector(`.rank-item[data-group="${CSS.escape(target)}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("highlight-flash");
+          setTimeout(() => el.classList.remove("highlight-flash"), 1800);
+          showToast(`✨ ${target} 팬덤을 찾았어! 여기야 💜`);
+        }
+      }, 100);
+    } else {
+      showToast("랭킹을 불러오는 중이에요. 잠시 후 다시 시도해봐!");
+    }
+    return;
+  }
+
   el.scrollIntoView({ behavior: "smooth", block: "center" });
   el.classList.add("highlight-flash");
   setTimeout(() => el.classList.remove("highlight-flash"), 1800);
