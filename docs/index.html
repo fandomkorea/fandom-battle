@@ -79,7 +79,6 @@
     .voted-badge { font-size: 0.72rem; color: var(--muted); text-align: center; }
 
     .vs-center { display: flex; align-items: center; justify-content: center; padding: 0 6px; }
-    .vs-text { font-size: 1.3rem; font-weight: 900; color: var(--border); letter-spacing: -1px; }
 
     /* ── 투표 바 ── */
     .battle-bar-wrap { padding: 14px 16px 16px; border-top: 1px solid var(--border); }
@@ -229,12 +228,35 @@
     .proof-canvas { width: 100%; border-radius: 10px; display: block; margin-top: 10px; cursor: pointer; }
     .proof-hint { font-size: 0.68rem; color: var(--muted); text-align: center; margin-top: 4px; }
 
+    /* ── VS 텍스트 ── */
+    .vs-text { font-size: 1.3rem; font-weight: 900; color: #7060bb; letter-spacing: -1px; }
+
+    /* ── 내 최애 그룹 ── */
+    .fav-chip { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; padding: 4px 12px; border-radius: 14px; background: rgba(124,77,255,0.15); border: 1px solid rgba(124,77,255,0.3); font-size: 0.72rem; color: var(--primary); cursor: pointer; transition: background 0.15s; }
+    .fav-chip:hover { background: rgba(124,77,255,0.28); }
+    .fav-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: linear-gradient(135deg,#1a0a2e,#0d0d1a); border-top: 1px solid var(--primary); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .fav-bar-text { font-size: 0.84rem; color: var(--text); }
+    .fav-bar-btn { padding: 8px 20px; border-radius: 20px; border: none; background: var(--primary); color: #fff; font-weight: 700; font-family: inherit; font-size: 0.82rem; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+    .fav-picker { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
+    .fav-picker-sheet { background: var(--card); border-radius: 20px 20px 0 0; width: 100%; max-width: 680px; padding: 20px 16px 40px; border-top: 1px solid var(--border); animation: slideUp 0.25s ease; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .fav-picker-title { font-size: 1rem; font-weight: 900; text-align: center; margin-bottom: 16px; }
+    .fav-picker-close { float: right; background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; margin-top: -4px; }
+    .fav-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px,1fr)); gap: 8px; max-height: 52vh; overflow-y: auto; padding-bottom: 4px; }
+    .fav-picker-btn { background: var(--bg); border: 2px solid var(--border); border-radius: 12px; padding: 10px 6px; text-align: center; cursor: pointer; transition: all 0.15s; font-family: inherit; color: var(--text); }
+    .fav-picker-btn:hover, .fav-picker-btn.selected { border-color: var(--primary); background: rgba(124,77,255,0.12); }
+    .fp-emoji { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+    .fp-name { font-size: 0.68rem; font-weight: 700; line-height: 1.3; display: block; }
+    .cheer-item.my-fav-item { background: rgba(124,77,255,0.06); }
+    .cheer-name.my-fav-label::before { content: "⭐ "; }
+
     /* ── 모바일 ── */
     @media (max-width: 480px) {
       header h1 { font-size: 1.7rem; }
       .fighter-name { font-size: 0.98rem; }
       .vote-btn { padding: 9px 16px; font-size: 0.84rem; }
       .fighter-emoji { font-size: 2.2rem; }
+      .fav-bar { padding: 10px 16px; }
     }
   </style>
 </head>
@@ -242,7 +264,8 @@
 
 <header>
   <h1>⚔️ 팬덤배틀</h1>
-  <div class="live-badge"><span class="live-dot"></span> LIVE 투표 중</div>
+  <div id="liveBadge" class="live-badge"><span class="live-dot"></span> LIVE 투표 중</div>
+  <div id="favChipArea"></div>
 </header>
 
 <main>
@@ -258,9 +281,11 @@
     <div class="next-vote-card" id="nextVoteGrid"></div>
   </div>
 
-  <!-- 광고 -->
-  <div class="section-title">AD</div>
-  <div class="ad-slot"><!-- Google AdSense 광고 영역 --><span>광고 영역</span></div>
+  <!-- 광고 (AdSense 연결 전까지 숨김) -->
+  <div id="adSection" style="display:none">
+    <div class="section-title">AD</div>
+    <div class="ad-slot"><!-- Google AdSense 광고 영역 --></div>
+  </div>
 
   <!-- 일일 응원 스탬프 -->
   <div class="section-title">💪 오늘의 응원 스탬프 <span style="font-size:.72rem;font-weight:400;color:var(--muted)">매일 내 그룹 응원!</span></div>
@@ -289,7 +314,7 @@
 
   <!-- 챔피언 카드 -->
   <div id="champCardSection" style="display:none">
-    <div class="section-title">🏆 현재 배틀 챔피언 카드</div>
+    <div class="section-title">📊 배틀 현황 카드</div>
     <div class="champ-card-wrap">
       <canvas id="champCanvas" width="600" height="320" style="width:100%;border-radius:12px;display:block"></canvas>
       <div class="share-row" style="margin-top:10px">
@@ -342,37 +367,36 @@ const firebaseConfig = {
 
 // 그룹 이모지/색상 메타데이터
 const GROUP_META = {
-  "BTS":           { emoji: "💜", color: "#4a148c" },
-  "BLACKPINK":     { emoji: "🖤", color: "#e91e63" },
-  "aespa":         { emoji: "💚", color: "#00796b" },
-  "NewJeans":      { emoji: "🩵", color: "#0288d1" },
-  "IVE":           { emoji: "🤍", color: "#546e7a" },
-  "LE SSERAFIM":   { emoji: "🧡", color: "#e65100" },
-  "SEVENTEEN":     { emoji: "💎", color: "#1565c0" },
-  "Stray Kids":    { emoji: "🖤", color: "#263238" },
-  "TXT":           { emoji: "🌙", color: "#4527a0" },
-  "ENHYPEN":       { emoji: "🖤", color: "#212121" },
-  "TWICE":         { emoji: "🎀", color: "#ad1457" },
-  "EXO":           { emoji: "⭐", color: "#f57f17" },
-  "NCT 127":       { emoji: "🔴", color: "#c62828" },
-  "NCT Dream":     { emoji: "🌈", color: "#2e7d32" },
-  "WayV":          { emoji: "💛", color: "#f9a825" },
-  "ITZY":          { emoji: "💥", color: "#b71c1c" },
-  "NMIXX":         { emoji: "🫧", color: "#0d47a1" },
-  "ZEROBASEONE":   { emoji: "🔵", color: "#1565c0" },
-  "RIIZE":         { emoji: "🌹", color: "#880e4f" },
-  "ATEEZ":         { emoji: "🏴‍☠️", color: "#37474f" },
-  "THE BOYZ":      { emoji: "🫐", color: "#283593" },
-  "Red Velvet":    { emoji: "🍎", color: "#b71c1c" },
+  "BTS":               { emoji: "💜", color: "#7c4dff" },   // BTS 퍼플 (가독성 개선)
+  "BLACKPINK":         { emoji: "🩷", color: "#e91e63" },
+  "aespa":             { emoji: "💚", color: "#00897b" },
+  "NewJeans":          { emoji: "🩵", color: "#0288d1" },
+  "IVE":               { emoji: "🤍", color: "#78909c" },   // 밝게 조정
+  "LE SSERAFIM":       { emoji: "🧡", color: "#e65100" },
+  "SEVENTEEN":         { emoji: "💎", color: "#1976d2" },
+  "Stray Kids":        { emoji: "⬛", color: "#607d8b" },   // 어두운 검정 → 회색
+  "TXT":               { emoji: "🌙", color: "#7c4dff" },
+  "ENHYPEN":           { emoji: "🖤", color: "#546e7a" },   // 어두운 검정 → 회색
+  "TWICE":             { emoji: "🎀", color: "#e91e8c" },
+  "EXO":               { emoji: "⭐", color: "#f57f17" },
+  "NCT 127":           { emoji: "🔴", color: "#e53935" },
+  "NCT Dream":         { emoji: "🌈", color: "#43a047" },
+  "WayV":              { emoji: "💛", color: "#f9a825" },
+  "ITZY":              { emoji: "💥", color: "#e53935" },
+  "NMIXX":             { emoji: "🫧", color: "#1565c0" },
+  "ZEROBASEONE":       { emoji: "🔵", color: "#1976d2" },
+  "RIIZE":             { emoji: "🌹", color: "#c2185b" },
+  "ATEEZ":             { emoji: "🏴‍☠️", color: "#607d8b" },
+  "THE BOYZ":          { emoji: "🫐", color: "#3949ab" },
+  "Red Velvet":        { emoji: "🍎", color: "#e53935" },
   "Girls' Generation": { emoji: "☀️", color: "#f57f17" },
-  "MAMAMOO":       { emoji: "🌻", color: "#827717" },
-  "SHINEE":        { emoji: "💙", color: "#1565c0" },
-  "Super Junior":  { emoji: "💙", color: "#0d47a1" },
-  "MONSTA X":      { emoji: "🔥", color: "#bf360c" },
-  "BIGBANG":       { emoji: "👑", color: "#212121" },
-  "GOT7":          { emoji: "🌿", color: "#1b5e20" },
-  "IU":            { emoji: "🌸", color: "#880e4f" },
-  "MAMAMOO":       { emoji: "🌻", color: "#f9a825" },
+  "MAMAMOO":           { emoji: "🌻", color: "#f9a825" },
+  "SHINEE":            { emoji: "💙", color: "#1976d2" },
+  "Super Junior":      { emoji: "💙", color: "#1565c0" },
+  "MONSTA X":          { emoji: "🔥", color: "#d84315" },
+  "BIGBANG":           { emoji: "👑", color: "#78909c" },   // 어두운 검정 → 회색
+  "GOT7":              { emoji: "🌿", color: "#388e3c" },
+  "IU":                { emoji: "🌸", color: "#c2185b" },
 };
 
 const ALL_GROUPS = Object.keys(GROUP_META);
@@ -405,6 +429,8 @@ function init() {
     listenCheers();
     listenComments();
     loadGroupRecords();
+    renderFavChip();
+    setTimeout(showFavBar, 1500); // 1.5초 후 바 표시 (페이지 로드 후)
     if (isAdmin) {
       const pw = prompt("관리자 패스워드:");
       if (pw === ADMIN_PW) setupAdmin();
@@ -428,6 +454,7 @@ function listenBattle() {
     renderBattle(battleData);
     showChampCard();
     if (allRankingsData) renderRankings(allRankingsData);
+    buildCommentSelect(); // 배틀 그룹 변경 시 댓글 셀렉트 재구성
   });
 }
 
@@ -449,13 +476,26 @@ function renderBattle(data) {
   const isBattleOver = data.endDate && new Date(data.endDate) < new Date();
 
   // 투표 후 감성 메시지
-  let votedMsg = "오늘 투표 완료! 💜", votedSub = "내일 또 투표할 수 있어요";
+  const timeLeft = nextVoteCountdown();
+  let votedMsg = "오늘 투표 완료! 💜", votedSub = timeLeft;
   if (alreadyVoted && total > 1) {
     const myGroup = myVote === "A" ? data.groupA : data.groupB;
     const myPct  = myVote === "A" ? pctA : pctB;
-    if (myPct > 55)      { votedMsg = `🎉 ${myGroup}가 앞서고 있어! 이대로 가자!`;   votedSub = "친구 불러서 격차 더 벌리자!"; }
-    else if (myPct < 45) { votedMsg = `💪 지금 역전 가능해! ${myGroup} 화이팅!`;     votedSub = "친구한테 공유해서 지금 당장 역전해!"; }
-    else                 { votedMsg = `⚡ 너무 팽팽해! 한 표 한 표가 소중해!`;        votedSub = "내일도 투표하러 다시 와줘!"; }
+    if (myPct > 55)      { votedMsg = `🎉 ${myGroup}가 앞서고 있어! 이대로 가자!`;   votedSub = `친구 불러서 격차 더 벌리자! · ${timeLeft}`; }
+    else if (myPct < 45) { votedMsg = `💪 지금 역전 가능해! ${myGroup} 화이팅!`;     votedSub = `친구한테 공유해서 역전해! · ${timeLeft}`; }
+    else                 { votedMsg = `⚡ 너무 팽팽해! 한 표 한 표가 소중해!`;        votedSub = `내일도 투표하러 다시 와줘! · ${timeLeft}`; }
+  }
+
+  // LIVE 배지 업데이트
+  const liveBadge = document.getElementById("liveBadge");
+  if (liveBadge) {
+    if (isBattleOver) {
+      liveBadge.innerHTML = "⏰ 배틀 종료";
+      liveBadge.style.cssText = "background:rgba(255,215,0,0.12);border-color:rgba(255,215,0,0.3);color:var(--gold)";
+    } else {
+      liveBadge.innerHTML = '<span class="live-dot"></span> LIVE 투표 중';
+      liveBadge.style.cssText = "";
+    }
   }
 
   el.innerHTML = `
@@ -951,9 +991,27 @@ function getWeekLabel() {
 function getTodayStr() { return new Date().toISOString().slice(0,10); }
 function getMyCheer() { return localStorage.getItem("cheered_" + getTodayStr()); }
 
-function listenCheers() {
+function buildCommentSelect() {
   const sel = document.getElementById("commentGroup");
-  ALL_GROUPS.forEach(g => { sel.innerHTML += `<option value="${g}">${g}</option>`; });
+  const myFav = getMyFav();
+  const battleGroups = battleData ? [battleData.groupA, battleData.groupB].filter(Boolean) : [];
+  const others = ALL_GROUPS.filter(g => !battleGroups.includes(g));
+  let html = "";
+  if (battleGroups.length) {
+    html += `<optgroup label="⚔️ 배틀 중">`;
+    battleGroups.forEach(g => { html += `<option value="${escAttr(g)}">${escHtml(g)}</option>`; });
+    html += `</optgroup><optgroup label="전체 그룹">`;
+    others.forEach(g => { html += `<option value="${escAttr(g)}">${escHtml(g)}</option>`; });
+    html += `</optgroup>`;
+  } else {
+    ALL_GROUPS.forEach(g => { html += `<option value="${escAttr(g)}">${escHtml(g)}</option>`; });
+  }
+  sel.innerHTML = html;
+  if (myFav && ALL_GROUPS.includes(myFav)) sel.value = myFav;
+}
+
+function listenCheers() {
+  buildCommentSelect();
   db.ref("cheers").on("value", snap => renderCheers(snap.val() || {}));
 }
 
@@ -969,15 +1027,23 @@ function renderCheers(data) {
     const idx = sorted.findIndex(([g]) => g === myCheer);
     if (idx >= CHEER_SHOW) { const [item] = sorted.splice(idx, 1); sorted.unshift(item); }
   }
+  const myFav = getMyFav();
+  // 내 최애 그룹 맨 위 고정
+  if (myFav) {
+    const idx = sorted.findIndex(([g]) => g === myFav);
+    if (idx > 0) { const [item] = sorted.splice(idx, 1); sorted.unshift(item); }
+  }
+
   const visible = showAllCheers ? sorted : sorted.slice(0, CHEER_SHOW);
   const hidden = sorted.length - CHEER_SHOW;
 
   const rows = visible.map(([g, cnt]) => {
     const meta = GROUP_META[g] || { emoji:"🌟", color:"#7c4dff" };
     const isMine = myCheer === g;
-    return `<div class="cheer-item ${isMine?"cheered-today":""}">
+    const isFav = myFav === g;
+    return `<div class="cheer-item ${isMine?"cheered-today":""} ${isFav?"my-fav-item":""}">
       <span class="cheer-emoji">${meta.emoji}</span>
-      <span class="cheer-name">${escHtml(g)}</span>
+      <span class="cheer-name ${isFav?"my-fav-label":""}">${escHtml(g)}</span>
       <span class="cheer-count">${cnt ? cnt.toLocaleString()+"응원" : ""}</span>
       <button class="cheer-btn ${isMine?"done":""}" onclick="cheer('${escAttr(g)}')" ${isMine?"disabled":""}>
         ${isMine ? "✅ 응원함" : "응원"}
@@ -1197,6 +1263,78 @@ function loadGroupRecords() {
     groupRecords = snap.val() || {};
     if (allRankingsData) renderRankings(allRankingsData);
   });
+}
+
+// ── 내 최애 그룹 ──
+function getMyFav() { return localStorage.getItem("my_fav_group"); }
+function setMyFav(g) {
+  localStorage.setItem("my_fav_group", g);
+  renderFavChip();
+  document.getElementById("favBar")?.remove();
+  // 댓글 셀렉트 자동 선택
+  const sel = document.getElementById("commentGroup");
+  if (sel && g) sel.value = g;
+  // 응원 목록 내 최애 위로
+  db.ref("cheers").once("value", snap => renderCheers(snap.val() || {}));
+}
+
+function renderFavChip() {
+  const area = document.getElementById("favChipArea");
+  if (!area) return;
+  const fav = getMyFav();
+  if (!fav) { area.innerHTML = ""; return; }
+  const meta = GROUP_META[fav] || { emoji:"🌟" };
+  area.innerHTML = `<div class="fav-chip" onclick="openFavPicker()" title="클릭해서 변경">${meta.emoji} ${escHtml(fav)} ✏️</div>`;
+}
+
+function showFavBar() {
+  if (getMyFav() || document.getElementById("favBar")) return;
+  const bar = document.createElement("div");
+  bar.id = "favBar";
+  bar.className = "fav-bar";
+  bar.innerHTML = `<span class="fav-bar-text">💜 내 최애 그룹을 설정하면 더 편해요!</span><button class="fav-bar-btn" onclick="openFavPicker()">팬덤 선택</button>`;
+  document.body.appendChild(bar);
+}
+
+function openFavPicker() {
+  if (document.getElementById("favPicker")) return;
+  const myFav = getMyFav();
+  const overlay = document.createElement("div");
+  overlay.id = "favPicker";
+  overlay.className = "fav-picker";
+  overlay.onclick = e => { if (e.target === overlay) closeFavPicker(); };
+  const grid = ALL_GROUPS.map(g => {
+    const meta = GROUP_META[g] || { emoji:"🌟" };
+    return `<button class="fav-picker-btn ${myFav===g?"selected":""}" onclick="pickFav('${escAttr(g)}')">
+      <span class="fp-emoji">${meta.emoji}</span>
+      <span class="fp-name">${escHtml(g)}</span>
+    </button>`;
+  }).join("");
+  overlay.innerHTML = `<div class="fav-picker-sheet">
+    <div class="fav-picker-title">💜 내 최애 그룹은?<button class="fav-picker-close" onclick="closeFavPicker()">✕</button></div>
+    <div class="fav-picker-grid">${grid}</div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+function closeFavPicker() { document.getElementById("favPicker")?.remove(); }
+
+function pickFav(group) {
+  setMyFav(group);
+  closeFavPicker();
+  showToast(`💜 ${group} 팬으로 설정됐어!`);
+}
+
+// ── 다음 투표까지 시간 ──
+function nextVoteCountdown() {
+  const now = new Date();
+  const next = new Date(now);
+  next.setDate(next.getDate() + 1);
+  next.setHours(0, 0, 0, 0);
+  const diff = next - now;
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  return `⏰ ${h}시간 ${m}분 후 투표 가능`;
 }
 
 // ── 유틸 ──
