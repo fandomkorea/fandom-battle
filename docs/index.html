@@ -566,17 +566,6 @@
     </div>
   </div>
 
-  <!-- 광고 시청 추가 투표 버튼 -->
-  <button class="ad-vote-cta" id="adVoteCta" onclick="watchAd()" style="display:none;width:100%;margin-bottom:12px;padding:12px;background:linear-gradient(135deg,rgba(77,158,255,0.2),rgba(124,77,255,0.2));border:1px solid rgba(77,158,255,0.4);border-radius:var(--radius);color:var(--blue);font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.15s">
-    📺 광고 보고 +1표 추가
-  </button>
-
-  <!-- 실시간 투표 활동 피드 -->
-  <div class="activity-feed" id="activityFeed" style="display:none;max-height:80px;overflow-y:auto;margin-bottom:12px">
-    <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:6px">🔥 실시간 투표 중</div>
-    <div id="activityList" style="display:flex;flex-direction:column;gap:3px"></div>
-  </div>
-
   <!-- 실시간 팬덤 파워 랭킹 + 투표 -->
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
     <div class="section-title" style="flex:1;margin:0">🏆 실시간 팬덤 파워 랭킹</div>
@@ -594,6 +583,17 @@
       <div class="rank-skeleton skeleton"></div>
       <div class="rank-skeleton skeleton"></div>
     </div>
+  </div>
+
+  <!-- 광고 시청 추가 투표 버튼 -->
+  <button class="ad-vote-cta" id="adVoteCta" onclick="watchAd()" style="display:none;width:100%;margin-bottom:12px;padding:12px;background:linear-gradient(135deg,rgba(77,158,255,0.2),rgba(124,77,255,0.2));border:1px solid rgba(77,158,255,0.4);border-radius:var(--radius);color:var(--blue);font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.15s">
+    📺 광고 보고 +1표 추가
+  </button>
+
+  <!-- 실시간 투표 활동 피드 -->
+  <div class="activity-feed" id="activityFeed" style="display:none;max-height:80px;overflow-y:auto;margin-bottom:12px">
+    <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:6px">🔥 실시간 투표 중</div>
+    <div id="activityList" style="display:flex;flex-direction:column;gap:3px"></div>
   </div>
 
   <!-- 팬덤 응원 메시지 -->
