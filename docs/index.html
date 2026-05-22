@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>팬덤배틀 - 아이돌 팬덤 파워 대결</title>
-  <meta name="description" content="BTS, 블랙핑크, 에스파, 뉴진스! 매주 새로운 빅매치 투표와 실시간 팬덤 파워 랭킹. 내 최애 그룹을 1등으로!" />
-  <meta property="og:title" content="팬덤배틀 - 아이돌 팬덤 파워 대결" />
-  <meta property="og:description" content="매주 빅매치 투표! 내 최애 그룹 팬덤 파워를 증명해봐 💪" />
+  <title>팬덤배틀 - 아이돌 팬덤 파워 월간 랭킹</title>
+  <meta name="description" content="BTS, 블랙핑크, 에스파, 뉴진스! 매달 팬덤 파워 랭킹 투표. 이달 1위 팬덤에게 100만원 상당 포토카드 증정!" />
+  <meta property="og:title" content="팬덤배틀 - 팬덤 파워 월간 랭킹" />
+  <meta property="og:description" content="이달 1위 팬덤에게 100만원 포토카드 증정! 지금 내 최애 그룹에 투표해봐 💪" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://fandomkorea.github.io/fandom-battle/" />
   <meta property="og:image" content="https://fandomkorea.github.io/fandom-battle/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="팬덤배틀 - 아이돌 팬덤 파워 대결" />
-  <meta name="twitter:description" content="매주 빅매치 투표! 내 최애 그룹 팬덤 파워를 증명해봐 💪" />
+  <meta name="twitter:title" content="팬덤배틀 - 팬덤 파워 월간 랭킹" />
+  <meta name="twitter:description" content="이달 1위 팬덤에게 100만원 포토카드 증정! 지금 내 최애 그룹에 투표해봐 💪" />
   <meta name="twitter:image" content="https://fandomkorea.github.io/fandom-battle/og-image.png" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -64,30 +64,6 @@
     .countdown span { color: var(--pink); }
     .total-votes-label { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
 
-    .battle-arena { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; align-items: stretch; }
-    .fighter { padding: 24px 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: background 0.2s; }
-    .fighter.side-a { background: linear-gradient(135deg, rgba(255,77,141,0.08) 0%, transparent 60%); border-right: 1px solid var(--border); }
-    .fighter.side-b { background: linear-gradient(225deg, rgba(77,158,255,0.08) 0%, transparent 60%); }
-    .fighter-emoji { font-size: 2.8rem; line-height: 1; }
-    .fighter-name { font-size: 1.15rem; font-weight: 900; text-align: center; line-height: 1.2; }
-    .fighter-votes { font-size: 0.8rem; color: var(--muted); }
-    .vote-btn { padding: 10px 22px; border-radius: 24px; border: none; font-size: 0.92rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.18s; white-space: nowrap; }
-    .vote-btn-a { background: linear-gradient(135deg, var(--pink), #c0004d); color: #fff; box-shadow: 0 4px 14px rgba(255,77,141,0.35); }
-    .vote-btn-b { background: linear-gradient(135deg, var(--blue), #0055cc); color: #fff; box-shadow: 0 4px 14px rgba(77,158,255,0.35); }
-    .vote-btn:hover { transform: translateY(-2px) scale(1.04); }
-    .vote-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .voted-badge { font-size: 0.72rem; color: var(--muted); text-align: center; }
-
-    .vs-center { display: flex; align-items: center; justify-content: center; padding: 0 6px; }
-
-    /* ── 투표 바 ── */
-    .battle-bar-wrap { padding: 14px 16px 16px; border-top: 1px solid var(--border); }
-    .battle-bar { height: 10px; border-radius: 6px; background: var(--border); overflow: hidden; display: flex; }
-    .bar-a { background: linear-gradient(90deg, var(--pink), #ff80b0); transition: width 0.6s cubic-bezier(.4,0,.2,1); border-radius: 6px 0 0 6px; }
-    .bar-b { background: linear-gradient(90deg, #80bfff, var(--blue)); transition: width 0.6s cubic-bezier(.4,0,.2,1); border-radius: 0 6px 6px 0; flex: 1; }
-    .bar-labels { display: flex; justify-content: space-between; margin-top: 7px; font-size: 0.78rem; font-weight: 700; }
-    .bar-labels .pct-a { color: var(--pink); }
-    .bar-labels .pct-b { color: var(--blue); }
 
     /* ── 투표 완료 오버레이 ── */
     .voted-overlay { padding: 18px 16px; text-align: center; background: rgba(124,77,255,0.08); border-top: 1px solid var(--border); display: none; }
@@ -133,10 +109,6 @@
     .share-btn.x-btn:hover { background: #222; border-color: #222; color: #fff; }
     .share-btn.native { background: var(--primary); color: #fff; border-color: var(--primary); }
     .share-btn.native:hover { background: #6a3de8; border-color: #6a3de8; color: #fff; }
-    /* ── 배틀 종료 배너 ── */
-    .battle-ended-banner { padding: 18px 16px; text-align: center; background: rgba(255,215,0,0.07); border-top: 1px solid rgba(255,215,0,0.2); }
-    .battle-ended-title { font-size: 1rem; font-weight: 900; color: var(--gold); }
-    .battle-ended-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
 
     /* ── 토스트 ── */
     .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1a1a3e; color: var(--text); padding: 12px 24px; border-radius: 12px; font-size: 0.88rem; font-weight: 600; z-index: 9999; transition: transform 0.3s; pointer-events: none; white-space: nowrap; border: 1px solid var(--border); }
@@ -157,29 +129,6 @@
     .admin-btn:hover { opacity: 0.85; }
     .admin-btn.danger { background: #cc2222; }
 
-    /* ── 다음 배틀 상대 투표 ── */
-    .next-vote-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-    .nv-desc { padding: 11px 16px; font-size: 0.8rem; color: var(--muted); border-bottom: 1px solid var(--border); text-align: center; }
-    .nv-desc strong { color: var(--text); }
-    .nv-item { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
-    .nv-item:last-child { border-bottom: none; }
-    .nv-item:hover { background: rgba(255,255,255,0.04); }
-    .nv-item.my-pick { background: rgba(124,77,255,0.1); }
-    .nv-item.nv-top { background: rgba(255,215,0,0.06); }
-    .nv-emoji { font-size: 1.2rem; flex-shrink: 0; }
-    .nv-name { font-size: 0.88rem; font-weight: 700; min-width: 110px; }
-    .nv-bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 4px; overflow: hidden; }
-    .nv-bar { height: 100%; border-radius: 4px; transition: width 0.5s cubic-bezier(.4,0,.2,1); }
-    .nv-pct { font-size: 0.75rem; font-weight: 700; color: var(--muted); min-width: 34px; text-align: right; }
-    .nv-check { font-size: 0.8rem; margin-left: 2px; }
-
-    /* ── 챔피언 카드 ── */
-    .champ-card-wrap { text-align: center; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
-
-    /* ── 공유 힌트 (투표 전) ── */
-    .share-hint { padding: 11px 16px; text-align: center; font-size: 0.78rem; color: var(--muted); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .share-btn-inline { padding: 5px 13px; border-radius: 14px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.75rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.15s; }
-    .share-btn-inline:hover { border-color: var(--primary); color: var(--primary); }
 
     /* ── 랭킹 더보기 ── */
     .rank-show-more { margin-top: 4px; }
@@ -215,11 +164,6 @@
     .comment-text { font-size: 0.84rem; line-height: 1.4; word-break: break-all; }
     .comment-meta { font-size: 0.65rem; color: var(--muted); margin-top: 3px; }
 
-    /* ── 다음 배틀 예고 ── */
-    .next-preview { background: linear-gradient(135deg,rgba(124,77,255,0.1),rgba(255,77,141,0.1)); border: 1px solid rgba(124,77,255,0.25); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 14px; }
-    .next-preview-label { font-size: 0.68rem; font-weight: 700; color: var(--primary); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
-    .next-preview-match { font-size: 0.95rem; font-weight: 700; }
-    .next-preview-sub { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
 
     /* ── 그룹 전적 뱃지 ── */
     .record-badge { font-size: 0.65rem; background: rgba(255,215,0,0.12); color: var(--gold); border-radius: 6px; padding: 1px 6px; font-weight: 700; margin-left: 4px; }
@@ -248,12 +192,19 @@
     .vs-text { font-size: 1.3rem; font-weight: 900; color: #7060bb; letter-spacing: -1px; }
 
     /* ── 상품 배너 ── */
-    .prize-banner { background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(124,77,255,0.12)); border: 1px solid rgba(255,215,0,0.4); border-radius: var(--radius); padding: 20px; text-align: center; margin-top: 16px; }
+    @keyframes prizeGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(255,215,0,0); border-color: rgba(255,215,0,0.4); } 50% { box-shadow: 0 0 20px 4px rgba(255,215,0,0.18); border-color: rgba(255,215,0,0.7); } }
+    @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+    .prize-banner { background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(124,77,255,0.12)); border: 1px solid rgba(255,215,0,0.4); border-radius: var(--radius); padding: 20px; text-align: center; margin-top: 16px; animation: prizeGlow 3s ease-in-out infinite; position: relative; overflow: hidden; }
+    .prize-banner::before { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 40%, rgba(255,215,0,0.08) 50%, transparent 60%); background-size: 200% 100%; animation: shimmer 4s ease-in-out infinite; pointer-events: none; }
     .prize-label { font-size: 0.72rem; font-weight: 700; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
     .prize-amount { font-size: 1.6rem; font-weight: 900; color: #fff; margin-bottom: 6px; }
-    .prize-amount span { color: var(--gold); text-shadow: 0 0 12px rgba(255,215,0,0.5); }
+    .prize-amount span { color: var(--gold); text-shadow: 0 0 14px rgba(255,215,0,0.6); }
     .prize-sub { font-size: 0.75rem; color: var(--muted); }
     .prize-notice { font-size: 0.78rem; color: var(--gold); margin-top: 8px; font-weight: 600; min-height: 0; }
+
+    /* ── 초기 상태 (투표 없을 때) ── */
+    .ranking-empty-hint { text-align: center; padding: 18px 16px 10px; background: rgba(124,77,255,0.06); border: 1px dashed rgba(124,77,255,0.3); border-radius: 12px; margin-bottom: 8px; }
+    .ranking-empty-hint p { font-size: 0.84rem; color: var(--muted); margin-top: 4px; }
 
     /* ── 랭킹 투표 버튼 ── */
     .vote-rank-btn { padding: 5px 13px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.72rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
@@ -299,10 +250,11 @@
     /* ── 모바일 ── */
     @media (max-width: 480px) {
       header h1 { font-size: 1.7rem; }
-      .fighter-name { font-size: 0.98rem; }
-      .vote-btn { padding: 9px 16px; font-size: 0.84rem; }
-      .fighter-emoji { font-size: 2.2rem; }
+      .prize-amount { font-size: 1.3rem; }
       .fav-bar { padding: 10px 16px; }
+      .rank-item { padding: 8px 10px; gap: 8px; }
+      .rank-emoji { font-size: 1.2rem; }
+      .vote-rank-btn { padding: 4px 10px; font-size: 0.68rem; }
     }
   </style>
 </head>
@@ -557,15 +509,44 @@ function showMyVotedBar(group) {
   const bar = document.getElementById("myVotedBar");
   const msgEl = document.getElementById("myVotedMsg");
   const subEl = document.getElementById("myVotedSub");
-  if (!bar || !msgEl || !subEl) return;
+  if (!bar || !msgEl || !subEl || !group) return;
   const meta = GROUP_META[group] || { emoji: "🌟" };
-  const total = allRankingsData ? Object.values(allRankingsData).reduce((s,v)=>s+v,0) : 0;
-  const myVotes = allRankingsData ? (allRankingsData[group] || 0) : 0;
+  const rankData = allRankingsData || {};
+  const total = Object.values(rankData).reduce((s, v) => s + v, 0);
+  const myVotes = rankData[group] || 0;
   const pct = total ? Math.round(myVotes / total * 100) : 0;
-  const now = new Date(); const next = new Date(now); next.setDate(next.getDate()+1); next.setHours(0,0,0,0);
-  const diff = next - now; const h = Math.floor(diff/3600000); const m = Math.floor((diff%3600000)/60000);
-  msgEl.textContent = `${meta.emoji} ${group} 투표 완료! 현재 ${pct}% (${myVotes.toLocaleString()}표)`;
-  subEl.textContent = `⏰ ${h}시간 ${m}분 후 다시 투표 가능 · 친구 불러서 1위 만들자!`;
+
+  // 현재 순위 계산
+  const sorted = Object.entries(rankData).sort((a, b) => b[1] - a[1]);
+  const myRank = sorted.findIndex(([g]) => g === group) + 1;
+
+  // 순위별 감성 메시지
+  let msg, sub;
+  if (myRank === 1 && myVotes > 0) {
+    msg = `👑 ${meta.emoji} ${group} 현재 1위! 이 기세 유지하자!`;
+    sub = `현재 ${pct}% (${myVotes.toLocaleString()}표) · 친구 불러서 격차 벌리자! 💪`;
+  } else if (myRank === 2 || myRank === 3) {
+    const leader = sorted[0];
+    const gap = leader ? (leader[1] - myVotes) : 0;
+    msg = `🔥 ${meta.emoji} ${group} ${myRank}위! 1위까지 ${gap.toLocaleString()}표 차이!`;
+    sub = `현재 ${pct}% · 지금 공유해서 역전 노려봐! 📢`;
+  } else if (myVotes === 0 || total === 0) {
+    msg = `${meta.emoji} ${group} 투표 완료! 첫 표를 던졌어!`;
+    sub = `친구한테도 알려서 우리 팀 1위 만들자! 💜`;
+  } else {
+    msg = `${meta.emoji} ${group} 투표 완료! 현재 ${myRank}위 · ${pct}%`;
+    sub = `${myVotes.toLocaleString()}표 · 친구 불러서 순위 올리자! 🚀`;
+  }
+
+  // 내일 투표 가능 시간
+  const now = new Date(); const next = new Date(now);
+  next.setDate(next.getDate() + 1); next.setHours(0, 0, 0, 0);
+  const diff = next - now;
+  const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000);
+  sub += `  ⏰ ${h}시간 ${m}분 후 재투표`;
+
+  msgEl.textContent = msg;
+  subEl.textContent = sub;
   bar.style.display = "block";
 }
 
@@ -576,9 +557,21 @@ function restoreVotedState() {
   showMyVotedBar(group);
 }
 
-// (renderBattle 삭제됨 — 월별 랭킹 투표 방식으로 전환)
-function _old_renderBattle_removed(data) { // stub: 아래 빈 함수로 대체
-  if (!data) return;
+// ── 댓글 필터 탭을 상위 그룹으로 업데이트 ──
+function updateCommentFilterTabs(topGroups) {
+  const row = document.getElementById("commentFilterRow");
+  if (!row) return;
+  let html = `<button class="cfilter-btn ${commentFilter==="all"?"active":""}" data-filter="all" onclick="filterComments('all')">전체</button>`;
+  topGroups.forEach(g => {
+    const meta = GROUP_META[g] || { emoji:"🌟" };
+    html += `<button class="cfilter-btn ${commentFilter===g?"active":""}" data-filter="${escAttr(g)}" onclick="filterComments('${escAttr(g)}')">${meta.emoji} ${escHtml(g)}</button>`;
+  });
+  row.innerHTML = html;
+}
+
+// (구 renderBattle, renderNextVote, voteNext 완전 제거됨)
+function _placeholder_for_removed_functions() { // 이 함수는 절대 호출되지 않음
+  if (true) return;
   const metaA = GROUP_META[data.groupA] || { emoji: "🌟", color: "#7c4dff" };
   const metaB = GROUP_META[data.groupB] || { emoji: "🌟", color: "#4d9eff" };
   const votesA = data.votesA || 0;
@@ -756,11 +749,27 @@ function renderRankings(data) {
       </div>`;
   };
 
+  // 댓글 필터 탭에 상위 그룹 반영
+  updateCommentFilterTabs(withVotes.slice(0, 3).map(([g]) => g));
+
   let html = "";
 
   if (withVotes.length === 0) {
-    // 아직 아무도 안 투표했을 때 → 전체 목록 보여주기
-    html = allEntries.map(([g, v], i) => renderRow(g, v, i + 1)).join("");
+    // 첫 달 / 초기화 직후 — 안내 + 상위 10개만 노출
+    const INITIAL_SHOW = 10;
+    html = `<div class="ranking-empty-hint">
+      <div style="font-size:1.4rem">🎯</div>
+      <p>아직 이번 달 투표가 없어요! 첫 번째 투표의 주인공이 되어봐!</p>
+    </div>`;
+    const initial = allEntries.slice(0, showAllRankings ? allEntries.length : INITIAL_SHOW);
+    html += initial.map(([g, v], i) => renderRow(g, v, i + 1)).join("");
+    if (!showAllRankings && allEntries.length > INITIAL_SHOW) {
+      html += `<div class="rank-show-more">
+        <button class="show-all-btn" onclick="toggleAllRankings()">▼ 전체 ${allEntries.length - INITIAL_SHOW}개 그룹 더보기</button>
+      </div>`;
+    } else if (showAllRankings) {
+      html += `<div class="rank-show-more"><button class="show-all-btn" onclick="toggleAllRankings()">▲ 접기</button></div>`;
+    }
   } else {
     html = withVotes.map(([g, v], i) => renderRow(g, v, i + 1)).join("");
 
@@ -777,45 +786,6 @@ function renderRankings(data) {
   el.innerHTML = html;
 }
 
-// (listenNextVote, renderNextVote, voteNext 제거됨 — 월별 랭킹 방식으로 전환)
-
-function _removed_renderNextVote(data) {
-  const sec = null;
-  const grid = null;
-  const battleGroups = battleData ? [battleData.groupA, battleData.groupB] : [];
-  const eligible = ALL_GROUPS.filter(g => !battleGroups.includes(g));
-  const sorted = eligible.map(g => [g, data[g] || 0]).sort((a, b) => b[1] - a[1]);
-  const totalVotes = sorted.reduce((s, [, v]) => s + v, 0);
-  const myPick = localStorage.getItem("next_voted_" + getWeekLabel());
-  const topGroup = sorted[0]?.[0];
-
-  renderNextPrediction(data);
-  grid.innerHTML = `<div class="nv-desc">⚔️ 다음 배틀 상대는? <strong>지금 가장 많이 뽑힌 그룹이 다음 주 등장해요!</strong></div>` +
-    sorted.slice(0, 5).map(([group, votes]) => {
-      const pct = totalVotes ? Math.round(votes / totalVotes * 100) : 0;
-      const meta = GROUP_META[group] || { emoji: "🌟", color: "#7c4dff" };
-      const isMyPick = myPick === group;
-      const isTop = group === topGroup && votes > 0;
-      return `<div class="nv-item ${isMyPick ? "my-pick" : ""} ${isTop ? "nv-top" : ""}" onclick="voteNext('${escAttr(group)}')">
-        <span class="nv-emoji">${meta.emoji}</span>
-        <span class="nv-name">${escHtml(group)}${isTop ? " 🔥" : ""}</span>
-        <div class="nv-bar-wrap"><div class="nv-bar" style="width:${pct}%;background:${meta.color}"></div></div>
-        <span class="nv-pct">${pct > 0 ? pct + "%" : "—"}</span>
-        ${isMyPick ? '<span class="nv-check">✅</span>' : ""}
-      </div>`;
-    }).join("");
-
-  sec.style.display = "block";
-}
-
-function voteNext(group) {
-  const key = "next_voted_" + getWeekLabel();
-  if (localStorage.getItem(key)) { showToast("다음 배틀 상대 투표는 1번만 가능해요!"); return; }
-  if (!db) return;
-  db.ref("next_vote/" + group).transaction(cur => (cur || 0) + 1);
-  localStorage.setItem(key, group);
-  showToast("✅ " + group + " 투표! 결과를 기다려봐 🔥");
-}
 
 // ── 챔피언 카드 ──
 function rrect(ctx, x, y, w, h, r) {
