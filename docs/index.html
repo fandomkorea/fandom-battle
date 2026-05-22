@@ -379,10 +379,15 @@
       header p { margin-top: 3px; font-size: 0.8rem; }
       .live-badge { margin-top: 6px; font-size: 0.65rem; padding: 2px 8px; }
 
-      /* 최애팀 칩 */
-      #favChipArea { margin-top: 6px; }
-      .fav-chip { margin-top: 4px; padding: 3px 10px; font-size: 0.65rem; }
-      .quick-access-btn { margin-top: 6px; padding: 6px 12px; font-size: 0.72rem; }
+      /* 최애팀 칩 - 모바일에서 숨김 */
+      #favChipArea { display: none; }
+      .fav-chip { display: none; }
+      .quick-access-btn { display: none; }
+
+      /* 하단 팬덤 선택 바 - 모바일에서 항상 표시 */
+      .fav-bar { padding: 10px 12px; display: flex !important; }
+      .fav-bar-text { font-size: 0.75rem; }
+      .fav-bar-btn { padding: 8px 14px; font-size: 0.75rem; }
 
       /* 주요 배너들 */
       #todayVoteCountBanner { padding: 10px; margin-bottom: 8px; font-size: 0.75rem; flex-direction: column; gap: 4px; text-align: center; }
@@ -1800,7 +1805,7 @@ function setMyFav(g) {
   localStorage.setItem("my_fav_group", g);
   renderFavChip();
   updateQuickAccessBtn();
-  document.getElementById("favBar")?.remove();
+  updateFavBar(); // 하단 바 업데이트
   // 댓글 셀렉트 자동 선택
   const sel = document.getElementById("commentGroup");
   if (sel && g) sel.value = g;
@@ -1843,13 +1848,30 @@ function renderFavChip() {
   updateQuickAccessBtn();
 }
 
+// ── 하단 팬덤 선택 바 업데이트 ──
+function updateFavBar() {
+  let bar = document.getElementById("favBar");
+  const fav = getMyFav();
+
+  // 바가 없으면 생성
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "favBar";
+    bar.className = "fav-bar";
+    document.body.appendChild(bar);
+  }
+
+  // 팬덤 선택 여부에 따라 내용 업데이트
+  if (fav) {
+    const meta = GROUP_META[fav] || { emoji: "🌟", fandom: fav };
+    bar.innerHTML = `<span class="fav-bar-text">${meta.emoji} ${fav} (${meta.fandom})</span><button class="fav-bar-btn" onclick="openFavPicker()" style="font-size:0.65rem;padding:6px 10px">변경</button>`;
+  } else {
+    bar.innerHTML = `<span class="fav-bar-text">💜 내 최애 그룹을 설정하면 더 편해요!</span><button class="fav-bar-btn" onclick="openFavPicker()">팬덤 선택</button>`;
+  }
+}
+
 function showFavBar() {
-  if (getMyFav() || document.getElementById("favBar")) return;
-  const bar = document.createElement("div");
-  bar.id = "favBar";
-  bar.className = "fav-bar";
-  bar.innerHTML = `<span class="fav-bar-text">💜 내 최애 그룹을 설정하면 더 편해요!</span><button class="fav-bar-btn" onclick="openFavPicker()">팬덤 선택</button>`;
-  document.body.appendChild(bar);
+  updateFavBar();
 }
 
 function openFavPicker() {
