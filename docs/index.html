@@ -247,6 +247,36 @@
     /* ── VS 텍스트 ── */
     .vs-text { font-size: 1.3rem; font-weight: 900; color: #7060bb; letter-spacing: -1px; }
 
+    /* ── 상품 배너 ── */
+    .prize-banner { background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(124,77,255,0.12)); border: 1px solid rgba(255,215,0,0.4); border-radius: var(--radius); padding: 20px; text-align: center; margin-top: 16px; }
+    .prize-label { font-size: 0.72rem; font-weight: 700; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+    .prize-amount { font-size: 1.6rem; font-weight: 900; color: #fff; margin-bottom: 6px; }
+    .prize-amount span { color: var(--gold); text-shadow: 0 0 12px rgba(255,215,0,0.5); }
+    .prize-sub { font-size: 0.75rem; color: var(--muted); }
+    .prize-notice { font-size: 0.78rem; color: var(--gold); margin-top: 8px; font-weight: 600; min-height: 0; }
+
+    /* ── 랭킹 투표 버튼 ── */
+    .vote-rank-btn { padding: 5px 13px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.72rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
+    .vote-rank-btn:hover:not(:disabled) { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .vote-rank-btn.voted { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .vote-rank-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── 랭킹 내 퍼센트 바 ── */
+    .rank-pct-bar-wrap { flex: 1; height: 5px; background: var(--border); border-radius: 4px; overflow: hidden; min-width: 40px; margin-top: 5px; }
+    .rank-pct-bar { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+    .rank-vote-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+    .rank-pct-label { font-size: 0.68rem; color: var(--muted); white-space: nowrap; }
+
+    /* ── 랭킹 우측 투표 컬럼 ── */
+    .rank-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+
+    /* ── 월 우승 기록 ── */
+    .monthly-winner-item { background: linear-gradient(135deg, rgba(255,215,0,0.07), var(--card)); border: 1px solid rgba(255,215,0,0.2); border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+    .mw-month { font-size: 0.7rem; color: var(--muted); min-width: 54px; }
+    .mw-info { flex: 1; }
+    .mw-winner { font-weight: 900; color: var(--gold); font-size: 0.95rem; }
+    .mw-votes { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
     /* ── 내 최애 그룹 ── */
     .fav-chip { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; padding: 4px 12px; border-radius: 14px; background: rgba(124,77,255,0.15); border: 1px solid rgba(124,77,255,0.3); font-size: 0.72rem; color: var(--primary); cursor: pointer; transition: background 0.15s; }
     .fav-chip:hover { background: rgba(124,77,255,0.28); }
@@ -280,30 +310,30 @@
 
 <header>
   <h1>⚔️ 팬덤배틀</h1>
-  <div id="liveBadge" class="live-badge"><span class="live-dot"></span> LIVE 투표 중</div>
+  <div id="liveBadge" class="live-badge"><span class="live-dot"></span> <span id="liveBadgeText">LIVE 투표 중</span></div>
   <div id="favChipArea"></div>
 </header>
 
 <main>
-  <!-- 이번 주 빅매치 -->
-  <div id="battleArea">
-    <div class="loading"><div class="spinner"></div><div>배틀 불러오는 중...</div></div>
+  <!-- 🎁 이달의 상품 배너 -->
+  <div class="prize-banner">
+    <div class="prize-label">🏆 이달의 1등 팬덤에게</div>
+    <div class="prize-amount"><span>100만원</span> 상당 포토카드 증정</div>
+    <div class="prize-sub">매월 1일 투표 초기화 · 월말 1위 팬덤이 상품을 받아요!</div>
+    <div class="prize-notice" id="prizeNotice"></div>
   </div>
 
-  <!-- 다음 배틀 상대 결정 -->
-  <div id="nextVoteSection" style="display:none">
-    <div class="section-title" style="margin-top:24px">🎯 다음 배틀 상대 결정 <span style="font-size:.72rem;font-weight:400;color:var(--muted)">누구나 참여 가능!</span></div>
-    <div id="nextPreviewBanner"></div>
-    <div class="next-vote-card" id="nextVoteGrid"></div>
-  </div>
-
-  <!-- 챔피언 카드 -->
-  <div id="champCardSection" style="display:none">
-    <div class="section-title">📊 배틀 현황 카드</div>
-    <div class="champ-card-wrap">
-      <canvas id="champCanvas" width="600" height="320" style="width:100%;border-radius:12px;display:block"></canvas>
-      <div class="share-row" style="margin-top:10px">
-        <button class="share-btn" onclick="downloadChampCard()">⬇ 카드 저장</button>
+  <!-- 이번 달 투표 카운트다운 헤더 -->
+  <div class="battle-card" style="margin-top:12px">
+    <div class="battle-header">
+      <div class="battle-label">🗳️ <span id="monthLabel">이번 달</span> 팬덤 파워 투표</div>
+      <div class="countdown" id="countdownEl">계산 중...</div>
+      <div class="total-votes-label">총 <strong id="totalVotesEl">0</strong>명 참여 · 하루 1표 무료</div>
+    </div>
+    <div id="myVotedBar" style="display:none" class="voted-overlay show">
+      <div class="voted-msg" id="myVotedMsg"></div>
+      <div class="voted-sub" id="myVotedSub"></div>
+      <div class="share-row" style="margin-top:8px">
         <button class="share-btn native" onclick="shareNative()">📤 공유하기</button>
         <button class="share-btn kakao" onclick="shareKakao()">💛 카카오</button>
         <button class="share-btn x-btn" onclick="shareToX()">𝕏 트위터</button>
@@ -315,6 +345,12 @@
   <div id="adSection" style="display:none">
     <div class="section-title">AD</div>
     <div class="ad-slot"><!-- Google AdSense 광고 영역 --></div>
+  </div>
+
+  <!-- 실시간 팬덤 파워 랭킹 + 투표 -->
+  <div class="section-title">🏆 실시간 팬덤 파워 랭킹 <span style="font-size:.72rem;font-weight:400;color:var(--muted)">내 최애에게 투표하자!</span></div>
+  <div class="ranking-list" id="rankingList">
+    <div class="loading"><div class="spinner"></div><div>랭킹 불러오는 중...</div></div>
   </div>
 
   <!-- 일일 응원 스탬프 -->
@@ -333,36 +369,29 @@
   </div>
   <div class="comment-list" id="commentList"></div>
 
-  <!-- 전체 랭킹 -->
-  <div class="section-title">🏆 팬덤 파워 랭킹</div>
-  <div class="ranking-list" id="rankingList">
-    <div class="loading"><div class="spinner"></div><div>랭킹 불러오는 중...</div></div>
-  </div>
-
-  <!-- 역대 배틀 기록 -->
+  <!-- 역대 월 우승 기록 -->
   <div id="historySection" style="display:none">
-    <div class="section-title">📜 역대 배틀 기록</div>
+    <div class="section-title">🏅 역대 월 우승 기록</div>
     <div class="history-list" id="historyList"></div>
   </div>
 
   <!-- 관리자 패널 (URL에 ?admin=1 추가 시 표시) -->
   <div class="admin-panel" id="adminPanel" style="display:none">
-    <h3>🔧 관리자 — 배틀 설정</h3>
+    <h3>🔧 관리자 — 월 투표 관리</h3>
     <div class="admin-row">
-      <label>그룹 A</label>
-      <select id="adminGroupA"></select>
+      <label>상품 공지</label>
+      <input type="text" id="adminPrizeNotice" placeholder="예: 5월 31일까지 투표! 당첨자 6월 1일 DM 공지" />
     </div>
     <div class="admin-row">
-      <label>그룹 B</label>
-      <select id="adminGroupB"></select>
+      <button class="admin-btn" onclick="adminSavePrizeNotice()">공지 저장</button>
+    </div>
+    <div class="admin-row" style="margin-top:10px;border-top:1px solid #ff4d4d33;padding-top:10px">
+      <label style="color:#ff8888">월 마감</label>
+      <span style="font-size:.76rem;color:var(--muted)">1위 그룹을 역대 기록에 저장 후 랭킹 초기화</span>
     </div>
     <div class="admin-row">
-      <label>종료 일시</label>
-      <input type="datetime-local" id="adminEndDate" />
-    </div>
-    <div class="admin-row">
-      <button class="admin-btn" onclick="adminSetBattle()">새 배틀 시작</button>
-      <button class="admin-btn danger" onclick="adminResetRankings()">랭킹 초기화</button>
+      <button class="admin-btn" onclick="adminCloseMonth()">이달 마감 & 우승 발표</button>
+      <button class="admin-btn danger" onclick="adminResetRankings()">랭킹만 초기화</button>
     </div>
     <div id="adminMsg" style="font-size:.78rem;color:var(--muted);margin-top:6px"></div>
   </div>
@@ -422,7 +451,6 @@ const ALL_GROUPS = Object.keys(GROUP_META);
 
 // ── 초기화 ──
 let db = null;
-let battleData = null;
 let allRankingsData = null;
 let showAllRankings = false;
 const ADMIN_PW = "fandom1234"; // 변경 가능
@@ -442,47 +470,115 @@ function init() {
   try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
-    listenBattle();
     listenRankings();
-    listenNextVote();
     listenCheers();
     listenComments();
+    listenPrizeNotice();
     loadGroupRecords();
+    loadMonthlyHistory();
     renderFavChip();
-    setTimeout(showFavBar, 1500); // 1.5초 후 바 표시 (페이지 로드 후)
+    buildCommentSelect();
+    startMonthlyCountdown();
+    setMonthLabel();
+    setTimeout(showFavBar, 1500);
     if (isAdmin) {
       const pw = prompt("관리자 패스워드:");
       if (pw === ADMIN_PW) setupAdmin();
       else alert("패스워드가 틀렸습니다.");
     }
   } catch (e) {
-    document.getElementById("battleArea").innerHTML =
-      '<div class="loading" style="color:#ff6b6b">Firebase 설정이 필요합니다.<br><small style="color:var(--muted)">firebaseConfig 값을 채워주세요</small></div>';
+    console.error(e);
   }
 }
 
-// ── 투표 제한 (하루 1표) ──
-function getTodayKey() { return "voted_" + new Date().toISOString().slice(0, 10); }
-function getMyVote() { return localStorage.getItem(getTodayKey()); }
-function setMyVote(side) { localStorage.setItem(getTodayKey(), side); }
+// ── 투표 제한 (하루 1표) — 그룹명 저장 ──
+function getTodayKey() { return "voted_group_" + new Date().toISOString().slice(0, 10); }
+function getMyVote() { return localStorage.getItem(getTodayKey()); }   // 그룹명 or null
+function setMyVote(group) { localStorage.setItem(getTodayKey(), group); }
 
-// ── 배틀 실시간 리슨 ──
-function listenBattle() {
-  db.ref("current_battle").on("value", snap => {
-    battleData = snap.val();
-    renderBattle(battleData);
-    showChampCard();
-    if (allRankingsData) renderRankings(allRankingsData);
-    buildCommentSelect(); // 배틀 그룹 변경 시 댓글 셀렉트 재구성
+// ── 월 라벨 & 카운트다운 ──
+function setMonthLabel() {
+  const el = document.getElementById("monthLabel");
+  if (!el) return;
+  const now = new Date();
+  el.textContent = (now.getMonth() + 1) + "월";
+}
+
+function startMonthlyCountdown() {
+  if (_cdTimer) clearInterval(_cdTimer);
+  function update() {
+    const el = document.getElementById("countdownEl");
+    if (!el) return;
+    const now = new Date();
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0);
+    const diff = endOfMonth - now;
+    if (diff <= 0) { el.innerHTML = "이번 달 투표 마감!"; clearInterval(_cdTimer); return; }
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    el.innerHTML = `마감까지 ` + (d > 0 ? `<span>${d}일</span> ` : "") + `<span>${h}시간</span> <span>${m}분</span> <span>${s}초</span>`;
+  }
+  update();
+  _cdTimer = setInterval(update, 1000);
+}
+
+// ── 상품 공지 리슨 ──
+function listenPrizeNotice() {
+  db.ref("prize_notice").on("value", snap => {
+    const notice = snap.val() || "";
+    const el = document.getElementById("prizeNotice");
+    if (el) el.textContent = notice ? "📢 " + notice : "";
   });
 }
 
-function renderBattle(data) {
-  const el = document.getElementById("battleArea");
-  if (!data || !data.groupA || !data.groupB) {
-    el.innerHTML = '<div class="loading">아직 배틀이 시작되지 않았어요 👀</div>';
-    return;
+// ── 투표 (그룹 선택) ──
+function voteForGroup(group) {
+  const already = getMyVote();
+  if (already) { showToast("오늘은 이미 " + already + "에 투표했어요! 내일 또 와줘 💜"); return; }
+  if (!db) return;
+
+  db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
+  setMyVote(group);
+
+  const meta = GROUP_META[group] || { emoji: "🌟" };
+  showToast(meta.emoji + " " + group + " 투표 완료! 1등을 향해!");
+
+  // 즉시 로컬 카운트 반영 후 재렌더
+  if (allRankingsData) {
+    allRankingsData[group] = (allRankingsData[group] || 0) + 1;
+    renderRankings(allRankingsData);
   }
+  showMyVotedBar(group);
+}
+
+// ── 투표 후 상단 바 표시 ──
+function showMyVotedBar(group) {
+  const bar = document.getElementById("myVotedBar");
+  const msgEl = document.getElementById("myVotedMsg");
+  const subEl = document.getElementById("myVotedSub");
+  if (!bar || !msgEl || !subEl) return;
+  const meta = GROUP_META[group] || { emoji: "🌟" };
+  const total = allRankingsData ? Object.values(allRankingsData).reduce((s,v)=>s+v,0) : 0;
+  const myVotes = allRankingsData ? (allRankingsData[group] || 0) : 0;
+  const pct = total ? Math.round(myVotes / total * 100) : 0;
+  const now = new Date(); const next = new Date(now); next.setDate(next.getDate()+1); next.setHours(0,0,0,0);
+  const diff = next - now; const h = Math.floor(diff/3600000); const m = Math.floor((diff%3600000)/60000);
+  msgEl.textContent = `${meta.emoji} ${group} 투표 완료! 현재 ${pct}% (${myVotes.toLocaleString()}표)`;
+  subEl.textContent = `⏰ ${h}시간 ${m}분 후 다시 투표 가능 · 친구 불러서 1위 만들자!`;
+  bar.style.display = "block";
+}
+
+// ── 투표 후 상태 복원 (페이지 로드 시) ──
+function restoreVotedState() {
+  const group = getMyVote();
+  if (!group) return;
+  showMyVotedBar(group);
+}
+
+// (renderBattle 삭제됨 — 월별 랭킹 투표 방식으로 전환)
+function _old_renderBattle_removed(data) { // stub: 아래 빈 함수로 대체
+  if (!data) return;
   const metaA = GROUP_META[data.groupA] || { emoji: "🌟", color: "#7c4dff" };
   const metaB = GROUP_META[data.groupB] || { emoji: "🌟", color: "#4d9eff" };
   const votesA = data.votesA || 0;
@@ -589,54 +685,9 @@ function renderBattle(data) {
         </div>`}
     </div>`;
 
-  if (alreadyVoted && !isBattleOver) {
-    const proofGroup = myVote === "A" ? data.groupA : data.groupB;
-    setTimeout(() => drawVoteProof(proofGroup), 80);
-  }
-  startCountdown(data.endDate);
-}
+} // _old_renderBattle_removed end
 
-// ── 투표 실행 ──
-function vote(side) {
-  if (!db || !battleData) return;
-  if (battleData.endDate && new Date(battleData.endDate) < new Date()) { showToast("이미 종료된 배틀이에요!"); return; }
-  if (getMyVote()) { showToast("오늘은 이미 투표했어요!"); return; }
-
-  const key = side === "A" ? "votesA" : "votesB";
-  const group = side === "A" ? battleData.groupA : battleData.groupB;
-
-  // 배틀 투표 증가 (transaction으로 안전하게)
-  db.ref("current_battle/" + key).transaction(cur => (cur || 0) + 1);
-
-  // 랭킹 누적 증가
-  db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
-
-  setMyVote(side);
-  showToast("💜 " + group + " 투표 완료!");
-  // 버튼만 즉시 비활성화, 숫자는 Firebase 리스너가 자동 업데이트
-  document.querySelectorAll(".vote-btn").forEach(b => b.disabled = true);
-  const votedBtn = document.getElementById(side === "A" ? "btnA" : "btnB");
-  if (votedBtn) votedBtn.textContent = "✅ 투표함";
-}
-
-// ── 카운트다운 ──
-let _cdTimer = null;
-function startCountdown(endDateStr) {
-  if (_cdTimer) clearInterval(_cdTimer);
-  function update() {
-    const el = document.getElementById("countdownEl");
-    if (!el || !endDateStr) return;
-    const diff = new Date(endDateStr) - Date.now();
-    if (diff <= 0) { el.innerHTML = "배틀 종료!"; clearInterval(_cdTimer); return; }
-    const d = Math.floor(diff / 86400000);
-    const h = Math.floor((diff % 86400000) / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
-    const s = Math.floor((diff % 60000) / 1000);
-    el.innerHTML = (d > 0 ? `<span>${d}일</span> ` : "") + `<span>${h}시간</span> <span>${m}분</span> <span>${s}초</span> 남음`;
-  }
-  update();
-  _cdTimer = setInterval(update, 1000);
-}
+let _cdTimer = null; // monthly countdown timer ref
 
 // ── 랭킹 실시간 리슨 ──
 function listenRankings() {
@@ -646,89 +697,91 @@ function listenRankings() {
   });
 }
 
-function renderRankings(data) {
-  const el = document.getElementById("rankingList");
-  const battleGroups = battleData ? [battleData.groupA, battleData.groupB] : [];
-  const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
-  const withVotes = sorted.filter(([, v]) => v > 0);
-  const zeroGroups = sorted.filter(([g, v]) => v === 0 && !battleGroups.includes(g));
-
-  // 배틀 중인 그룹은 투표 0이어도 항상 포함
-  const toShow = [...withVotes];
-  battleGroups.forEach(g => {
-    if (!toShow.find(([k]) => k === g)) toShow.unshift([g, data[g] || 0]);
-  });
-  toShow.sort((a, b) => b[1] - a[1]);
-
-  if (!toShow.length) {
-    el.innerHTML = '<div class="loading" style="padding:20px">배틀에 투표하면 랭킹이 집계돼요!</div>';
-    return;
-  }
-
-  const rankNums = ["","👑","🥈","🥉"];
-  const rankClasses = ["","gold","silver","bronze"];
-
-  const myFavGroup = getMyFav();
-  let html = toShow.map(([group, votes], i) => {
-    const rank = i + 1;
-    const meta = GROUP_META[group] || { emoji: "🌟" };
-    const isBattle = battleGroups.includes(group);
-    const isFav = group === myFavGroup;
-    const rec = groupRecords[group];
-    const recBadge = rec && rec.wins ? `<span class="record-badge">👑 ${rec.wins}승${rec.losses ? ` ${rec.losses}패` : ""}</span>` : "";
-    return `
-      <div class="rank-item ${isBattle?"battle-now":""} ${isFav?"my-fav-rank":""}">
-        <div class="rank-num ${rankClasses[rank]||""}">${rankNums[rank]||rank}</div>
-        <div class="rank-emoji">${meta.emoji}</div>
-        <div class="rank-info">
-          <div class="rank-name">${isFav?'<span class="my-fav-star">⭐</span>':""}${escHtml(group)}${recBadge} ${isBattle?'<span class="battle-now-tag">배틀 중</span>':""}</div>
-          <div class="rank-sub">누적 ${votes.toLocaleString()}표</div>
-        </div>
-        <div class="rank-votes">${fmtVotes(votes)}</div>
-      </div>`;
-  }).join("");
-
-  if (showAllRankings) {
-    html += zeroGroups.map(([group], i) => {
-      const rank = toShow.length + i + 1;
-      const meta = GROUP_META[group] || { emoji: "🌟" };
-      return `
-        <div class="rank-item" style="opacity:0.45">
-          <div class="rank-num">${rank}</div>
-          <div class="rank-emoji">${meta.emoji}</div>
-          <div class="rank-info">
-            <div class="rank-name">${escHtml(group)}</div>
-            <div class="rank-sub">아직 배틀 참전 전</div>
-          </div>
-          <div class="rank-votes" style="color:var(--muted)">—</div>
-        </div>`;
-    }).join("");
-  }
-
-  if (zeroGroups.length) {
-    html += `<div class="rank-show-more">
-      <button class="show-all-btn" onclick="toggleAllRankings()">
-        ${showAllRankings ? "▲ 접기" : `▼ 아직 참전 안 한 그룹 ${zeroGroups.length}개 보기`}
-      </button>
-    </div>`;
-  }
-
-  el.innerHTML = html;
-}
-
 function toggleAllRankings() {
   showAllRankings = !showAllRankings;
   if (allRankingsData) renderRankings(allRankingsData);
 }
 
-// ── 다음 배틀 상대 투표 ──
-function listenNextVote() {
-  db.ref("next_vote").on("value", snap => renderNextVote(snap.val() || {}));
+function renderRankings(data) {
+  const el = document.getElementById("rankingList");
+  const myVotedGroup = getMyVote();       // 오늘 투표한 그룹명 or null
+  const alreadyVoted = !!myVotedGroup;
+  const myFavGroup = getMyFav();
+
+  // 전체 그룹 정렬 (투표수 내림차순)
+  const allEntries = ALL_GROUPS.map(g => [g, data[g] || 0]).sort((a, b) => b[1] - a[1]);
+  const totalVotes = allEntries.reduce((s, [, v]) => s + v, 0);
+
+  // 총 참여자 수 업데이트
+  const tvEl = document.getElementById("totalVotesEl");
+  if (tvEl) tvEl.textContent = totalVotes.toLocaleString();
+
+  // 투표 후 상태바 갱신
+  if (alreadyVoted) restoreVotedState();
+
+  const withVotes = allEntries.filter(([, v]) => v > 0);
+  const zeroVotes = allEntries.filter(([, v]) => v === 0);
+
+  const rankNums = ["", "👑", "🥈", "🥉"];
+  const rankClasses = ["", "gold", "silver", "bronze"];
+
+  const renderRow = (group, votes, rank, faded = false) => {
+    const meta = GROUP_META[group] || { emoji: "🌟", color: "#7c4dff" };
+    const isFav = group === myFavGroup;
+    const isVoted = myVotedGroup === group;
+    const pct = totalVotes ? Math.round(votes / totalVotes * 100) : 0;
+    const rec = groupRecords[group];
+    const recBadge = rec && rec.wins ? `<span class="record-badge">🏆 ${rec.wins}회</span>` : "";
+    return `
+      <div class="rank-item ${isFav ? "my-fav-rank" : ""}" ${faded ? 'style="opacity:0.5"' : ""}>
+        <div class="rank-num ${rankClasses[rank] || ""}">${rankNums[rank] || rank}</div>
+        <div class="rank-emoji">${meta.emoji}</div>
+        <div class="rank-info">
+          <div class="rank-name">${isFav ? '<span class="my-fav-star">⭐</span>' : ""}${escHtml(group)}${recBadge}</div>
+          <div class="rank-vote-meta">
+            <div class="rank-pct-bar-wrap">
+              <div class="rank-pct-bar" style="width:${pct}%;background:${meta.color}"></div>
+            </div>
+            <span class="rank-pct-label">${pct}%</span>
+          </div>
+        </div>
+        <div class="rank-right">
+          <div class="rank-votes">${fmtVotes(votes)}</div>
+          <button class="vote-rank-btn ${isVoted ? "voted" : ""}"
+            onclick="voteForGroup('${escAttr(group)}')"
+            ${alreadyVoted ? "disabled" : ""}>
+            ${isVoted ? "✅ 투표함" : meta.emoji + " 투표"}
+          </button>
+        </div>
+      </div>`;
+  };
+
+  let html = "";
+
+  if (withVotes.length === 0) {
+    // 아직 아무도 안 투표했을 때 → 전체 목록 보여주기
+    html = allEntries.map(([g, v], i) => renderRow(g, v, i + 1)).join("");
+  } else {
+    html = withVotes.map(([g, v], i) => renderRow(g, v, i + 1)).join("");
+
+    if (showAllRankings) {
+      html += zeroVotes.map(([g, v], i) => renderRow(g, v, withVotes.length + i + 1, true)).join("");
+      if (zeroVotes.length) html += `<div class="rank-show-more"><button class="show-all-btn" onclick="toggleAllRankings()">▲ 접기</button></div>`;
+    } else if (zeroVotes.length) {
+      html += `<div class="rank-show-more">
+        <button class="show-all-btn" onclick="toggleAllRankings()">▼ 아직 투표 없는 그룹 ${zeroVotes.length}개 보기</button>
+      </div>`;
+    }
+  }
+
+  el.innerHTML = html;
 }
 
-function renderNextVote(data) {
-  const sec = document.getElementById("nextVoteSection");
-  const grid = document.getElementById("nextVoteGrid");
+// (listenNextVote, renderNextVote, voteNext 제거됨 — 월별 랭킹 방식으로 전환)
+
+function _removed_renderNextVote(data) {
+  const sec = null;
+  const grid = null;
   const battleGroups = battleData ? [battleData.groupA, battleData.groupB] : [];
   const eligible = ALL_GROUPS.filter(g => !battleGroups.includes(g));
   const sorted = eligible.map(g => [g, data[g] || 0]).sort((a, b) => b[1] - a[1]);
@@ -773,8 +826,33 @@ function rrect(ctx, x, y, w, h, r) {
   ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
 }
 
-function drawChampCard() {
-  const canvas = document.getElementById("champCanvas");
+// ── 월 우승 기록 로드 ──
+function loadMonthlyHistory() {
+  db.ref("monthly_history").limitToLast(6).once("value", snap => {
+    const data = snap.val();
+    const sec = document.getElementById("historySection");
+    const list = document.getElementById("historyList");
+    if (!data || !sec || !list) return;
+    const items = Object.entries(data).sort((a, b) => b[0].localeCompare(a[0]));
+    list.innerHTML = items.map(([month, h]) => {
+      const meta = GROUP_META[h.winner] || { emoji: "🌟" };
+      return `<div class="monthly-winner-item">
+        <div class="mw-month">${h.monthLabel || month}</div>
+        <div class="rank-emoji" style="font-size:1.3rem">${meta.emoji}</div>
+        <div class="mw-info">
+          <div class="mw-winner">🏆 ${escHtml(h.winner)}</div>
+          <div class="mw-votes">${(h.votes||0).toLocaleString()}표 · 1위</div>
+        </div>
+        <div style="font-size:.72rem;color:var(--gold)">포토카드 증정</div>
+      </div>`;
+    }).join("");
+    sec.style.display = "block";
+  });
+}
+
+// (drawChampCard / showChampCard / downloadChampCard 제거됨)
+function _stub_drawChampCard() {
+  const canvas = null;
   if (!canvas || !battleData) return;
   const ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
@@ -858,49 +936,20 @@ function downloadChampCard() {
   showToast("카드 저장됨! SNS에 공유해봐 💜");
 }
 
-// ── 역대 기록 ──
-function loadHistory() {
-  db.ref("battle_history").limitToLast(5).once("value", snap => {
-    const data = snap.val();
-    if (!data) return;
-    const sec = document.getElementById("historySection");
-    const list = document.getElementById("historyList");
-    const items = Object.values(data).reverse();
-    list.innerHTML = items.map(h => {
-      const winner = (h.votesA || 0) >= (h.votesB || 0) ? h.groupA : h.groupB;
-      const loser  = winner === h.groupA ? h.groupB : h.groupA;
-      const wVotes = winner === h.groupA ? (h.votesA||0) : (h.votesB||0);
-      const lVotes = winner === h.groupA ? (h.votesB||0) : (h.votesA||0);
-      return `<div class="history-item">
-        <div class="history-week">${h.week || ""}</div>
-        <div class="history-match">
-          <span class="history-winner">🏆 ${escHtml(winner)}</span>
-          <span style="color:var(--muted)">vs</span>
-          <span class="history-loser">${escHtml(loser)}</span>
-        </div>
-        <div class="history-score">${wVotes.toLocaleString()} : ${lVotes.toLocaleString()}</div>
-      </div>`;
-    }).join("");
-    sec.style.display = "block";
-  });
-}
+// (loadHistory 제거됨 → loadMonthlyHistory 로 대체)
 
 // ── 공유 ──
 const SITE_URL = "https://fandomkorea.github.io/fandom-battle/";
 
 function getShareText() {
-  if (!battleData) return { title: "팬덤배틀", text: "아이돌 팬덤 파워 대결!", url: SITE_URL };
-  const vA = battleData.votesA || 0, vB = battleData.votesB || 0;
-  const total = vA + vB;
-  const pctA = total ? Math.round(vA / total * 100) : 50;
-  const myVote = getMyVote();
-  const myGroup = myVote === "A" ? battleData.groupA : myVote === "B" ? battleData.groupB : null;
-  const tagA = battleData.groupA.replace(/\s/g, "");
-  const tagB = battleData.groupB.replace(/\s/g, "");
-  const title = `⚔️ ${battleData.groupA} vs ${battleData.groupB} 팬덤배틀!`;
+  const myGroup = getMyVote();
+  const now = new Date();
+  const monthStr = (now.getMonth() + 1) + "월";
+  const title = `🏆 ${monthStr} 팬덤 파워 랭킹 — 팬덤배틀`;
+  const myTag = myGroup ? myGroup.replace(/\s/g, "") : "";
   const text = myGroup
-    ? `나는 ${myGroup}에 투표했어! 현재 ${battleData.groupA} ${pctA}% vs ${battleData.groupB} ${100 - pctA}% #팬덤배틀 #${tagA} #${tagB}`
-    : `${battleData.groupA} vs ${battleData.groupB} — 지금 투표 중! #팬덤배틀 #${tagA} #${tagB}`;
+    ? `나는 ${myGroup}에 투표했어! 100만원 포토카드 주인공을 만들자! #팬덤배틀 #${myTag} #팬덤파워랭킹`
+    : `${monthStr} 팬덤 파워 랭킹 진행 중! 100만원 포토카드 내 최애한테! #팬덤배틀 #팬덤파워랭킹`;
   return { title, text, url: SITE_URL };
 }
 
@@ -950,72 +999,49 @@ function shareToX() {
 // ── 관리자 ──
 function setupAdmin() {
   document.getElementById("adminPanel").style.display = "block";
-  const selA = document.getElementById("adminGroupA");
-  const selB = document.getElementById("adminGroupB");
-  ALL_GROUPS.forEach(g => {
-    selA.innerHTML += `<option value="${g}">${g}</option>`;
-    selB.innerHTML += `<option value="${g}">${g}</option>`;
+  // 현재 공지 불러오기
+  db.ref("prize_notice").once("value", snap => {
+    const el = document.getElementById("adminPrizeNotice");
+    if (el && snap.val()) el.value = snap.val();
   });
-  selB.selectedIndex = 1;
-
-  // 기본 종료일: 7일 후
-  const d = new Date(); d.setDate(d.getDate() + 7);
-  document.getElementById("adminEndDate").value = d.toISOString().slice(0, 16);
-
-  loadHistory();
 }
 
-async function adminSetBattle() {
-  const groupA = document.getElementById("adminGroupA").value;
-  const groupB = document.getElementById("adminGroupB").value;
-  const endDate = document.getElementById("adminEndDate").value;
-  if (groupA === groupB) { adminMsg("같은 그룹은 안 돼요!"); return; }
-  if (!endDate) { adminMsg("종료 일시를 선택해주세요"); return; }
+async function adminSavePrizeNotice() {
+  const notice = document.getElementById("adminPrizeNotice").value.trim();
+  await db.ref("prize_notice").set(notice);
+  adminMsg("✅ 공지 저장됨!");
+}
 
-  // 현재 배틀을 역대 기록에 저장 + 전적 업데이트
-  if (battleData && battleData.groupA) {
-    const week = getWeekLabel();
-    await db.ref("battle_history/" + week).set({ ...battleData, week });
+async function adminCloseMonth() {
+  if (!allRankingsData) { adminMsg("랭킹 데이터 없음"); return; }
+  const sorted = Object.entries(allRankingsData).sort((a, b) => b[1] - a[1]);
+  if (!sorted.length || sorted[0][1] === 0) { adminMsg("투표 데이터가 없어요"); return; }
+  const [winner, votes] = sorted[0];
+  const now = new Date();
+  const monthKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+  const monthLabel = now.getFullYear() + "년 " + (now.getMonth() + 1) + "월";
 
-    // 승패 기록 업데이트
-    const winner = (battleData.votesA || 0) >= (battleData.votesB || 0) ? battleData.groupA : battleData.groupB;
-    const loser  = winner === battleData.groupA ? battleData.groupB : battleData.groupA;
-    const recSnap = await db.ref("group_records").once("value");
-    const recs = recSnap.val() || {};
-    const wRec = recs[winner] || { wins: 0, losses: 0 };
-    const lRec = recs[loser]  || { wins: 0, losses: 0 };
-    await db.ref("group_records/" + winner).set({ wins: (wRec.wins||0)+1, losses: wRec.losses||0 });
-    await db.ref("group_records/" + loser ).set({ wins: lRec.wins||0, losses: (lRec.losses||0)+1 });
-  }
+  // 월 우승 기록 저장
+  await db.ref("monthly_history/" + monthKey).set({ winner, votes, monthLabel });
 
-  await db.ref("current_battle").set({ groupA, groupB, endDate, votesA: 0, votesB: 0, week: getWeekLabel() });
-  await db.ref("next_vote").remove(); // 새 배틀 시작 시 다음 상대 투표 초기화
+  // 그룹 역대 우승 횟수 업데이트
+  const recSnap = await db.ref("group_records/" + winner).once("value");
+  const rec = recSnap.val() || { wins: 0 };
+  await db.ref("group_records/" + winner).set({ wins: (rec.wins || 0) + 1 });
 
-  // 랭킹에 새 그룹 없으면 0으로 초기화
-  const snap = await db.ref("rankings").once("value");
-  const existing = snap.val() || {};
-  const updates = {};
-  ALL_GROUPS.forEach(g => { if (!(g in existing)) updates[g] = 0; });
-  if (Object.keys(updates).length) await db.ref("rankings").update(updates);
-
-  adminMsg("✅ 새 배틀 시작됨!");
+  adminMsg(`🏆 ${monthLabel} 우승: ${winner} (${votes.toLocaleString()}표) 저장 완료! 이제 랭킹 초기화하세요.`);
+  loadMonthlyHistory();
 }
 
 async function adminResetRankings() {
-  if (!confirm("랭킹을 전부 초기화할까요?")) return;
+  if (!confirm("이달 랭킹을 초기화할까요? (월 마감 후 실행하세요)")) return;
   const updates = {};
   ALL_GROUPS.forEach(g => { updates[g] = 0; });
   await db.ref("rankings").set(updates);
-  adminMsg("🔄 랭킹 초기화 완료");
+  adminMsg("🔄 랭킹 초기화 완료 — 새 달 투표 시작!");
 }
 
 function adminMsg(msg) { document.getElementById("adminMsg").textContent = msg; }
-function getWeekLabel() {
-  const d = new Date();
-  const jan1 = new Date(d.getFullYear(), 0, 1);
-  const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
-  return d.getFullYear() + "-W" + String(week).padStart(2, "0");
-}
 
 // ── 일일 응원 스탬프 ──
 function getTodayStr() { return new Date().toISOString().slice(0,10); }
@@ -1023,34 +1049,17 @@ function getMyCheer() { return localStorage.getItem("cheered_" + getTodayStr());
 
 function buildCommentSelect() {
   const sel = document.getElementById("commentGroup");
+  if (!sel) return;
   const myFav = getMyFav();
-  const battleGroups = battleData ? [battleData.groupA, battleData.groupB].filter(Boolean) : [];
-  const others = ALL_GROUPS.filter(g => !battleGroups.includes(g));
-  let html = "";
-  if (battleGroups.length) {
-    html += `<optgroup label="⚔️ 배틀 중">`;
-    battleGroups.forEach(g => { html += `<option value="${escAttr(g)}">${escHtml(g)}</option>`; });
-    html += `</optgroup><optgroup label="전체 그룹">`;
-    others.forEach(g => { html += `<option value="${escAttr(g)}">${escHtml(g)}</option>`; });
-    html += `</optgroup>`;
-  } else {
-    ALL_GROUPS.forEach(g => { html += `<option value="${escAttr(g)}">${escHtml(g)}</option>`; });
-  }
-  sel.innerHTML = html;
+  sel.innerHTML = ALL_GROUPS.map(g => `<option value="${escAttr(g)}">${escHtml(g)}</option>`).join("");
   if (myFav && ALL_GROUPS.includes(myFav)) sel.value = myFav;
-  buildCommentFilterRow();
 }
 
 function buildCommentFilterRow() {
   const row = document.getElementById("commentFilterRow");
   if (!row) return;
-  const battleGroups = battleData ? [battleData.groupA, battleData.groupB].filter(Boolean) : [];
-  let html = `<button class="cfilter-btn ${commentFilter==="all"?"active":""}" data-filter="all" onclick="filterComments('all')">전체</button>`;
-  battleGroups.forEach(g => {
-    const meta = GROUP_META[g] || { emoji:"🌟" };
-    html += `<button class="cfilter-btn ${commentFilter===g?"active":""}" data-filter="${escAttr(g)}" onclick="filterComments('${escAttr(g)}')">${meta.emoji} ${escHtml(g)}</button>`;
-  });
-  row.innerHTML = html;
+  // 현재 선택된 그룹 또는 상위 그룹을 필터 탭으로 표시
+  row.innerHTML = `<button class="cfilter-btn ${commentFilter==="all"?"active":""}" data-filter="all" onclick="filterComments('all')">전체</button>`;
 }
 
 function listenCheers() {
@@ -1221,10 +1230,9 @@ function relTimeComment(ts) {
   return Math.floor(s/86400)+"일 전";
 }
 
-// ── 투표 인증 이미지 ──
-function drawVoteProof(group) {
-  const canvas = document.getElementById("proofCanvas");
-  if (!canvas) return;
+// (drawVoteProof 제거됨 — 투표 인증 이미지 기능 삭제)
+function drawVoteProof(group) { return; // stub
+  const canvas = null; if (!canvas) return;
   const ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
   const meta = GROUP_META[group] || { color: "#7c4dff", emoji: "🌟" };
@@ -1288,43 +1296,7 @@ function drawVoteProof(group) {
   ctx.fillText("fandomkorea.github.io/fandom-battle", W / 2, 291);
 }
 
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-function downloadVoteProof(group) {
-  const canvas = document.getElementById("proofCanvas");
-  drawVoteProof(group);
-  const a = document.createElement("a"); a.download = "팬덤배틀_투표인증.png";
-  a.href = canvas.toDataURL("image/png"); a.click();
-  showToast("저장됨! 인스타/트위터에 공유해봐 💜");
-}
-
-// ── 다음 배틀 예고 ──
-function renderNextPrediction(nextVoteData) {
-  const battleGroups = battleData ? [battleData.groupA, battleData.groupB] : [];
-  const eligible = ALL_GROUPS.filter(g => !battleGroups.includes(g));
-  const sorted = eligible.map(g => [g, nextVoteData[g]||0]).sort((a,b)=>b[1]-a[1]);
-  const topNext = sorted[0]?.[0];
-  if (!topNext || !battleData) return;
-  const winnerLeading = (battleData.votesA||0) >= (battleData.votesB||0) ? battleData.groupA : battleData.groupB;
-  const mA = GROUP_META[winnerLeading]||{emoji:"🌟"}, mB = GROUP_META[topNext]||{emoji:"🌟"};
-  const el = document.getElementById("nextPreviewBanner");
-  if (!el) return;
-  el.innerHTML = `<div class="next-preview">
-    <div>
-      <div class="next-preview-label">📅 다음 배틀 예고</div>
-      <div class="next-preview-match">${mA.emoji} ${escHtml(winnerLeading)} vs ${mB.emoji} ${escHtml(topNext)}</div>
-      <div class="next-preview-sub">현재 투표 기준 예상 매치 · 결과에 따라 바뀔 수 있어요</div>
-    </div>
-  </div>`;
-}
+// (drawVoteProof / roundRect / downloadVoteProof / renderNextPrediction 제거됨)
 
 // ── 그룹 역대 전적 ──
 let groupRecords = {};
