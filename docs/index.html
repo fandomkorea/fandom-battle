@@ -193,8 +193,9 @@
     .ranking-empty-hint p { font-size: 0.84rem; color: var(--muted); margin-top: 4px; }
 
     /* ── 랭킹 투표 버튼 ── */
-    .vote-rank-btn { padding: 5px 13px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.72rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; min-width: 60px; text-align: center; }
-    .vote-rank-btn:hover:not(:disabled) { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .vote-rank-btn { padding: 7px 15px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.75rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; min-width: 70px; text-align: center; }
+    .vote-rank-btn:hover:not(:disabled) { background: var(--primary); color: #fff; border-color: var(--primary); transform: scale(1.08); }
+    .vote-rank-btn:active:not(:disabled) { transform: scale(0.95); }
     .vote-rank-btn.voted { background: var(--primary); color: #fff; border-color: var(--primary); }
     .vote-rank-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
@@ -319,11 +320,11 @@
       header h1 { font-size: 1.7rem; }
       .prize-amount { font-size: 1.3rem; }
       .fav-bar { padding: 10px 16px; }
-      .rank-item { padding: 10px 12px; gap: 10px; }
+      .rank-item { padding: 12px 12px; gap: 10px; }
       .rank-emoji { font-size: 1.3rem; }
-      .vote-rank-btn { padding: 6px 12px; font-size: 0.72rem; font-weight: 700; border-radius: 14px; }
+      .vote-rank-btn { padding: 10px 14px; font-size: 0.78rem; font-weight: 700; border-radius: 14px; min-width: 80px; }
       .rank-pct-bar-wrap { height: 8px; }
-      #groupSearchInput { font-size: 0.75rem !important; padding: 8px 10px !important; }
+      #groupSearchInput { font-size: 0.8rem !important; padding: 10px 12px !important; flex: 0.5 !important; }
       .rank-fandom { display: none; }
       .vote-guide-banner { padding: 12px 14px; margin-bottom: 10px; }
       .vote-guide-title { font-size: 0.78rem; }
@@ -391,7 +392,10 @@
   <!-- 실시간 팬덤 파워 랭킹 + 투표 -->
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
     <div class="section-title" style="flex:1;margin:0">🏆 실시간 팬덤 파워 랭킹</div>
-    <input class="comment-input" id="groupSearchInput" placeholder="그룹 검색..." style="flex:0.4;padding:6px 10px;font-size:.8rem" onkeyup="filterRankings(this.value)" />
+    <div style="flex:0.45;display:flex;gap:4px;align-items:center">
+      <span style="color:var(--muted);font-size:.75rem">🔍</span>
+      <input class="comment-input" id="groupSearchInput" placeholder="팀 이름 검색..." style="flex:1;padding:8px 10px;font-size:.8rem;border:1px solid var(--primary)" onkeyup="filterRankings(this.value)" />
+    </div>
   </div>
   <div class="ranking-list" id="rankingList">
     <div id="skeletonLoader">
@@ -658,9 +662,10 @@ function voteForGroup(group) {
   if (already) {
     // 이미 오늘 투표함 → 광고 안내
     if (canVoteMore()) {
-      showToast("📺 광고를 보면 추가 투표권을 얻을 수 있어요!");
+      const remaining = MAX_VOTES_PER_DAY - getTodayVoteCount();
+      showToast(`📺 광고를 보고 ${remaining}표 더 투표할 수 있어! 광고 영역에서 시작하세요!`);
     } else {
-      showToast(`오늘 ${MAX_VOTES_PER_DAY}표를 모두 사용했어요! 내일 또 와줘 💜`);
+      showToast(`🏆 오늘 ${MAX_VOTES_PER_DAY}표를 모두 사용했어요! 내일 또 와줘 💜`);
     }
     return;
   }
@@ -787,7 +792,7 @@ function showMyVotedBar(group) {
     shareCtaEl.onclick = shareNative;
     bar.insertBefore(shareCtaEl, bar.lastElementChild);
   }
-  shareCtaEl.innerHTML = `📢 친구들한테 알려서 ${meta.emoji} ${escHtml(group)} 1위 만들자! 💪`;
+  shareCtaEl.innerHTML = `🌟 지금 공유하면 우리 팀이 1위 될 확률 UP! 친구들을 초대해봐 ${meta.emoji} 💪`;
 
   bar.style.display = "block";
 }
@@ -846,9 +851,17 @@ function watchAd() {
 function claimAdReward() {
   document.getElementById("adModal")?.remove();
   adPending = true;
-  showToast("🎁 추가 투표권 획득! 아래에서 그룹을 선택해 투표하세요!");
+  showToast("🎁 투표권 획득! 아래에서 팀을 선택해서 투표하세요! ⬇️");
+
   // 버튼 상태 업데이트
   if (allRankingsData) renderRankings(allRankingsData);
+
+  // 랭킹으로 자동 스크롤
+  setTimeout(() => {
+    const ranking = document.getElementById("rankingList");
+    if (ranking) ranking.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 300);
+
   showMyVotedBar(getMyVote());
 }
 
@@ -932,13 +945,14 @@ function scrollToMyGroup(group) {
 }
 
 // ── 투표 가이드 배너 표시 ──
-let hasShownVoteGuide = false;
 function showVoteGuideBanner() {
-  if (hasShownVoteGuide) return;
   const banner = document.getElementById("voteGuideBanner");
-  if (banner && !getMyVote()) {
+  if (!banner) return;
+  // 오늘 이미 투표했으면 배너 숨기기
+  if (getMyVote()) {
+    banner.style.display = "none";
+  } else {
     banner.style.display = "block";
-    hasShownVoteGuide = true;
   }
 }
 
@@ -956,8 +970,8 @@ function addActivity(group) {
 
 function renderActivityFeed() {
   const now = Date.now();
-  // 5초 이상 된 항목은 제거
-  activityQueue = activityQueue.filter(a => now - a.time < 5000);
+  // 10초 이상 된 항목은 제거
+  activityQueue = activityQueue.filter(a => now - a.time < 10000);
 
   const feedEl = document.getElementById("activityFeed");
   const listEl = document.getElementById("activityList");
@@ -1001,8 +1015,10 @@ function listenRankings() {
     if (!lastRankingData) {
       const skeletonEl = document.getElementById("skeletonLoader");
       if (skeletonEl) skeletonEl.remove();
-      showVoteGuideBanner();
     }
+
+    // 매번 투표 상태 확인해서 배너 표시/숨김
+    showVoteGuideBanner();
 
     // 변화가 있는 그룹 감지해서 activity 추가
     if (lastRankingData) {
@@ -1133,8 +1149,8 @@ function renderRankings(data) {
       </div>`;
   };
 
-  // 댓글 필터 탭에 상위 그룹 반영
-  updateCommentFilterTabs(withVotes.slice(0, 3).map(([g]) => g));
+  // 댓글 필터 탭에 상위 그룹 반영 (상위 5팀까지)
+  updateCommentFilterTabs(withVotes.slice(0, 5).map(([g]) => g));
 
   let html = "";
 
