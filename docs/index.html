@@ -261,6 +261,11 @@
     .rank-item.rank-first .rank-name { color: #fff; font-weight: 900; }
     .rank-first-crown { font-size: 0.6rem; color: var(--gold); background: rgba(255,215,0,0.15); border-radius: 6px; padding: 1px 5px; margin-left: 5px; font-weight: 700; vertical-align: middle; }
 
+    /* ── 경쟁 뜨거운 경기 (상위 3팀이 가까운 경우) ── */
+    @keyframes closeRaceGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(255,77,141,0); } 50% { box-shadow: 0 0 8px 0 rgba(255,77,141,0.3); } }
+    .rank-item.close-race { animation: closeRaceGlow 2s ease-in-out infinite; }
+    .close-race-badge { display: inline-block; font-size: 0.6rem; background: rgba(255,77,141,0.2); color: var(--pink); border-radius: 6px; padding: 1px 5px; margin-left: 4px; font-weight: 700; animation: pulse 1.2s infinite; }
+
     /* ── 팬덤 이름 ── */
     .rank-fandom { font-size: 0.65rem; color: var(--muted); margin-top: 1px; }
 
@@ -277,6 +282,11 @@
     /* ── 내 팀 스크롤 하이라이트 ── */
     @keyframes rankHighlight { 0%,100% { box-shadow: none; } 30% { box-shadow: 0 0 0 3px var(--primary); } }
     .rank-item.highlight-flash { animation: rankHighlight 0.8s ease-in-out 2 !important; }
+
+    /* ── 팀 빠른접근 버튼 ── */
+    .quick-access-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 20px; background: var(--primary); color: #fff; border: none; font-weight: 700; font-family: inherit; font-size: 0.82rem; cursor: pointer; white-space: nowrap; transition: all 0.15s; margin-top: 8px; }
+    .quick-access-btn:hover { background: #6a3de8; transform: scale(1.05); }
+    .quick-access-emoji { font-size: 1.1rem; }
 
     /* ── Skeleton Loader ── */
     @keyframes shimmerPulse { 0%,100% { background-position: -200% center; } 50% { background-position: 200% center; } }
@@ -327,6 +337,10 @@
   <h1>⚔️ 팬덤배틀</h1>
   <div id="liveBadge" class="live-badge"><span class="live-dot"></span> <span id="liveBadgeText">LIVE 투표 중</span></div>
   <div id="favChipArea"></div>
+  <button id="quickAccessBtn" class="quick-access-btn" onclick="scrollToMyTeam()" style="display:none">
+    <span class="quick-access-emoji" id="quickAccessEmoji"></span>
+    <span id="quickAccessText"></span>
+  </button>
 </header>
 
 <main>
@@ -1001,6 +1015,11 @@ function renderRankings(data) {
   // 1위 그룹의 투표수 가져오기
   const firstPlaceVotes = withVotes.length > 0 ? withVotes[0][1] : 0;
 
+  // 상위 3팀의 투표 격차가 작은지 확인 (경쟁이 뜨거운지)
+  const isCloseRace = withVotes.length >= 3 &&
+    firstPlaceVotes > 0 &&
+    (firstPlaceVotes - withVotes[2][1]) < (firstPlaceVotes * 0.15); // 15% 이내
+
   const renderRow = (group, votes, rank, faded = false) => {
     const meta = GROUP_META[group] || { emoji: "🌟", color: "#7c4dff", fandom: "" };
     const isFav = group === myFavGroup;
@@ -1022,14 +1041,16 @@ function renderRankings(data) {
     const rec = groupRecords[group];
     const recBadge = rec && rec.wins ? `<span class="record-badge">🏆 ${rec.wins}회</span>` : "";
     const trendingBadge = isTrending(group) ? `<span class="record-badge" style="background:rgba(255,107,53,0.2);color:#ff6b35;animation:pulse 1s infinite">🔥 핫</span>` : "";
+    const closeRaceApplies = isCloseRace && rank <= 3;
+    const closeRaceBadge = closeRaceApplies ? `<span class="close-race-badge">⚡경쟁 중</span>` : "";
     const firstCrown = isFirst ? `<span class="rank-first-crown">1위</span>` : "";
     const fadedStyle = faded ? 'style="opacity:0.5"' : "";
     return `
-      <div class="rank-item ${isFirst ? "rank-first" : ""} ${isFav ? "my-fav-rank" : ""}" data-group="${escAttr(group)}" ${fadedStyle}>
+      <div class="rank-item ${isFirst ? "rank-first" : ""} ${closeRaceApplies ? "close-race" : ""} ${isFav ? "my-fav-rank" : ""}" data-group="${escAttr(group)}" ${fadedStyle}>
         <div class="rank-num ${rankClasses[rank] || ""}">${rankNums[rank] || rank}</div>
         <div class="rank-emoji">${meta.emoji}</div>
         <div class="rank-info">
-          <div class="rank-name">${isFav ? '<span class="my-fav-star">⭐</span>' : ""}${escHtml(group)}${firstCrown}${trendingBadge}${recBadge}</div>
+          <div class="rank-name">${isFav ? '<span class="my-fav-star">⭐</span>' : ""}${escHtml(group)}${firstCrown}${closeRaceBadge}${trendingBadge}${recBadge}</div>
           ${meta.fandom ? `<div class="rank-fandom">${escHtml(meta.fandom)}</div>` : ""}
           <div class="rank-vote-meta">
             <div class="rank-pct-bar-wrap">
@@ -1402,10 +1423,36 @@ function getMyFav() { return localStorage.getItem("my_fav_group"); }
 function setMyFav(g) {
   localStorage.setItem("my_fav_group", g);
   renderFavChip();
+  updateQuickAccessBtn();
   document.getElementById("favBar")?.remove();
   // 댓글 셀렉트 자동 선택
   const sel = document.getElementById("commentGroup");
   if (sel && g) sel.value = g;
+}
+
+// ── 팀 빠른접근 버튼 업데이트 ──
+function updateQuickAccessBtn() {
+  const btn = document.getElementById("quickAccessBtn");
+  const fav = getMyFav();
+  if (!btn) return;
+  if (!fav) {
+    btn.style.display = "none";
+    return;
+  }
+  const meta = GROUP_META[fav] || { emoji: "🌟" };
+  document.getElementById("quickAccessEmoji").textContent = meta.emoji;
+  document.getElementById("quickAccessText").textContent = `${fav}로 스크롤`;
+  btn.style.display = "inline-flex";
+}
+
+// ── 내 팀으로 스크롤 (빠른접근) ──
+function scrollToMyTeam() {
+  const fav = getMyFav();
+  if (!fav) {
+    showToast("먼저 최애 그룹을 설정해봐! 💜");
+    return;
+  }
+  scrollToMyGroup(fav);
 }
 
 function renderFavChip() {
@@ -1417,6 +1464,7 @@ function renderFavChip() {
   area.innerHTML = `
     <div class="fav-chip" onclick="scrollToMyGroup('${escAttr(fav)}')" title="클릭 시 내 팀으로 이동">${meta.emoji} ${escHtml(fav)}</div>
     <div class="fav-chip" onclick="openFavPicker()" title="팬덤 변경" style="margin-left:4px;font-size:.65rem;padding:3px 9px">✏️ 변경</div>`;
+  updateQuickAccessBtn();
 }
 
 function showFavBar() {
