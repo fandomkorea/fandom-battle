@@ -224,6 +224,22 @@
     /* ── 그룹 전적 뱃지 ── */
     .record-badge { font-size: 0.65rem; background: rgba(255,215,0,0.12); color: var(--gold); border-radius: 6px; padding: 1px 6px; font-weight: 700; margin-left: 4px; }
 
+    /* ── 내 최애 랭킹 하이라이트 ── */
+    .rank-item.my-fav-rank { border-color: var(--primary); background: rgba(124,77,255,0.07); }
+    .my-fav-star { font-size: 0.65rem; margin-right: 3px; }
+
+    /* ── 내 팀 배틀 참여 배너 ── */
+    .my-team-banner { background: linear-gradient(135deg,rgba(124,77,255,0.15),rgba(255,77,141,0.1)); border: 1px solid rgba(124,77,255,0.35); border-radius: 10px; padding: 9px 14px; margin-bottom: 10px; font-size: 0.82rem; font-weight: 700; color: var(--primary); text-align: center; animation: glowPulse 2s ease-in-out infinite; }
+    @keyframes glowPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(124,77,255,0); } 50% { box-shadow: 0 0 12px 2px rgba(124,77,255,0.25); } }
+
+    /* ── 댓글 필터 탭 ── */
+    .comment-filter-row { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .cfilter-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.75rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.15s; }
+    .cfilter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* ── 투표 0개 빈 바 ── */
+    .bar-empty-hint { text-align: center; font-size: 0.74rem; color: var(--muted); padding: 6px 0 2px; }
+
     /* ── 투표 인증 이미지 ── */
     .proof-canvas { width: 100%; border-radius: 10px; display: block; margin-top: 10px; cursor: pointer; }
     .proof-hint { font-size: 0.68rem; color: var(--muted); text-align: center; margin-top: 4px; }
@@ -276,9 +292,23 @@
 
   <!-- 다음 배틀 상대 결정 -->
   <div id="nextVoteSection" style="display:none">
-    <div class="section-title" style="margin-top:24px">🎯 다음 배틀 상대 결정 <span style="font-size:.72rem;font-weight:400;color:var(--muted)">이긴 팀이 결정해요!</span></div>
+    <div class="section-title" style="margin-top:24px">🎯 다음 배틀 상대 결정 <span style="font-size:.72rem;font-weight:400;color:var(--muted)">누구나 참여 가능!</span></div>
     <div id="nextPreviewBanner"></div>
     <div class="next-vote-card" id="nextVoteGrid"></div>
+  </div>
+
+  <!-- 챔피언 카드 -->
+  <div id="champCardSection" style="display:none">
+    <div class="section-title">📊 배틀 현황 카드</div>
+    <div class="champ-card-wrap">
+      <canvas id="champCanvas" width="600" height="320" style="width:100%;border-radius:12px;display:block"></canvas>
+      <div class="share-row" style="margin-top:10px">
+        <button class="share-btn" onclick="downloadChampCard()">⬇ 카드 저장</button>
+        <button class="share-btn native" onclick="shareNative()">📤 공유하기</button>
+        <button class="share-btn kakao" onclick="shareKakao()">💛 카카오</button>
+        <button class="share-btn x-btn" onclick="shareToX()">𝕏 트위터</button>
+      </div>
+    </div>
   </div>
 
   <!-- 광고 (AdSense 연결 전까지 숨김) -->
@@ -298,6 +328,9 @@
     <input class="comment-input" id="commentInput" placeholder="우리 팀 응원 한 마디!" maxlength="60" />
     <button class="comment-submit" onclick="postComment()">등록</button>
   </div>
+  <div class="comment-filter-row" id="commentFilterRow">
+    <button class="cfilter-btn active" data-filter="all" onclick="filterComments('all')">전체</button>
+  </div>
   <div class="comment-list" id="commentList"></div>
 
   <!-- 전체 랭킹 -->
@@ -310,20 +343,6 @@
   <div id="historySection" style="display:none">
     <div class="section-title">📜 역대 배틀 기록</div>
     <div class="history-list" id="historyList"></div>
-  </div>
-
-  <!-- 챔피언 카드 -->
-  <div id="champCardSection" style="display:none">
-    <div class="section-title">📊 배틀 현황 카드</div>
-    <div class="champ-card-wrap">
-      <canvas id="champCanvas" width="600" height="320" style="width:100%;border-radius:12px;display:block"></canvas>
-      <div class="share-row" style="margin-top:10px">
-        <button class="share-btn" onclick="downloadChampCard()">⬇ 카드 저장</button>
-        <button class="share-btn native" onclick="shareNative()">📤 공유하기</button>
-        <button class="share-btn kakao" onclick="shareKakao()">💛 카카오</button>
-        <button class="share-btn x-btn" onclick="shareToX()">𝕏 트위터</button>
-      </div>
-    </div>
   </div>
 
   <!-- 관리자 패널 (URL에 ?admin=1 추가 시 표시) -->
@@ -498,7 +517,24 @@ function renderBattle(data) {
     }
   }
 
-  el.innerHTML = `
+  const myFav = getMyFav();
+  const isMyTeamInBattle = myFav && (myFav === data.groupA || myFav === data.groupB);
+  const myTeamBanner = isMyTeamInBattle
+    ? `<div class="my-team-banner">🎉 내 최애 ${escHtml(myFav)} 배틀 중! 지금 바로 투표하자!</div>`
+    : "";
+
+  const barContent = total === 0
+    ? `<div class="bar-empty-hint">첫 번째 투표의 주인공이 되어봐! 🎉</div>`
+    : `<div class="battle-bar">
+        <div class="bar-a" style="width:${pctA}%;background:linear-gradient(90deg,${hexToRgba(metaA.color,0.7)},${metaA.color})"></div>
+        <div class="bar-b" style="width:${pctB}%;background:linear-gradient(90deg,${metaB.color},${hexToRgba(metaB.color,0.7)});flex:unset"></div>
+       </div>
+       <div class="bar-labels">
+         <span style="color:${metaA.color};font-weight:700">${pctA}%</span>
+         <span style="color:${metaB.color};font-weight:700">${pctB}%</span>
+       </div>`;
+
+  el.innerHTML = `${myTeamBanner}
     <div class="battle-card">
       <div class="battle-header">
         <div class="battle-label">⚔️ 이번 주 빅매치</div>
@@ -526,16 +562,7 @@ function renderBattle(data) {
           </button>
         </div>
       </div>
-      <div class="battle-bar-wrap">
-        <div class="battle-bar">
-          <div class="bar-a" style="width:${pctA}%;background:linear-gradient(90deg,${hexToRgba(metaA.color,0.7)},${metaA.color})"></div>
-          <div class="bar-b" style="width:${pctB}%;background:linear-gradient(90deg,${metaB.color},${hexToRgba(metaB.color,0.7)});flex:unset"></div>
-        </div>
-        <div class="bar-labels">
-          <span style="color:${metaA.color};font-weight:700">${pctA}%</span>
-          <span style="color:${metaB.color};font-weight:700">${pctB}%</span>
-        </div>
-      </div>
+      <div class="battle-bar-wrap">${barContent}</div>
       ${isBattleOver ? `
         <div class="battle-ended-banner">
           <div class="battle-ended-title">⏰ 이번 배틀이 종료됐어요!</div>
@@ -604,10 +631,11 @@ function startCountdown(endDateStr) {
     const d = Math.floor(diff / 86400000);
     const h = Math.floor((diff % 86400000) / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
-    el.innerHTML = (d > 0 ? `<span>${d}일</span> ` : "") + `<span>${h}시간</span> <span>${m}분</span> 남음`;
+    const s = Math.floor((diff % 60000) / 1000);
+    el.innerHTML = (d > 0 ? `<span>${d}일</span> ` : "") + `<span>${h}시간</span> <span>${m}분</span> <span>${s}초</span> 남음`;
   }
   update();
-  _cdTimer = setInterval(update, 30000);
+  _cdTimer = setInterval(update, 1000);
 }
 
 // ── 랭킹 실시간 리슨 ──
@@ -640,18 +668,20 @@ function renderRankings(data) {
   const rankNums = ["","👑","🥈","🥉"];
   const rankClasses = ["","gold","silver","bronze"];
 
+  const myFavGroup = getMyFav();
   let html = toShow.map(([group, votes], i) => {
     const rank = i + 1;
     const meta = GROUP_META[group] || { emoji: "🌟" };
     const isBattle = battleGroups.includes(group);
+    const isFav = group === myFavGroup;
     const rec = groupRecords[group];
     const recBadge = rec && rec.wins ? `<span class="record-badge">👑 ${rec.wins}승${rec.losses ? ` ${rec.losses}패` : ""}</span>` : "";
     return `
-      <div class="rank-item ${isBattle?"battle-now":""}">
+      <div class="rank-item ${isBattle?"battle-now":""} ${isFav?"my-fav-rank":""}">
         <div class="rank-num ${rankClasses[rank]||""}">${rankNums[rank]||rank}</div>
         <div class="rank-emoji">${meta.emoji}</div>
         <div class="rank-info">
-          <div class="rank-name">${escHtml(group)}${recBadge} ${isBattle?'<span class="battle-now-tag">배틀 중</span>':""}</div>
+          <div class="rank-name">${isFav?'<span class="my-fav-star">⭐</span>':""}${escHtml(group)}${recBadge} ${isBattle?'<span class="battle-now-tag">배틀 중</span>':""}</div>
           <div class="rank-sub">누적 ${votes.toLocaleString()}표</div>
         </div>
         <div class="rank-votes">${fmtVotes(votes)}</div>
@@ -1008,6 +1038,19 @@ function buildCommentSelect() {
   }
   sel.innerHTML = html;
   if (myFav && ALL_GROUPS.includes(myFav)) sel.value = myFav;
+  buildCommentFilterRow();
+}
+
+function buildCommentFilterRow() {
+  const row = document.getElementById("commentFilterRow");
+  if (!row) return;
+  const battleGroups = battleData ? [battleData.groupA, battleData.groupB].filter(Boolean) : [];
+  let html = `<button class="cfilter-btn ${commentFilter==="all"?"active":""}" data-filter="all" onclick="filterComments('all')">전체</button>`;
+  battleGroups.forEach(g => {
+    const meta = GROUP_META[g] || { emoji:"🌟" };
+    html += `<button class="cfilter-btn ${commentFilter===g?"active":""}" data-filter="${escAttr(g)}" onclick="filterComments('${escAttr(g)}')">${meta.emoji} ${escHtml(g)}</button>`;
+  });
+  row.innerHTML = html;
 }
 
 function listenCheers() {
@@ -1095,23 +1138,27 @@ function canPostComment() {
 
 function listenComments() {
   db.ref("comments").limitToLast(30).on("value", snap => {
-    const list = [];
-    snap.forEach(c => list.push(c.val()));
-    renderComments(list.reverse());
+    commentCache = [];
+    snap.forEach(c => commentCache.push(c.val()));
+    commentCache.reverse();
+    renderComments(commentCache);
   });
 }
 
 const COMMENT_SHOW = 5;
 let showAllComments = false;
+let commentFilter = "all";
+let commentCache = [];
 
 function renderComments(list) {
   const el = document.getElementById("commentList");
-  if (!list.length) {
-    el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--muted);font-size:.82rem">첫 번째 응원 댓글을 남겨봐! 🎤</div>';
+  const filtered = commentFilter === "all" ? list : list.filter(c => c.group === commentFilter);
+  if (!filtered.length) {
+    el.innerHTML = `<div style="text-align:center;padding:14px;color:var(--muted);font-size:.82rem">${commentFilter === "all" ? "첫 번째 응원 댓글을 남겨봐! 🎤" : `아직 ${escHtml(commentFilter)} 응원 댓글이 없어요!`}</div>`;
     return;
   }
-  const visible = showAllComments ? list : list.slice(0, COMMENT_SHOW);
-  const hidden = list.length - COMMENT_SHOW;
+  const visible = showAllComments ? filtered : filtered.slice(0, COMMENT_SHOW);
+  const hidden = filtered.length - COMMENT_SHOW;
 
   const rows = visible.map(c => {
     const meta = GROUP_META[c.group] || { color:"#7c4dff" };
@@ -1134,13 +1181,18 @@ function renderComments(list) {
   el.innerHTML = rows + moreBtn;
 }
 
+function filterComments(f) {
+  commentFilter = f;
+  showAllComments = false;
+  document.querySelectorAll(".cfilter-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.filter === f);
+  });
+  renderComments(commentCache);
+}
+
 function showMoreComments() {
   showAllComments = !showAllComments;
-  // 현재 캐시된 댓글 재렌더 트리거
-  db.ref("comments").limitToLast(30).once("value", snap => {
-    const list = []; snap.forEach(c => list.push(c.val()));
-    renderComments(list.reverse());
-  });
+  renderComments(commentCache);
 }
 
 function postComment() {
@@ -1204,18 +1256,36 @@ function drawVoteProof(group) {
 
   // 메인 텍스트
   ctx.fillStyle = "#ffffff"; ctx.font = "bold 24px 'Noto Sans KR', sans-serif";
-  ctx.fillText("나는 오늘", W / 2, 178);
-  ctx.fillStyle = meta.color; ctx.font = "bold 30px 'Noto Sans KR', sans-serif";
-  ctx.fillText(group + " 에 투표했어!", W / 2, 216);
+  ctx.fillText("나는 오늘", W / 2, 170);
+  ctx.fillStyle = meta.color; ctx.font = "bold 28px 'Noto Sans KR', sans-serif";
+  ctx.fillText(group + " 에 투표했어!", W / 2, 206);
+
+  // 현재 투표 현황
+  if (battleData) {
+    const vA = battleData.votesA || 0, vB = battleData.votesB || 0;
+    const tot = vA + vB;
+    const pA = tot ? Math.round(vA / tot * 100) : 50;
+    const pB = 100 - pA;
+    const myPct = group === battleData.groupA ? pA : pB;
+    const otherPct = 100 - myPct;
+    const otherGroup = group === battleData.groupA ? battleData.groupB : battleData.groupA;
+    // 작은 바 배경
+    const bx = W * 0.15, bw = W * 0.7, by = 228, bh = 8;
+    ctx.fillStyle = "#ffffff18"; roundRect(ctx, bx, by, bw, bh, 4); ctx.fill();
+    const bwMy = Math.round(bw * myPct / 100);
+    if (bwMy > 0) { ctx.fillStyle = meta.color; roundRect(ctx, bx, by, bwMy, bh, 4); ctx.fill(); }
+    ctx.fillStyle = "#ffffff88"; ctx.font = "bold 13px sans-serif";
+    ctx.fillText(`${group} ${myPct}%  vs  ${otherGroup} ${otherPct}%`, W / 2, 254);
+  }
 
   // 날짜
   const today = new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
-  ctx.fillStyle = "#ffffff66"; ctx.font = "13px sans-serif";
-  ctx.fillText(today + "  ·  팬덤배틀", W / 2, 254);
+  ctx.fillStyle = "#ffffff55"; ctx.font = "12px sans-serif";
+  ctx.fillText(today + "  ·  팬덤배틀", W / 2, 272);
 
   // URL
-  ctx.fillStyle = "#ffffff33"; ctx.font = "11px sans-serif";
-  ctx.fillText("fandomkorea.github.io/fandom-battle", W / 2, 280);
+  ctx.fillStyle = "#ffffff2a"; ctx.font = "11px sans-serif";
+  ctx.fillText("fandomkorea.github.io/fandom-battle", W / 2, 291);
 }
 
 function roundRect(ctx, x, y, w, h, r) {
