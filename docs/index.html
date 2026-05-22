@@ -199,7 +199,7 @@
     .vote-rank-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
     /* ── 랭킹 내 퍼센트 바 ── */
-    .rank-pct-bar-wrap { flex: 1; height: 5px; background: var(--border); border-radius: 4px; overflow: hidden; min-width: 40px; margin-top: 5px; }
+    .rank-pct-bar-wrap { flex: 1; height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; min-width: 40px; margin-top: 5px; }
     .rank-pct-bar { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
     .rank-vote-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
     .rank-pct-label { font-size: 0.68rem; color: var(--muted); white-space: nowrap; }
@@ -283,9 +283,11 @@
       header h1 { font-size: 1.7rem; }
       .prize-amount { font-size: 1.3rem; }
       .fav-bar { padding: 10px 16px; }
-      .rank-item { padding: 8px 10px; gap: 8px; }
-      .rank-emoji { font-size: 1.2rem; }
-      .vote-rank-btn { padding: 4px 10px; font-size: 0.68rem; }
+      .rank-item { padding: 10px 12px; gap: 10px; }
+      .rank-emoji { font-size: 1.3rem; }
+      .vote-rank-btn { padding: 6px 12px; font-size: 0.72rem; font-weight: 700; border-radius: 14px; }
+      .rank-pct-bar-wrap { height: 8px; }
+      #groupSearchInput { font-size: 0.75rem !important; padding: 8px 10px !important; }
     }
   </style>
 </head>
@@ -329,7 +331,10 @@
 
 
   <!-- 실시간 팬덤 파워 랭킹 + 투표 -->
-  <div class="section-title">🏆 실시간 팬덤 파워 랭킹 <span style="font-size:.72rem;font-weight:400;color:var(--muted)">내 최애에게 투표하자!</span></div>
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+    <div class="section-title" style="flex:1;margin:0">🏆 실시간 팬덤 파워 랭킹</div>
+    <input class="comment-input" id="groupSearchInput" placeholder="그룹 검색..." style="flex:0.4;padding:6px 10px;font-size:.8rem" onkeyup="filterRankings(this.value)" />
+  </div>
   <div class="ranking-list" id="rankingList">
     <div class="loading"><div class="spinner"></div><div>랭킹 불러오는 중...</div></div>
   </div>
@@ -447,6 +452,7 @@ function init() {
     startMonthlyCountdown();
     setMonthLabel();
     renderNickDisplay();
+    handleShareRef();
     setTimeout(showFavBar, 1500);
     if (isAdmin) {
       const pw = prompt("관리자 패스워드:");
@@ -796,6 +802,12 @@ function toggleAllRankings() {
   if (allRankingsData) renderRankings(allRankingsData);
 }
 
+let rankingSearchQuery = "";
+function filterRankings(query) {
+  rankingSearchQuery = query.toLowerCase().trim();
+  if (allRankingsData) renderRankings(allRankingsData);
+}
+
 function renderRankings(data) {
   const el = document.getElementById("rankingList");
   const myVotedGroup = getMyVote();       // 오늘 투표한 그룹명 or null
@@ -814,8 +826,13 @@ function renderRankings(data) {
   if (alreadyVoted) restoreVotedState();
   const isAdPending = adPending; // 광고 시청 후 추가 투표 대기
 
-  const withVotes = allEntries.filter(([, v]) => v > 0);
-  const zeroVotes = allEntries.filter(([, v]) => v === 0);
+  // 검색 필터 적용
+  const filtered = rankingSearchQuery
+    ? allEntries.filter(([g]) => g.toLowerCase().includes(rankingSearchQuery) || (GROUP_META[g]?.fandom?.toLowerCase().includes(rankingSearchQuery)))
+    : allEntries;
+
+  const withVotes = filtered.filter(([, v]) => v > 0);
+  const zeroVotes = filtered.filter(([, v]) => v === 0);
 
   const rankNums = ["", "👑", "🥈", "🥉"];
   const rankClasses = ["", "gold", "silver", "bronze"];
@@ -864,8 +881,13 @@ function renderRankings(data) {
     // 첫 달 / 초기화 직후 — 안내 + 상위 10개만 노출
     const INITIAL_SHOW = 10;
     html = `<div class="ranking-empty-hint">
-      <div style="font-size:1.4rem">🎯</div>
-      <p>아직 이번 달 투표가 없어요! 첫 번째 투표의 주인공이 되어봐!</p>
+      <div style="font-size:1.6rem;margin-bottom:8px">🎯</div>
+      <p style="margin-bottom:8px;font-weight:700">아직 이번 달 투표가 없어요!</p>
+      <p style="font-size:.77rem;line-height:1.5">
+        누구나 참여 가능! 😍<br>
+        하루 1표 무료 · 광고시청 시 최대 10표<br>
+        <strong>첫 번째 투표의 주인공이 되어봐! 💜</strong>
+      </p>
     </div>`;
     const initial = allEntries.slice(0, showAllRankings ? allEntries.length : INITIAL_SHOW);
     html += initial.map(([g, v], i) => renderRow(g, v, i + 1)).join("");
@@ -929,10 +951,20 @@ function getShareText() {
   const monthStr = (now.getMonth() + 1) + "월";
   const title = `🏆 ${monthStr} 팬덤 파워 랭킹 — 팬덤배틀`;
   const myTag = myGroup ? myGroup.replace(/\s/g, "") : "";
+  const shareUrl = myGroup ? `${SITE_URL}?ref=${encodeURIComponent(myGroup)}` : SITE_URL;
   const text = myGroup
     ? `나는 ${myGroup}에 투표했어! 100만원 포토카드 주인공을 만들자! #팬덤배틀 #${myTag} #팬덤파워랭킹`
     : `${monthStr} 팬덤 파워 랭킹 진행 중! 100만원 포토카드 내 최애한테! #팬덤배틀 #팬덤파워랭킹`;
-  return { title, text, url: SITE_URL };
+  return { title, text, url: shareUrl };
+}
+
+function handleShareRef() {
+  const params = new URLSearchParams(location.search);
+  const ref = params.get("ref");
+  if (ref) {
+    setTimeout(() => scrollToMyGroup(ref), 1200);
+    showToast(`친구 초대감사! ${escHtml(ref)} 팬덤을 보고 있어요 💜`);
+  }
 }
 
 async function shareNative() {
@@ -1144,6 +1176,14 @@ function postComment() {
   });
   document.getElementById("commentInput").value = "";
   showToast("💬 응원 완료!");
+  // 댓글 영역 자동 스크롤
+  setTimeout(() => {
+    const commentList = document.getElementById("commentList");
+    if (commentList && commentList.children.length > 0) {
+      const lastComment = commentList.lastElementChild;
+      lastComment.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, 300);
 }
 
 function relTimeComment(ts) {
