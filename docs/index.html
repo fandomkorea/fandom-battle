@@ -416,6 +416,15 @@
   </div>
   <div class="comment-list" id="commentList"></div>
 
+  <!-- 내 투표 기록 -->
+  <div id="myVotingHistorySection" style="display:none;margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="section-title" style="margin:0">📊 이번 달 나의 투표</div>
+      <button onclick="toggleMyVotingHistory()" style="background:none;border:none;color:var(--muted);font-size:.8rem;cursor:pointer;text-decoration:underline">상세보기</button>
+    </div>
+    <div id="myVotingHistoryList"></div>
+  </div>
+
   <!-- 역대 월 우승 기록 -->
   <div id="historySection" style="display:none;margin-top:28px;padding-top:20px;border-top:1px solid var(--border)">
     <div class="section-title">🏅 역대 월 우승 기록 <span style="font-size:.7rem;font-weight:400;color:var(--muted)">지난달 1위들!</span></div>
@@ -517,6 +526,7 @@ function init() {
     loadGroupRecords();
     loadMonthlyHistory();
     renderFavChip();
+    renderMyVotingHistory();
     buildCommentSelect();
     startMonthlyCountdown();
     setMonthLabel();
@@ -632,12 +642,14 @@ function voteForGroup(group) {
     addExtraVote();
     adPending = false;
     addActivity(group);
+    recordVote(group); // 추가 투표도 기록
     const todayCount = getTodayVoteCount() + 1; // 방금 투표한 것 포함
     showToast(`${meta.emoji} ${group} 추가 투표 완료! 오늘 ${todayCount}/${MAX_VOTES_PER_DAY}표 🎉`);
     if (allRankingsData) {
       allRankingsData[group] = (allRankingsData[group] || 0) + 1;
       renderRankings(allRankingsData);
     }
+    renderMyVotingHistory();
     showMyVotedBar(getMyVote());
     return;
   }
@@ -656,6 +668,7 @@ function voteForGroup(group) {
   // 첫 무료 투표
   db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
   setMyVote(group);
+  recordVote(group);
   addActivity(group);
   const streak = updateVotingStreak();
   const streakMsg = streak > 1 ? `🔥 ${streak}일 연속 투표 중!` : "";
@@ -665,6 +678,7 @@ function voteForGroup(group) {
     allRankingsData[group] = (allRankingsData[group] || 0) + 1;
     renderRankings(allRankingsData);
   }
+  renderMyVotingHistory();
   showMyVotedBar(group);
   // 투표 가이드 배너 숨기기
   const banner = document.getElementById("voteGuideBanner");
@@ -1464,6 +1478,73 @@ function loadGroupRecords() {
     groupRecords = snap.val() || {};
     if (allRankingsData) renderRankings(allRankingsData);
   });
+}
+
+// ── 내 투표 기록 ──
+function recordVote(group) {
+  const today = getTodayKey();
+  const history = JSON.parse(localStorage.getItem("my_voting_history") || "{}");
+  history[today] = group;
+  localStorage.setItem("my_voting_history", JSON.stringify(history));
+}
+
+function getMyVotingHistory() {
+  const history = JSON.parse(localStorage.getItem("my_voting_history") || "{}");
+  // 현재 월만 필터링
+  const now = new Date();
+  const monthPrefix = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+  const filtered = {};
+  Object.entries(history).forEach(([date, group]) => {
+    if (date.startsWith(monthPrefix)) {
+      filtered[date] = group;
+    }
+  });
+  return filtered;
+}
+
+let showDetailedHistory = false;
+function toggleMyVotingHistory() {
+  showDetailedHistory = !showDetailedHistory;
+  renderMyVotingHistory();
+}
+
+function renderMyVotingHistory() {
+  const section = document.getElementById("myVotingHistorySection");
+  const list = document.getElementById("myVotingHistoryList");
+  if (!section || !list) return;
+
+  const history = getMyVotingHistory();
+  const sortedDates = Object.keys(history).sort().reverse();
+
+  if (sortedDates.length === 0) {
+    section.style.display = "none";
+    return;
+  }
+
+  section.style.display = "block";
+
+  if (!showDetailedHistory) {
+    // 최근 5일만 표시
+    const recent = sortedDates.slice(0, 5);
+    list.innerHTML = recent.map(date => {
+      const group = history[date];
+      const meta = GROUP_META[group] || { emoji: "🌟" };
+      return `
+        <div style="padding:8px;background:rgba(124,77,255,0.05);border-radius:8px;margin-bottom:6px;font-size:.78rem">
+          <span style="color:var(--muted)">${date}</span> — <span>${meta.emoji} ${escHtml(group)}</span>
+        </div>`;
+    }).join("");
+  } else {
+    // 모든 날짜 표시
+    list.innerHTML = sortedDates.map(date => {
+      const group = history[date];
+      const meta = GROUP_META[group] || { emoji: "🌟" };
+      return `
+        <div style="padding:8px;background:rgba(124,77,255,0.05);border-radius:8px;margin-bottom:6px;font-size:.78rem">
+          <span style="color:var(--muted)">${date}</span> — <span>${meta.emoji} ${escHtml(group)}</span>
+        </div>`;
+    }).join("");
+  }
 }
 
 // ── 내 최애 그룹 ──
