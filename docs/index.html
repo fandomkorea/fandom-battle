@@ -135,20 +135,6 @@
     .show-all-btn { width: 100%; padding: 10px; background: none; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: 0.8rem; font-family: inherit; cursor: pointer; transition: all 0.15s; }
     .show-all-btn:hover { border-color: var(--primary); color: var(--primary); }
 
-    /* ── 일일 응원 스탬프 ── */
-    .cheer-list { display: flex; flex-direction: column; gap: 0; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-    .cheer-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); transition: background 0.12s; }
-    .cheer-item:last-child { border-bottom: none; }
-    .cheer-item.cheered-today { background: rgba(124,77,255,0.07); }
-    .cheer-emoji { font-size: 1.2rem; flex-shrink: 0; width: 24px; text-align: center; }
-    .cheer-name { font-size: 0.86rem; font-weight: 700; flex: 1; min-width: 0; }
-    .cheer-count { font-size: 0.72rem; color: var(--muted); white-space: nowrap; margin-right: 4px; }
-    .cheer-btn { padding: 4px 14px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.72rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
-    .cheer-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .cheer-btn.done { background: var(--primary); color: #fff; border-color: var(--primary); cursor: default; }
-    .cheer-show-more { padding: 10px 14px; text-align: center; border-top: 1px solid var(--border); }
-    .cheer-more-btn { background: none; border: none; color: var(--muted); font-size: 0.78rem; font-family: inherit; cursor: pointer; }
-    .cheer-more-btn:hover { color: var(--primary); }
 
     /* ── 응원 댓글 ── */
     .comment-input-row { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -244,8 +230,27 @@
     .fav-picker-btn:hover, .fav-picker-btn.selected { border-color: var(--primary); background: rgba(124,77,255,0.12); }
     .fp-emoji { font-size: 1.4rem; display: block; margin-bottom: 4px; }
     .fp-name { font-size: 0.68rem; font-weight: 700; line-height: 1.3; display: block; }
-    .cheer-item.my-fav-item { background: rgba(124,77,255,0.06); }
-    .cheer-name.my-fav-label::before { content: "⭐ "; }
+
+    /* ── 광고 모달 ── */
+    .ad-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .ad-modal-box { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 28px 24px 24px; width: 100%; max-width: 360px; text-align: center; }
+    .ad-modal-title { font-size: 1.1rem; font-weight: 900; margin-bottom: 6px; }
+    .ad-modal-desc { font-size: 0.8rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+    .ad-countdown-circle { width: 72px; height: 72px; border-radius: 50%; border: 4px solid var(--border); border-top-color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; color: var(--primary); animation: spin 1s linear infinite; margin: 0 auto 20px; }
+    .ad-mock-content { background: var(--bg); border: 1px dashed rgba(124,77,255,0.3); border-radius: 10px; padding: 22px 16px; margin-bottom: 18px; color: var(--muted); font-size: 0.78rem; line-height: 1.6; }
+    .ad-skip-btn { width: 100%; padding: 13px; border-radius: 12px; border: none; background: var(--primary); color: #fff; font-weight: 900; font-size: 0.95rem; font-family: inherit; cursor: pointer; transition: all 0.2s; }
+    .ad-skip-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+    .ad-skip-btn.ready { background: linear-gradient(135deg, #ffd700, #ff9500); color: #1a1000; animation: glowPulse 1.2s ease-in-out infinite; }
+
+    /* ── 광고보고 추가투표 CTA 버튼 ── */
+    .ad-vote-cta { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; padding: 9px 16px; border-radius: 12px; border: 1px solid rgba(255,215,0,0.4); background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(124,77,255,0.1)); color: var(--gold); font-size: 0.82rem; font-weight: 700; font-family: inherit; cursor: pointer; width: 100%; transition: all 0.15s; }
+    .ad-vote-cta:hover { border-color: var(--gold); background: rgba(255,215,0,0.18); }
+    .ad-vote-cta:disabled { opacity: 0.38; cursor: not-allowed; }
+    .ad-pending-badge { display: inline-block; background: var(--gold); color: #1a1000; font-size: 0.65rem; font-weight: 900; padding: 2px 7px; border-radius: 8px; animation: pulse 1s infinite; }
+
+    /* ── 추가 투표 활성 상태 버튼 ── */
+    .vote-rank-btn.ad-active { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1000; border-color: #ffd700; }
+    .vote-rank-btn.ad-active:hover:not(:disabled) { opacity: 0.85; }
 
     /* ── 모바일 ── */
     @media (max-width: 480px) {
@@ -280,11 +285,14 @@
     <div class="battle-header">
       <div class="battle-label">🗳️ <span id="monthLabel">이번 달</span> 팬덤 파워 투표</div>
       <div class="countdown" id="countdownEl">계산 중...</div>
-      <div class="total-votes-label">총 <strong id="totalVotesEl">0</strong>명 참여 · 하루 1표 무료</div>
+      <div class="total-votes-label">총 <strong id="totalVotesEl">0</strong>명 참여 · 하루 1표 무료 + 광고시청 시 최대 10표</div>
     </div>
     <div id="myVotedBar" style="display:none" class="voted-overlay show">
       <div class="voted-msg" id="myVotedMsg"></div>
       <div class="voted-sub" id="myVotedSub"></div>
+      <button class="ad-vote-cta" id="adVoteCta" onclick="watchAd()" style="display:none">
+        📺 광고 보고 +1표 추가
+      </button>
       <div class="share-row" style="margin-top:8px">
         <button class="share-btn native" onclick="shareNative()">📤 공유하기</button>
         <button class="share-btn kakao" onclick="shareKakao()">💛 카카오</button>
@@ -293,21 +301,12 @@
     </div>
   </div>
 
-  <!-- 광고 (AdSense 연결 전까지 숨김) -->
-  <div id="adSection" style="display:none">
-    <div class="section-title">AD</div>
-    <div class="ad-slot"><!-- Google AdSense 광고 영역 --></div>
-  </div>
 
   <!-- 실시간 팬덤 파워 랭킹 + 투표 -->
   <div class="section-title">🏆 실시간 팬덤 파워 랭킹 <span style="font-size:.72rem;font-weight:400;color:var(--muted)">내 최애에게 투표하자!</span></div>
   <div class="ranking-list" id="rankingList">
     <div class="loading"><div class="spinner"></div><div>랭킹 불러오는 중...</div></div>
   </div>
-
-  <!-- 일일 응원 스탬프 -->
-  <div class="section-title">💪 오늘의 응원 스탬프 <span style="font-size:.72rem;font-weight:400;color:var(--muted)">매일 내 그룹 응원!</span></div>
-  <div class="cheer-list" id="cheerGrid"><div class="loading" style="padding:16px"><div class="spinner"></div></div></div>
 
   <!-- 응원 한 마디 -->
   <div class="section-title">💬 응원 한 마디</div>
@@ -423,7 +422,6 @@ function init() {
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
     listenRankings();
-    listenCheers();
     listenComments();
     listenPrizeNotice();
     loadGroupRecords();
@@ -443,10 +441,17 @@ function init() {
   }
 }
 
-// ── 투표 제한 (하루 1표) — 그룹명 저장 ──
-function getTodayKey() { return "voted_group_" + new Date().toISOString().slice(0, 10); }
-function getMyVote() { return localStorage.getItem(getTodayKey()); }   // 그룹명 or null
-function setMyVote(group) { localStorage.setItem(getTodayKey(), group); }
+// ── 투표 제한 (하루 최대 MAX_VOTES_PER_DAY표) ──
+const MAX_VOTES_PER_DAY = 10;
+let adPending = false; // 광고 시청 후 추가 투표 대기 상태
+
+function getTodayKey()      { return new Date().toISOString().slice(0, 10); }
+function getMyVote()        { return localStorage.getItem("voted_group_" + getTodayKey()); }   // 첫 무료 투표 그룹 or null
+function setMyVote(group)   { localStorage.setItem("voted_group_" + getTodayKey(), group); }
+function getExtraVotes()    { return parseInt(localStorage.getItem("extra_votes_" + getTodayKey()) || "0", 10); }
+function addExtraVote()     { localStorage.setItem("extra_votes_" + getTodayKey(), getExtraVotes() + 1); }
+function getTodayVoteCount(){ return (getMyVote() ? 1 : 0) + getExtraVotes(); }
+function canVoteMore()      { return getTodayVoteCount() < MAX_VOTES_PER_DAY; }
 
 // ── 월 라벨 & 카운트다운 ──
 function setMonthLabel() {
@@ -486,17 +491,38 @@ function listenPrizeNotice() {
 
 // ── 투표 (그룹 선택) ──
 function voteForGroup(group) {
-  const already = getMyVote();
-  if (already) { showToast("오늘은 이미 " + already + "에 투표했어요! 내일 또 와줘 💜"); return; }
   if (!db) return;
+  const meta = GROUP_META[group] || { emoji: "🌟" };
 
+  if (adPending) {
+    // 광고 시청 후 추가 투표
+    db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
+    addExtraVote();
+    adPending = false;
+    showToast(`${meta.emoji} ${group} 추가 투표 완료! 오늘 ${getTodayVoteCount()}/${MAX_VOTES_PER_DAY}표 🎉`);
+    if (allRankingsData) {
+      allRankingsData[group] = (allRankingsData[group] || 0) + 1;
+      renderRankings(allRankingsData);
+    }
+    showMyVotedBar(getMyVote());
+    return;
+  }
+
+  const already = getMyVote();
+  if (already) {
+    // 이미 오늘 투표함 → 광고 안내
+    if (canVoteMore()) {
+      showToast("📺 광고를 보면 추가 투표권을 얻을 수 있어요!");
+    } else {
+      showToast(`오늘 ${MAX_VOTES_PER_DAY}표를 모두 사용했어요! 내일 또 와줘 💜`);
+    }
+    return;
+  }
+
+  // 첫 무료 투표
   db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
   setMyVote(group);
-
-  const meta = GROUP_META[group] || { emoji: "🌟" };
   showToast(meta.emoji + " " + group + " 투표 완료! 1등을 향해!");
-
-  // 즉시 로컬 카운트 반영 후 재렌더
   if (allRankingsData) {
     allRankingsData[group] = (allRankingsData[group] || 0) + 1;
     renderRankings(allRankingsData);
@@ -543,11 +569,86 @@ function showMyVotedBar(group) {
   next.setDate(next.getDate() + 1); next.setHours(0, 0, 0, 0);
   const diff = next - now;
   const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000);
+  const todayCount = getTodayVoteCount();
   sub += `  ⏰ ${h}시간 ${m}분 후 재투표`;
 
   msgEl.textContent = msg;
   subEl.textContent = sub;
+
+  // 광고 투표 CTA 업데이트
+  const adCtaEl = document.getElementById("adVoteCta");
+  if (adCtaEl) {
+    const remaining = MAX_VOTES_PER_DAY - todayCount;
+    if (adPending) {
+      adCtaEl.innerHTML = `<span class="ad-pending-badge">NEW</span> 🎁 투표권 획득! 아래에서 투표 그룹을 선택하세요!`;
+      adCtaEl.disabled = false;
+    } else if (remaining > 0) {
+      adCtaEl.innerHTML = `📺 광고 보고 +1표 추가 <span style="font-size:.7rem;opacity:.75">(오늘 ${todayCount}/${MAX_VOTES_PER_DAY}표)</span>`;
+      adCtaEl.disabled = false;
+      adCtaEl.onclick = watchAd;
+    } else {
+      adCtaEl.innerHTML = `✅ 오늘 최대 투표 완료 (${MAX_VOTES_PER_DAY}/${MAX_VOTES_PER_DAY}표)`;
+      adCtaEl.disabled = true;
+    }
+    adCtaEl.style.display = "flex";
+  }
+
   bar.style.display = "block";
+}
+
+// ── 광고 시청 → 추가 투표권 ──
+function watchAd() {
+  if (!canVoteMore()) {
+    showToast(`오늘 최대 ${MAX_VOTES_PER_DAY}표를 모두 사용했어요! 내일 또 와줘 💜`);
+    return;
+  }
+  if (document.getElementById("adModal")) return;
+
+  const modal = document.createElement("div");
+  modal.id = "adModal";
+  modal.className = "ad-modal-overlay";
+  let sec = 5;
+
+  modal.innerHTML = `
+    <div class="ad-modal-box">
+      <div class="ad-modal-title">📺 광고 시청 중...</div>
+      <div class="ad-modal-desc">광고를 보면 투표권 1개를 드려요!<br>하루 최대 ${MAX_VOTES_PER_DAY}표까지 가능해요</div>
+      <div class="ad-countdown-circle" id="adCircle">${sec}</div>
+      <div class="ad-mock-content">
+        🎵 K-POP 팬이라면 주목!<br>
+        <span style="opacity:.6;font-size:.72rem">여기에 실제 광고가 표시됩니다</span>
+      </div>
+      <button class="ad-skip-btn" id="adSkipBtn" disabled>⏳ ${sec}초 후 투표권 받기</button>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const timer = setInterval(() => {
+    sec--;
+    const circle = document.getElementById("adCircle");
+    const btn = document.getElementById("adSkipBtn");
+    if (circle) circle.textContent = sec;
+    if (sec <= 0) {
+      clearInterval(timer);
+      if (circle) { circle.style.animation = "none"; circle.style.borderColor = "#ffd700"; circle.style.color = "#ffd700"; circle.textContent = "🎁"; }
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "✅ 투표권 받기!";
+        btn.classList.add("ready");
+        btn.onclick = claimAdReward;
+      }
+    } else {
+      if (btn) btn.textContent = `⏳ ${sec}초 후 투표권 받기`;
+    }
+  }, 1000);
+}
+
+function claimAdReward() {
+  document.getElementById("adModal")?.remove();
+  adPending = true;
+  showToast("🎁 추가 투표권 획득! 아래에서 그룹을 선택해 투표하세요!");
+  // 버튼 상태 업데이트
+  if (allRankingsData) renderRankings(allRankingsData);
+  showMyVotedBar(getMyVote());
 }
 
 // ── 투표 후 상태 복원 (페이지 로드 시) ──
@@ -569,116 +670,6 @@ function updateCommentFilterTabs(topGroups) {
   row.innerHTML = html;
 }
 
-// (구 renderBattle, renderNextVote, voteNext 완전 제거됨)
-function _placeholder_for_removed_functions() { // 이 함수는 절대 호출되지 않음
-  if (true) return;
-  const metaA = GROUP_META[data.groupA] || { emoji: "🌟", color: "#7c4dff" };
-  const metaB = GROUP_META[data.groupB] || { emoji: "🌟", color: "#4d9eff" };
-  const votesA = data.votesA || 0;
-  const votesB = data.votesB || 0;
-  const total = votesA + votesB;
-  const pctA = total ? Math.round(votesA / total * 100) : 50;
-  const pctB = 100 - pctA;
-  const myVote = getMyVote();
-  const alreadyVoted = !!myVote;
-  const isBattleOver = data.endDate && new Date(data.endDate) < new Date();
-
-  // 투표 후 감성 메시지
-  const timeLeft = nextVoteCountdown();
-  let votedMsg = "오늘 투표 완료! 💜", votedSub = timeLeft;
-  if (alreadyVoted && total > 1) {
-    const myGroup = myVote === "A" ? data.groupA : data.groupB;
-    const myPct  = myVote === "A" ? pctA : pctB;
-    if (myPct > 55)      { votedMsg = `🎉 ${myGroup}가 앞서고 있어! 이대로 가자!`;   votedSub = `친구 불러서 격차 더 벌리자! · ${timeLeft}`; }
-    else if (myPct < 45) { votedMsg = `💪 지금 역전 가능해! ${myGroup} 화이팅!`;     votedSub = `친구한테 공유해서 역전해! · ${timeLeft}`; }
-    else                 { votedMsg = `⚡ 너무 팽팽해! 한 표 한 표가 소중해!`;        votedSub = `내일도 투표하러 다시 와줘! · ${timeLeft}`; }
-  }
-
-  // LIVE 배지 업데이트
-  const liveBadge = document.getElementById("liveBadge");
-  if (liveBadge) {
-    if (isBattleOver) {
-      liveBadge.innerHTML = "⏰ 배틀 종료";
-      liveBadge.style.cssText = "background:rgba(255,215,0,0.12);border-color:rgba(255,215,0,0.3);color:var(--gold)";
-    } else {
-      liveBadge.innerHTML = '<span class="live-dot"></span> LIVE 투표 중';
-      liveBadge.style.cssText = "";
-    }
-  }
-
-  const myFav = getMyFav();
-  const isMyTeamInBattle = myFav && (myFav === data.groupA || myFav === data.groupB);
-  const myTeamBanner = isMyTeamInBattle
-    ? `<div class="my-team-banner">🎉 내 최애 ${escHtml(myFav)} 배틀 중! 지금 바로 투표하자!</div>`
-    : "";
-
-  const barContent = total === 0
-    ? `<div class="bar-empty-hint">첫 번째 투표의 주인공이 되어봐! 🎉</div>`
-    : `<div class="battle-bar">
-        <div class="bar-a" style="width:${pctA}%;background:linear-gradient(90deg,${hexToRgba(metaA.color,0.7)},${metaA.color})"></div>
-        <div class="bar-b" style="width:${pctB}%;background:linear-gradient(90deg,${metaB.color},${hexToRgba(metaB.color,0.7)});flex:unset"></div>
-       </div>
-       <div class="bar-labels">
-         <span style="color:${metaA.color};font-weight:700">${pctA}%</span>
-         <span style="color:${metaB.color};font-weight:700">${pctB}%</span>
-       </div>`;
-
-  el.innerHTML = `${myTeamBanner}
-    <div class="battle-card">
-      <div class="battle-header">
-        <div class="battle-label">⚔️ 이번 주 빅매치</div>
-        <div class="countdown" id="countdownEl">계산 중...</div>
-        <div class="total-votes-label">총 <strong>${total.toLocaleString()}</strong>명 참여</div>
-      </div>
-      <div class="battle-arena">
-        <div class="fighter side-a" style="background:linear-gradient(135deg,${hexToRgba(metaA.color,0.2)} 0%,transparent 70%)">
-          <div class="fighter-emoji">${metaA.emoji}</div>
-          <div class="fighter-name">${escHtml(data.groupA)}</div>
-          <div class="fighter-votes">${votesA.toLocaleString()}표</div>
-          <button class="vote-btn" id="btnA" onclick="vote('A')" ${(alreadyVoted||isBattleOver)?"disabled":""}
-            style="background:linear-gradient(135deg,${metaA.color},${darken(metaA.color)});box-shadow:0 4px 14px ${hexToRgba(metaA.color,0.4)}">
-            ${isBattleOver?"🔒 종료":myVote==="A"?"✅ 투표함":metaA.emoji+" 투표"}
-          </button>
-        </div>
-        <div class="vs-center"><div class="vs-text">VS</div></div>
-        <div class="fighter side-b" style="background:linear-gradient(225deg,${hexToRgba(metaB.color,0.2)} 0%,transparent 70%)">
-          <div class="fighter-emoji">${metaB.emoji}</div>
-          <div class="fighter-name">${escHtml(data.groupB)}</div>
-          <div class="fighter-votes">${votesB.toLocaleString()}표</div>
-          <button class="vote-btn" id="btnB" onclick="vote('B')" ${(alreadyVoted||isBattleOver)?"disabled":""}
-            style="background:linear-gradient(135deg,${metaB.color},${darken(metaB.color)});box-shadow:0 4px 14px ${hexToRgba(metaB.color,0.4)}">
-            ${isBattleOver?"🔒 종료":myVote==="B"?"✅ 투표함":metaB.emoji+" 투표"}
-          </button>
-        </div>
-      </div>
-      <div class="battle-bar-wrap">${barContent}</div>
-      ${isBattleOver ? `
-        <div class="battle-ended-banner">
-          <div class="battle-ended-title">⏰ 이번 배틀이 종료됐어요!</div>
-          <div class="battle-ended-sub">최종 결과 — ${data.groupA} ${pctA}% : ${data.groupB} ${pctB}%</div>
-          <div class="share-row" style="margin-top:12px">
-            <button class="share-btn native" onclick="shareNative()">📤 결과 공유</button>
-            <button class="share-btn kakao" onclick="shareKakao()">💛 카카오 공유</button>
-          </div>
-        </div>` :
-      alreadyVoted ? `
-        <div class="voted-overlay show">
-          <div class="voted-msg">${votedMsg}</div>
-          <div class="voted-sub">${votedSub}</div>
-          <canvas id="proofCanvas" width="600" height="300" class="proof-canvas" onclick="downloadVoteProof('${escAttr(myVote==='A'?data.groupA:data.groupB)}')"></canvas>
-          <div class="proof-hint">👆 이미지 클릭 시 저장 — 인스타/트위터에 공유해봐!</div>
-          <div class="share-row" style="margin-top:8px">
-            <button class="share-btn native" onclick="shareNative()">📤 공유하기</button>
-            <button class="share-btn kakao" onclick="shareKakao()">💛 카카오</button>
-            <button class="share-btn x-btn" onclick="shareToX()">𝕏 트위터</button>
-          </div>
-        </div>` : `
-        <div class="share-hint">💬 친구한테 알려서 같이 응원해!
-          <button class="share-btn-inline" onclick="shareNative()">📤 공유</button>
-        </div>`}
-    </div>`;
-
-} // _old_renderBattle_removed end
 
 let _cdTimer = null; // monthly countdown timer ref
 
@@ -711,6 +702,7 @@ function renderRankings(data) {
 
   // 투표 후 상태바 갱신
   if (alreadyVoted) restoreVotedState();
+  const isAdPending = adPending; // 광고 시청 후 추가 투표 대기
 
   const withVotes = allEntries.filter(([, v]) => v > 0);
   const zeroVotes = allEntries.filter(([, v]) => v === 0);
@@ -740,10 +732,10 @@ function renderRankings(data) {
         </div>
         <div class="rank-right">
           <div class="rank-votes">${fmtVotes(votes)}</div>
-          <button class="vote-rank-btn ${isVoted ? "voted" : ""}"
+          <button class="vote-rank-btn ${isVoted ? "voted" : ""} ${isAdPending ? "ad-active" : ""}"
             onclick="voteForGroup('${escAttr(group)}')"
-            ${alreadyVoted ? "disabled" : ""}>
-            ${isVoted ? "✅ 투표함" : meta.emoji + " 투표"}
+            ${(alreadyVoted && !isAdPending) ? "disabled" : ""}>
+            ${isAdPending ? "🎁 추가 투표" : isVoted ? "✅ 투표함" : meta.emoji + " 투표"}
           </button>
         </div>
       </div>`;
@@ -820,91 +812,6 @@ function loadMonthlyHistory() {
   });
 }
 
-// (drawChampCard / showChampCard / downloadChampCard 제거됨)
-function _stub_drawChampCard() {
-  const canvas = null;
-  if (!canvas || !battleData) return;
-  const ctx = canvas.getContext("2d");
-  const W = canvas.width, H = canvas.height;
-  const vA = battleData.votesA || 0, vB = battleData.votesB || 0;
-  const total = vA + vB;
-  const pctA = total ? Math.round(vA / total * 100) : 50;
-  const pctB = 100 - pctA;
-  const mA = GROUP_META[battleData.groupA] || { color: "#7c4dff", emoji: "🌟" };
-  const mB = GROUP_META[battleData.groupB] || { color: "#4d9eff", emoji: "🌟" };
-
-  // 배경
-  const bg = ctx.createLinearGradient(0,0,W,H);
-  bg.addColorStop(0,"#0d0d1a"); bg.addColorStop(0.5,"#16162a"); bg.addColorStop(1,"#0d0d1a");
-  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
-
-  // 양쪽 글로우
-  [[W*0.22,mA.color],[W*0.78,mB.color]].forEach(([cx,col]) => {
-    const g = ctx.createRadialGradient(cx,H*0.5,0,cx,H*0.5,W*0.38);
-    g.addColorStop(0,col+"55"); g.addColorStop(1,"transparent");
-    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-  });
-
-  ctx.textAlign = "center";
-
-  // 상단 타이틀
-  ctx.fillStyle = "#ffffff88"; ctx.font = "bold 15px sans-serif";
-  ctx.fillText("⚔️  팬덤배틀 이번 주 빅매치  ⚔️", W/2, 38);
-
-  // 그룹 A
-  ctx.font = "40px sans-serif"; ctx.fillStyle = mA.color;
-  ctx.fillText(mA.emoji, W*0.22, 120);
-  ctx.font = "bold 22px sans-serif"; ctx.fillStyle = "#fff";
-  ctx.fillText(battleData.groupA, W*0.22, 158);
-  ctx.font = "bold 36px sans-serif"; ctx.fillStyle = mA.color;
-  ctx.fillText(pctA + "%", W*0.22, 204);
-  ctx.font = "13px sans-serif"; ctx.fillStyle = "#ffffff66";
-  ctx.fillText(vA.toLocaleString() + "표", W*0.22, 224);
-
-  // VS
-  ctx.font = "bold 22px sans-serif"; ctx.fillStyle = "#ffffff33";
-  ctx.fillText("VS", W/2, 178);
-
-  // 그룹 B
-  ctx.font = "40px sans-serif"; ctx.fillStyle = mB.color;
-  ctx.fillText(mB.emoji, W*0.78, 120);
-  ctx.font = "bold 22px sans-serif"; ctx.fillStyle = "#fff";
-  ctx.fillText(battleData.groupB, W*0.78, 158);
-  ctx.font = "bold 36px sans-serif"; ctx.fillStyle = mB.color;
-  ctx.fillText(pctB + "%", W*0.78, 204);
-  ctx.font = "13px sans-serif"; ctx.fillStyle = "#ffffff66";
-  ctx.fillText(vB.toLocaleString() + "표", W*0.78, 224);
-
-  // 투표 바
-  const bx=50, by=250, bw=W-100, bh=14;
-  rrect(ctx,bx,by,bw,bh,7); ctx.fillStyle="#ffffff18"; ctx.fill();
-  const bwA = Math.max(0, Math.round(bw*pctA/100));
-  if (bwA>0) { rrect(ctx,bx,by,bwA,bh,7); ctx.fillStyle=mA.color; ctx.fill(); }
-  if (bw-bwA>0) { rrect(ctx,bx+bwA,by,bw-bwA,bh,7); ctx.fillStyle=mB.color; ctx.fill(); }
-
-  // 총 참여
-  ctx.fillStyle="#ffffff55"; ctx.font="13px sans-serif";
-  ctx.fillText("총 "+total.toLocaleString()+"명 참여", W/2, 290);
-  ctx.fillStyle="#ffffff33"; ctx.font="12px sans-serif";
-  ctx.fillText("fandomkorea.github.io/fandom-battle", W/2, 312);
-}
-
-function showChampCard() {
-  const sec = document.getElementById("champCardSection");
-  const total = (battleData?.votesA||0)+(battleData?.votesB||0);
-  if (!battleData || total < 2) { sec.style.display="none"; return; }
-  sec.style.display = "block";
-  setTimeout(drawChampCard, 50);
-}
-
-function downloadChampCard() {
-  drawChampCard();
-  const a = document.createElement("a");
-  a.download = "팬덤배틀_챔피언카드.png";
-  a.href = document.getElementById("champCanvas").toDataURL("image/png");
-  a.click();
-  showToast("카드 저장됨! SNS에 공유해봐 💜");
-}
 
 // (loadHistory 제거됨 → loadMonthlyHistory 로 대체)
 
@@ -1013,86 +920,12 @@ async function adminResetRankings() {
 
 function adminMsg(msg) { document.getElementById("adminMsg").textContent = msg; }
 
-// ── 일일 응원 스탬프 ──
-function getTodayStr() { return new Date().toISOString().slice(0,10); }
-function getMyCheer() { return localStorage.getItem("cheered_" + getTodayStr()); }
-
 function buildCommentSelect() {
   const sel = document.getElementById("commentGroup");
   if (!sel) return;
   const myFav = getMyFav();
   sel.innerHTML = ALL_GROUPS.map(g => `<option value="${escAttr(g)}">${escHtml(g)}</option>`).join("");
   if (myFav && ALL_GROUPS.includes(myFav)) sel.value = myFav;
-}
-
-function buildCommentFilterRow() {
-  const row = document.getElementById("commentFilterRow");
-  if (!row) return;
-  // 현재 선택된 그룹 또는 상위 그룹을 필터 탭으로 표시
-  row.innerHTML = `<button class="cfilter-btn ${commentFilter==="all"?"active":""}" data-filter="all" onclick="filterComments('all')">전체</button>`;
-}
-
-function listenCheers() {
-  buildCommentSelect();
-  db.ref("cheers").on("value", snap => renderCheers(snap.val() || {}));
-}
-
-const CHEER_SHOW = 8;
-let showAllCheers = false;
-
-function renderCheers(data) {
-  const wrap = document.getElementById("cheerGrid");
-  const myCheer = getMyCheer();
-  const sorted = ALL_GROUPS.map(g => [g, data[g]||0]).sort((a,b) => b[1]-a[1]);
-  // 내 그룹이 접힌 범위에 있으면 항상 위로 올리기
-  if (myCheer) {
-    const idx = sorted.findIndex(([g]) => g === myCheer);
-    if (idx >= CHEER_SHOW) { const [item] = sorted.splice(idx, 1); sorted.unshift(item); }
-  }
-  const myFav = getMyFav();
-  // 내 최애 그룹 맨 위 고정
-  if (myFav) {
-    const idx = sorted.findIndex(([g]) => g === myFav);
-    if (idx > 0) { const [item] = sorted.splice(idx, 1); sorted.unshift(item); }
-  }
-
-  const visible = showAllCheers ? sorted : sorted.slice(0, CHEER_SHOW);
-  const hidden = sorted.length - CHEER_SHOW;
-
-  const rows = visible.map(([g, cnt]) => {
-    const meta = GROUP_META[g] || { emoji:"🌟", color:"#7c4dff" };
-    const isMine = myCheer === g;
-    const isFav = myFav === g;
-    return `<div class="cheer-item ${isMine?"cheered-today":""} ${isFav?"my-fav-item":""}">
-      <span class="cheer-emoji">${meta.emoji}</span>
-      <span class="cheer-name ${isFav?"my-fav-label":""}">${escHtml(g)}</span>
-      <span class="cheer-count">${cnt ? cnt.toLocaleString()+"응원" : ""}</span>
-      <button class="cheer-btn ${isMine?"done":""}" onclick="cheer('${escAttr(g)}')" ${isMine?"disabled":""}>
-        ${isMine ? "✅ 응원함" : "응원"}
-      </button>
-    </div>`;
-  }).join("");
-
-  const moreBtn = hidden > 0 ? `<div class="cheer-show-more">
-    <button class="cheer-more-btn" onclick="toggleAllCheers()">
-      ${showAllCheers ? "▲ 접기" : `▼ ${hidden}개 그룹 더보기`}
-    </button>
-  </div>` : "";
-
-  wrap.innerHTML = rows + moreBtn;
-}
-
-function toggleAllCheers() {
-  showAllCheers = !showAllCheers;
-  db.ref("cheers").once("value", snap => renderCheers(snap.val() || {}));
-}
-
-function cheer(group) {
-  const key = "cheered_" + getTodayStr();
-  if (localStorage.getItem(key)) { showToast("오늘은 이미 응원했어요! 내일 또 와줘 💜"); return; }
-  db.ref("cheers/" + group).transaction(c => (c||0)+1);
-  localStorage.setItem(key, group);
-  showToast("💪 " + group + " 응원 완료!");
 }
 
 // ── 응원 댓글 ──
@@ -1200,73 +1033,6 @@ function relTimeComment(ts) {
   return Math.floor(s/86400)+"일 전";
 }
 
-// (drawVoteProof 제거됨 — 투표 인증 이미지 기능 삭제)
-function drawVoteProof(group) { return; // stub
-  const canvas = null; if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  const W = canvas.width, H = canvas.height;
-  const meta = GROUP_META[group] || { color: "#7c4dff", emoji: "🌟" };
-  const c2 = darken(meta.color);
-
-  // 배경 그라디언트
-  const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, "#0d0d1a");
-  bg.addColorStop(0.6, meta.color + "33");
-  bg.addColorStop(1, c2 + "55");
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-
-  // 장식 원
-  ctx.beginPath(); ctx.arc(W - 60, 60, 90, 0, Math.PI * 2);
-  ctx.fillStyle = meta.color + "18"; ctx.fill();
-  ctx.beginPath(); ctx.arc(60, H - 40, 70, 0, Math.PI * 2);
-  ctx.fillStyle = meta.color + "12"; ctx.fill();
-
-  // 상단 배지
-  ctx.fillStyle = meta.color + "33";
-  roundRect(ctx, W/2 - 80, 18, 160, 28, 14); ctx.fill();
-  ctx.fillStyle = meta.color; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center";
-  ctx.fillText("✅  투표 인증", W / 2, 37);
-
-  // 이모지
-  ctx.font = "64px sans-serif";
-  ctx.fillText(meta.emoji, W / 2, 130);
-
-  // 메인 텍스트
-  ctx.fillStyle = "#ffffff"; ctx.font = "bold 24px 'Noto Sans KR', sans-serif";
-  ctx.fillText("나는 오늘", W / 2, 170);
-  ctx.fillStyle = meta.color; ctx.font = "bold 28px 'Noto Sans KR', sans-serif";
-  ctx.fillText(group + " 에 투표했어!", W / 2, 206);
-
-  // 현재 투표 현황
-  if (battleData) {
-    const vA = battleData.votesA || 0, vB = battleData.votesB || 0;
-    const tot = vA + vB;
-    const pA = tot ? Math.round(vA / tot * 100) : 50;
-    const pB = 100 - pA;
-    const myPct = group === battleData.groupA ? pA : pB;
-    const otherPct = 100 - myPct;
-    const otherGroup = group === battleData.groupA ? battleData.groupB : battleData.groupA;
-    // 작은 바 배경
-    const bx = W * 0.15, bw = W * 0.7, by = 228, bh = 8;
-    ctx.fillStyle = "#ffffff18"; roundRect(ctx, bx, by, bw, bh, 4); ctx.fill();
-    const bwMy = Math.round(bw * myPct / 100);
-    if (bwMy > 0) { ctx.fillStyle = meta.color; roundRect(ctx, bx, by, bwMy, bh, 4); ctx.fill(); }
-    ctx.fillStyle = "#ffffff88"; ctx.font = "bold 13px sans-serif";
-    ctx.fillText(`${group} ${myPct}%  vs  ${otherGroup} ${otherPct}%`, W / 2, 254);
-  }
-
-  // 날짜
-  const today = new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
-  ctx.fillStyle = "#ffffff55"; ctx.font = "12px sans-serif";
-  ctx.fillText(today + "  ·  팬덤배틀", W / 2, 272);
-
-  // URL
-  ctx.fillStyle = "#ffffff2a"; ctx.font = "11px sans-serif";
-  ctx.fillText("fandomkorea.github.io/fandom-battle", W / 2, 291);
-}
-
-// (drawVoteProof / roundRect / downloadVoteProof / renderNextPrediction 제거됨)
 
 // ── 그룹 역대 전적 ──
 let groupRecords = {};
@@ -1286,8 +1052,6 @@ function setMyFav(g) {
   // 댓글 셀렉트 자동 선택
   const sel = document.getElementById("commentGroup");
   if (sel && g) sel.value = g;
-  // 응원 목록 내 최애 위로
-  db.ref("cheers").once("value", snap => renderCheers(snap.val() || {}));
 }
 
 function renderFavChip() {
