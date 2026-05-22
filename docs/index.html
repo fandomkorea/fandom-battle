@@ -894,7 +894,10 @@ async function recordUserVote(group) {
       timestamp: Date.now(),
       email: currentUser.email
     };
+    // Firebase에 저장
     await db.ref(`votes/${today}/${currentUser.uid}`).set(record);
+    // localStorage에도 저장 (UI와 getTodayVoteCount()에서 사용)
+    setMyVote(group);
   } else {
     // 익명: localStorage 사용
     setMyVote(group);
@@ -1166,6 +1169,7 @@ function init() {
     setMonthLabel();
     renderNickDisplay();
     handleShareRef();
+    restoreVotedState(); // 페이지 로드 시 투표 상태 복원 (광고 버튼 포함)
     setTimeout(showFavBar, 1500);
     if (isAdmin) {
       const pw = prompt("관리자 패스워드:");
@@ -1186,7 +1190,12 @@ function getMyVote()        { return localStorage.getItem("voted_group_" + getTo
 function setMyVote(group)   { localStorage.setItem("voted_group_" + getTodayKey(), group); }
 function getExtraVotes()    { return parseInt(localStorage.getItem("extra_votes_" + getTodayKey()) || "0", 10); }
 function addExtraVote()     { localStorage.setItem("extra_votes_" + getTodayKey(), getExtraVotes() + 1); }
-function getTodayVoteCount(){ return (getMyVote() ? 1 : 0) + getExtraVotes(); }
+function getTodayVoteCount(){
+  // 로그인 유저는 Firebase에서 checkUserVotedToday() 사용해야 하지만,
+  // 이 동기 함수에서는 localStorage만 사용
+  // 로그인 유저는 항상 localStorage에도 저장하도록 recordUserVote 수정됨
+  return (getMyVote() ? 1 : 0) + getExtraVotes();
+}
 function canVoteMore()      { return getTodayVoteCount() < MAX_VOTES_PER_DAY; }
 
 // ── 투표 스트릭 (연속 투표 일수) ──
@@ -1296,10 +1305,11 @@ async function voteForGroup(group) {
 
   const already = await checkUserVotedToday();
   if (already) {
-    // 이미 오늘 투표함 → 광고 안내
+    // 이미 오늘 투표함 → 광고 버튼 업데이트 후 안내
+    showMyVotedBar(already); // 광고 버튼이 나타나도록 업데이트
     if (canVoteMore()) {
       const remaining = MAX_VOTES_PER_DAY - getTodayVoteCount();
-      showToast(`📺 광고를 보고 ${remaining}표 더 투표할 수 있어! 광고 영역에서 시작하세요!`);
+      showToast(`📺 광고를 보고 ${remaining}표 더 투표할 수 있어! 아래 광고 버튼을 클릭하세요!`);
     } else {
       showToast(`🏆 오늘 ${MAX_VOTES_PER_DAY}표를 모두 사용했어요! 내일 또 와줘 💜`);
     }
