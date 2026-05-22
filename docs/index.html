@@ -278,6 +278,25 @@
     @keyframes rankHighlight { 0%,100% { box-shadow: none; } 30% { box-shadow: 0 0 0 3px var(--primary); } }
     .rank-item.highlight-flash { animation: rankHighlight 0.8s ease-in-out 2 !important; }
 
+    /* ── Skeleton Loader ── */
+    @keyframes shimmerPulse { 0%,100% { background-position: -200% center; } 50% { background-position: 200% center; } }
+    .skeleton { background: linear-gradient(90deg, var(--border) 0%, rgba(124,77,255,0.08) 50%, var(--border) 100%); background-size: 200% 100%; animation: shimmerPulse 1.5s infinite; border-radius: 10px; }
+    .rank-skeleton { height: 60px; margin-bottom: 8px; }
+    .skeleton-title { height: 20px; width: 40%; margin-bottom: 8px; }
+    .skeleton-subtitle { height: 14px; width: 60%; margin-bottom: 4px; }
+
+    /* ── 투표 권장 배너 ── */
+    .vote-guide-banner { background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,77,141,0.08)); border: 1px solid rgba(255,77,141,0.3); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; text-align: center; }
+    .vote-guide-title { font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .vote-guide-sub { font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
+    .vote-guide-highlight { color: var(--gold); font-weight: 700; }
+
+    /* ── 실시간 투표 활동 ── */
+    .activity-feed { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px; font-size: 0.78rem; }
+    .activity-item { display: flex; align-items: center; gap: 6px; color: var(--muted); padding: 4px 0; }
+    .activity-emoji { font-size: 1rem; flex-shrink: 0; }
+    .activity-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
     /* ── footer ── */
     footer a { transition: color 0.15s; }
     footer a:hover { color: var(--pink); }
@@ -293,6 +312,12 @@
       .rank-pct-bar-wrap { height: 8px; }
       #groupSearchInput { font-size: 0.75rem !important; padding: 8px 10px !important; }
       .rank-fandom { display: none; }
+      .vote-guide-banner { padding: 12px 14px; margin-bottom: 10px; }
+      .vote-guide-title { font-size: 0.78rem; }
+      .vote-guide-sub { font-size: 0.7rem; }
+      .activity-feed { padding: 10px 12px; margin-bottom: 10px; max-height: 70px; }
+      .activity-item { font-size: 0.73rem; }
+      .activity-emoji { font-size: 0.9rem; }
     }
   </style>
 </head>
@@ -334,13 +359,32 @@
   </div>
 
 
+  <!-- 투표 방법 가이드 배너 -->
+  <div id="voteGuideBanner" class="vote-guide-banner" style="display:none">
+    <div class="vote-guide-title">📱 투표하고 100만원 포토카드 우승팬이 되자!</div>
+    <div class="vote-guide-sub">🎯 <span class="vote-guide-highlight">하루 1표 무료</span> + 📺 <span class="vote-guide-highlight">광고시청 시 최대 9표 추가</span> (총 10표/일)</div>
+  </div>
+
+  <!-- 실시간 투표 활동 피드 -->
+  <div class="activity-feed" id="activityFeed" style="display:none;max-height:80px;overflow-y:auto">
+    <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:6px">🔥 실시간 투표 중</div>
+    <div id="activityList" style="display:flex;flex-direction:column;gap:3px"></div>
+  </div>
+
   <!-- 실시간 팬덤 파워 랭킹 + 투표 -->
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
     <div class="section-title" style="flex:1;margin:0">🏆 실시간 팬덤 파워 랭킹</div>
     <input class="comment-input" id="groupSearchInput" placeholder="그룹 검색..." style="flex:0.4;padding:6px 10px;font-size:.8rem" onkeyup="filterRankings(this.value)" />
   </div>
   <div class="ranking-list" id="rankingList">
-    <div class="loading"><div class="spinner"></div><div>랭킹 불러오는 중...</div></div>
+    <div id="skeletonLoader">
+      <div class="skeleton skeleton-title" style="width:50%"></div>
+      <div class="rank-skeleton skeleton"></div>
+      <div class="rank-skeleton skeleton"></div>
+      <div class="rank-skeleton skeleton"></div>
+      <div class="rank-skeleton skeleton"></div>
+      <div class="rank-skeleton skeleton"></div>
+    </div>
   </div>
 
   <!-- 응원 한 마디 -->
@@ -530,6 +574,7 @@ function voteForGroup(group) {
     db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
     addExtraVote();
     adPending = false;
+    addActivity(group);
     showToast(`${meta.emoji} ${group} 추가 투표 완료! 오늘 ${getTodayVoteCount()}/${MAX_VOTES_PER_DAY}표 🎉`);
     if (allRankingsData) {
       allRankingsData[group] = (allRankingsData[group] || 0) + 1;
@@ -553,6 +598,7 @@ function voteForGroup(group) {
   // 첫 무료 투표
   db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
   setMyVote(group);
+  addActivity(group);
   showToast(meta.emoji + " " + group + " 투표 완료! 1등을 향해!");
   showConfetti(meta.color);
   if (allRankingsData) {
@@ -560,6 +606,9 @@ function voteForGroup(group) {
     renderRankings(allRankingsData);
   }
   showMyVotedBar(group);
+  // 투표 가이드 배너 숨기기
+  const banner = document.getElementById("voteGuideBanner");
+  if (banner) banner.style.display = "none";
   // 댓글 그룹 자동 선택
   const sel = document.getElementById("commentGroup");
   if (sel) sel.value = group;
@@ -605,7 +654,14 @@ function showMyVotedBar(group) {
   const diff = next - now;
   const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000);
   const todayCount = getTodayVoteCount();
-  sub += `  ⏰ ${h}시간 ${m}분 후 재투표`;
+
+  // 모든 투표를 사용한 경우 특별 메시지
+  if (todayCount === MAX_VOTES_PER_DAY) {
+    sub = `🏆 오늘 최대 투표 ${MAX_VOTES_PER_DAY}/${MAX_VOTES_PER_DAY}표 모두 사용! 대단해! 💪`;
+    sub += `<br style="height:4px"> ⏰ 내일 ${h}시간 ${m}분 후 다시 투표할 수 있어요!`;
+  } else {
+    sub += `  ⏰ ${h}시간 ${m}분 후 재투표`;
+  }
 
   msgEl.textContent = msg;
   subEl.textContent = sub;
@@ -799,10 +855,96 @@ function scrollToMyGroup(group) {
   setTimeout(() => el.classList.remove("highlight-flash"), 1800);
 }
 
+// ── 투표 가이드 배너 표시 ──
+let hasShownVoteGuide = false;
+function showVoteGuideBanner() {
+  if (hasShownVoteGuide) return;
+  const banner = document.getElementById("voteGuideBanner");
+  if (banner && !getMyVote()) {
+    banner.style.display = "block";
+    hasShownVoteGuide = true;
+  }
+}
+
+// ── 실시간 투표 활동 피드 ──
+const MAX_ACTIVITY_ITEMS = 5;
+let activityQueue = [];
+let activityLastRendered = 0;
+
+function addActivity(group) {
+  const meta = GROUP_META[group] || { emoji: "🌟" };
+  activityQueue.unshift({ group, emoji: meta.emoji, time: Date.now() });
+  if (activityQueue.length > MAX_ACTIVITY_ITEMS) activityQueue.pop();
+  renderActivityFeed();
+}
+
+function renderActivityFeed() {
+  const now = Date.now();
+  // 5초 이상 된 항목은 제거
+  activityQueue = activityQueue.filter(a => now - a.time < 5000);
+
+  const feedEl = document.getElementById("activityFeed");
+  const listEl = document.getElementById("activityList");
+  if (!feedEl || !listEl) return;
+
+  if (activityQueue.length === 0) {
+    feedEl.style.display = "none";
+    return;
+  }
+
+  feedEl.style.display = "block";
+  listEl.innerHTML = activityQueue.map((a, i) => `
+    <div class="activity-item" style="animation:slideUp 0.3s ease">
+      <span class="activity-emoji">${a.emoji}</span>
+      <span class="activity-text">${escHtml(a.group)} 투표 중! 🔥</span>
+    </div>
+  `).join("");
+}
+
 // ── 랭킹 실시간 리슨 ──
+let lastRankingData = null;
+let trendingData = {}; // 최근 투표 속도 추적
+
+function updateTrending() {
+  // 매 업데이트마다 trending 점수 감소 (최대 12초)
+  Object.keys(trendingData).forEach(group => {
+    trendingData[group]--;
+    if (trendingData[group] <= 0) delete trendingData[group];
+  });
+}
+
+function isTrending(group) {
+  return trendingData[group] && trendingData[group] > 5;
+}
+
 function listenRankings() {
   db.ref("rankings").on("value", snap => {
     allRankingsData = snap.val() || {};
+
+    // 첫 로드 시 스켈레톤 제거
+    if (!lastRankingData) {
+      const skeletonEl = document.getElementById("skeletonLoader");
+      if (skeletonEl) skeletonEl.remove();
+      showVoteGuideBanner();
+    }
+
+    // 변화가 있는 그룹 감지해서 activity 추가
+    if (lastRankingData) {
+      Object.entries(allRankingsData).forEach(([group, votes]) => {
+        const oldVotes = lastRankingData[group] || 0;
+        if (votes > oldVotes) {
+          // 새로운 투표 있음
+          const diff = votes - oldVotes;
+          trendingData[group] = Math.min(10, (trendingData[group] || 0) + diff);
+          for (let i = 0; i < diff; i++) {
+            setTimeout(() => addActivity(group), i * 200);
+          }
+        }
+      });
+    }
+
+    lastRankingData = { ...allRankingsData };
+    updateTrending();
     renderRankings(allRankingsData);
     updatePageTitle(allRankingsData);
   });
@@ -856,14 +998,30 @@ function renderRankings(data) {
   const rankNums = ["", "👑", "🥈", "🥉"];
   const rankClasses = ["", "gold", "silver", "bronze"];
 
+  // 1위 그룹의 투표수 가져오기
+  const firstPlaceVotes = withVotes.length > 0 ? withVotes[0][1] : 0;
+
   const renderRow = (group, votes, rank, faded = false) => {
     const meta = GROUP_META[group] || { emoji: "🌟", color: "#7c4dff", fandom: "" };
     const isFav = group === myFavGroup;
     const isVoted = myVotedGroup === group;
     const isFirst = rank === 1 && votes > 0;
     const pct = totalVotes ? Math.round(votes / totalVotes * 100) : 0;
+
+    // 1위까지의 거리 계산
+    let distanceBar = "";
+    if (!isFirst && votes > 0 && firstPlaceVotes > 0) {
+      const gap = firstPlaceVotes - votes;
+      const distancePct = Math.min(100, Math.round((votes / firstPlaceVotes) * 100));
+      distanceBar = `<div style="margin-top:5px;font-size:.65rem;color:var(--muted);margin-bottom:3px">1위까지 ${gap.toLocaleString()}표 차이</div>
+        <div class="rank-pct-bar-wrap" style="height:5px">
+          <div class="rank-pct-bar" style="width:${distancePct}%;background:linear-gradient(90deg,${meta.color},${meta.color}88)"></div>
+        </div>`;
+    }
+
     const rec = groupRecords[group];
     const recBadge = rec && rec.wins ? `<span class="record-badge">🏆 ${rec.wins}회</span>` : "";
+    const trendingBadge = isTrending(group) ? `<span class="record-badge" style="background:rgba(255,107,53,0.2);color:#ff6b35;animation:pulse 1s infinite">🔥 핫</span>` : "";
     const firstCrown = isFirst ? `<span class="rank-first-crown">1위</span>` : "";
     const fadedStyle = faded ? 'style="opacity:0.5"' : "";
     return `
@@ -871,7 +1029,7 @@ function renderRankings(data) {
         <div class="rank-num ${rankClasses[rank] || ""}">${rankNums[rank] || rank}</div>
         <div class="rank-emoji">${meta.emoji}</div>
         <div class="rank-info">
-          <div class="rank-name">${isFav ? '<span class="my-fav-star">⭐</span>' : ""}${escHtml(group)}${firstCrown}${recBadge}</div>
+          <div class="rank-name">${isFav ? '<span class="my-fav-star">⭐</span>' : ""}${escHtml(group)}${firstCrown}${trendingBadge}${recBadge}</div>
           ${meta.fandom ? `<div class="rank-fandom">${escHtml(meta.fandom)}</div>` : ""}
           <div class="rank-vote-meta">
             <div class="rank-pct-bar-wrap">
@@ -879,6 +1037,7 @@ function renderRankings(data) {
             </div>
             <span class="rank-pct-label">${pct}%</span>
           </div>
+          ${distanceBar}
         </div>
         <div class="rank-right">
           <div class="rank-votes">${fmtVotes(votes)}</div>
@@ -1138,7 +1297,19 @@ function renderComments(list) {
   const el = document.getElementById("commentList");
   const filtered = commentFilter === "all" ? list : list.filter(c => c.group === commentFilter);
   if (!filtered.length) {
-    el.innerHTML = `<div style="text-align:center;padding:14px;color:var(--muted);font-size:.82rem">${commentFilter === "all" ? "첫 번째 응원 댓글을 남겨봐! 🎤" : `아직 ${escHtml(commentFilter)} 응원 댓글이 없어요!`}</div>`;
+    const emptyMsg = commentFilter === "all"
+      ? `<div style="text-align:center;padding:18px;color:var(--muted)">
+          <div style="font-size:1.8rem;margin-bottom:8px">💬</div>
+          <div style="font-size:.84rem;font-weight:700;margin-bottom:4px">첫 응원 댓글을 남겨봐!</div>
+          <div style="font-size:.75rem;margin-bottom:12px;line-height:1.5">우리 팀에 응원 메시지를 보내면<br>다른 팬들과 함께 응원할 수 있어! 💜</div>
+          <button onclick="document.getElementById('commentInput').focus()" style="padding:8px 16px;border-radius:20px;background:var(--primary);color:#fff;border:none;font-weight:700;font-family:inherit;cursor:pointer">응원 댓글 작성</button>
+        </div>`
+      : `<div style="text-align:center;padding:18px;color:var(--muted)">
+          <div style="font-size:1.6rem;margin-bottom:8px">🤐</div>
+          <div style="font-size:.82rem">아직 ${escHtml(commentFilter)} 응원 댓글이 없어요!</div>
+          <div style="font-size:.73rem;margin-top:8px">첫 응원자가 되어볼래? 💜</div>
+        </div>`;
+    el.innerHTML = emptyMsg;
     return;
   }
   const visible = showAllComments ? filtered : filtered.slice(0, COMMENT_SHOW);
