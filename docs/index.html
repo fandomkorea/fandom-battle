@@ -23,6 +23,7 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
   <style>
     :root {
@@ -48,6 +49,47 @@
     .live-badge { display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; padding: 4px 12px; border-radius: 20px; background: rgba(255,77,141,0.15); border: 1px solid rgba(255,77,141,0.3); font-size: 0.75rem; color: var(--pink); }
     .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pink); animation: pulse 1.4s infinite; }
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* ── 인증 컨테이너 ── */
+    #authContainer { padding: 12px 16px; background: linear-gradient(135deg, rgba(124,77,255,0.08), rgba(255,77,141,0.04)); border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
+    #authContainer button { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-weight: 600; font-size: 0.78rem; font-family: inherit; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    #authContainer button:hover { border-color: var(--primary); background: rgba(124,77,255,0.1); }
+    #authLoggedIn { display: flex; gap: 12px; align-items: center; }
+    #userDisplayName { font-size: 0.8rem; color: var(--text); font-weight: 600; }
+    #authLoggedIn button { background: rgba(255,77,141,0.15); border-color: var(--pink); color: var(--pink); }
+    #authLoggedIn button:hover { background: rgba(255,77,141,0.25); }
+
+    /* ── 인증 설정 모달 ── */
+    .auth-setup-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+    .auth-setup-box { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+    .auth-setup-title { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 16px; text-align: center; }
+    .auth-setup-section { margin-bottom: 20px; }
+    .auth-setup-label { font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 8px; display: block; }
+    .auth-setup-input { width: 100%; padding: 10px 12px; background: rgba(124,77,255,0.1); border: 1px solid var(--primary); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 0.9rem; }
+    .auth-setup-input:focus { outline: none; border-color: var(--pink); background: rgba(255,77,141,0.1); }
+    #authFandomSearch { margin-bottom: 12px; }
+    .auth-fandom-search-hint { font-size: 0.7rem; color: var(--muted); margin-top: 4px; }
+    .auth-fandom-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-height: 220px; overflow-y: auto; }
+    .auth-fandom-grid.empty { display: flex; align-items: center; justify-content: center; height: 100px; }
+    .auth-fandom-empty-msg { text-align: center; color: var(--muted); font-size: 0.8rem; }
+    .auth-fandom-highlight { color: var(--pink); font-weight: 700; }
+    .auth-fandom-btn { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: rgba(124,77,255,0.05); color: var(--text); font-family: inherit; font-size: 0.8rem; cursor: pointer; transition: all 0.15s; }
+    .auth-fandom-btn:hover { border-color: var(--primary); }
+    .auth-fandom-btn.selected { background: var(--primary); border-color: var(--primary); }
+    .auth-setup-buttons { display: flex; gap: 10px; margin-top: 20px; }
+    .auth-setup-buttons button { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.15s; }
+    .auth-setup-btn-ok { background: var(--primary); color: #fff; }
+    .auth-setup-btn-ok:hover { background: #6a3de8; }
+    .auth-setup-btn-skip { background: rgba(124,77,255,0.1); color: var(--primary); border: 1px solid var(--primary); }
+    .auth-setup-btn-skip:hover { background: rgba(124,77,255,0.2); }
+
+    @media (max-width: 480px) {
+      #authContainer { padding: 10px 12px; gap: 6px; }
+      #authContainer button { padding: 8px 12px; font-size: 0.7rem; }
+      #userDisplayName { font-size: 0.7rem; }
+      .auth-setup-box { padding: 20px; }
+      .auth-fandom-grid { grid-template-columns: repeat(3, 1fr); }
+    }
 
     /* ── 메인 ── */
     main { max-width: 680px; margin: 0 auto; padding: 0 16px 48px; }
@@ -534,6 +576,18 @@
   </button>
 </header>
 
+<!-- 인증 컨테이너 -->
+<div id="authContainer">
+  <div id="authNotLoggedIn" style="display:flex;gap:8px;flex-wrap:wrap;width:100%;justify-content:center">
+    <button id="googleLoginBtn" onclick="signInWithGoogle()">🔍 Google로 로그인</button>
+    <button id="kakaoLoginBtn" onclick="signInWithKakao()">☀️ Kakao로 로그인</button>
+  </div>
+  <div id="authLoggedIn" style="display:none;width:100%">
+    <div id="userDisplayName"></div>
+    <button onclick="signOut()">로그아웃</button>
+  </div>
+</div>
+
 <main>
   <!-- 🎁 이달의 상품 & 투표 카운트다운 통합 배너 -->
   <div class="battle-card" style="margin-top:12px">
@@ -712,10 +766,393 @@ let showAllRankings = false;
 const ADMIN_PW = "fandom1234"; // 변경 가능
 const isAdmin = new URLSearchParams(location.search).has("admin");
 
+// ── 인증 상태 관리 ──
+let auth = null;
+let currentUser = null;
+let isLoggedIn = false;
+
+// Google 로그인
+function signInWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(provider)
+    .then(result => {
+      currentUser = result.user;
+      isLoggedIn = true;
+      syncVotesWithServer();
+      // 모달 띄우기 전에 기존 닉네임 확인
+      loadAuthUserData(() => {
+        if (!currentUser.customNickname) {
+          showAuthSetupModal();
+        } else {
+          updateAuthUI();
+          showToast(`👤 ${currentUser.customNickname}님 환영합니다!`);
+
+          // 투표 대기 중이면 투표 진행
+          if (window.pendingVoteGroup) {
+            const group = window.pendingVoteGroup;
+            window.pendingVoteGroup = null;
+            setTimeout(() => voteForGroup(group), 500);
+          }
+        }
+      });
+    })
+    .catch(error => {
+      showToast("Google 로그인 실패: " + error.message);
+      console.error(error);
+    });
+}
+
+// Kakao 로그인 (현재 스텁)
+function signInWithKakao() {
+  showToast("Kakao 로그인은 준비 중입니다 🔜");
+}
+
+// 로그아웃
+function signOut() {
+  firebase.auth().signOut().then(() => {
+    currentUser = null;
+    isLoggedIn = false;
+    updateAuthUI();
+    showToast("로그아웃되었어요! 👋");
+  }).catch(error => {
+    showToast("로그아웃 실패: " + error.message);
+  });
+}
+
+// 익명으로 투표 계속
+function continueAnonymousVote(group) {
+  isLoggedIn = false;
+  currentUser = null;
+  document.getElementById("voteLoginModal")?.remove();
+  updateAuthUI();
+  // 실제 투표 진행
+  proceedWithVote(group);
+}
+
+// 투표 모달에서 로그인
+function loginFromVoteModal(group) {
+  document.getElementById("voteLoginModal")?.remove();
+  window.pendingVoteGroup = group; // 투표 그룹 저장
+  signInWithGoogle();
+}
+
+function loginFromVoteModalKakao(group) {
+  document.getElementById("voteLoginModal")?.remove();
+  window.pendingVoteGroup = group;
+  signInWithKakao();
+}
+
+// 로그인 상태 감시
+function setupAuthListener() {
+  firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+      currentUser = user;
+      isLoggedIn = true;
+    } else {
+      currentUser = null;
+      isLoggedIn = false;
+    }
+    updateAuthUI();
+  });
+}
+
+// UI 업데이트
+function updateAuthUI() {
+  const notLoggedIn = document.getElementById("authNotLoggedIn");
+  const loggedIn = document.getElementById("authLoggedIn");
+
+  if (!notLoggedIn || !loggedIn) return;
+
+  if (isLoggedIn && currentUser) {
+    notLoggedIn.style.display = "none";
+    loggedIn.style.display = "flex";
+    const nickname = currentUser.customNickname || "👤 사용자";
+    document.getElementById("userDisplayName").textContent = nickname;
+  } else {
+    notLoggedIn.style.display = "flex";
+    loggedIn.style.display = "none";
+  }
+}
+
+// 사용자가 오늘 투표했는지 확인
+async function checkUserVotedToday() {
+  if (!isLoggedIn || !currentUser) {
+    return getMyVote(); // 익명: localStorage 사용
+  }
+
+  const today = getTodayKey();
+  const snap = await db.ref(`votes/${today}/${currentUser.uid}`).once("value");
+  return snap.exists() ? snap.val().group : null;
+}
+
+// 투표 기록 저장
+async function recordUserVote(group) {
+  if (isLoggedIn && currentUser) {
+    const today = getTodayKey();
+    const record = {
+      group: group,
+      timestamp: Date.now(),
+      email: currentUser.email
+    };
+    await db.ref(`votes/${today}/${currentUser.uid}`).set(record);
+  } else {
+    // 익명: localStorage 사용
+    setMyVote(group);
+  }
+}
+
+// localStorage 투표를 서버로 동기화 (로그인 시)
+async function syncVotesWithServer() {
+  if (!isLoggedIn || !currentUser) return;
+
+  const history = JSON.parse(localStorage.getItem("my_voting_history") || "{}");
+  const promises = [];
+
+  Object.entries(history).forEach(([date, group]) => {
+    promises.push(
+      db.ref(`votes/${date}/${currentUser.uid}`).set({
+        group: group,
+        timestamp: Date.now(),
+        migrated: true
+      }).catch(err => console.log("Sync error for", date, err))
+    );
+  });
+
+  await Promise.all(promises).catch(err => console.error("Sync failed:", err));
+}
+
+// Firebase에서 사용자 데이터 로드
+function loadAuthUserData(callback) {
+  if (!currentUser || !db) {
+    if (callback) callback();
+    return;
+  }
+
+  db.ref(`users/${currentUser.uid}`).once("value", snap => {
+    if (snap.exists()) {
+      const data = snap.val();
+      currentUser.customNickname = data.nickname || null;
+      currentUser.customFandom = data.fandom || null;
+    }
+    if (callback) callback();
+  }).catch(err => {
+    console.error("Failed to load user data:", err);
+    if (callback) callback();
+  });
+}
+
+// 닉네임/팬덤 설정 모달 표시
+function showAuthSetupModal() {
+  if (document.getElementById("authSetupModal")) return;
+
+  const modal = document.createElement("div");
+  modal.id = "authSetupModal";
+  modal.className = "auth-setup-modal";
+
+  modal.innerHTML = `
+    <div class="auth-setup-box">
+      <div class="auth-setup-title">👤 내 정보 설정하기</div>
+
+      <div class="auth-setup-section">
+        <label class="auth-setup-label">📝 닉네임 (댓글에 표시됨)</label>
+        <input type="text" id="authNicknameInput" class="auth-setup-input" placeholder="좋아하는 닉네임을 입력하세요" maxlength="12" />
+      </div>
+
+      <div class="auth-setup-section">
+        <label class="auth-setup-label">💜 내 최애 팬덤</label>
+        <div id="authFandomSearch">
+          <input type="text" id="authFandomSearchInput" class="auth-setup-input" placeholder="팬덤 검색... (N, BTS, aes 등)" oninput="filterAuthFandoms(this.value)" />
+          <div class="auth-fandom-search-hint">💡 팬덤 이름이나 첫글자로 검색하세요</div>
+        </div>
+        <div class="auth-fandom-grid" id="authFandomGrid"></div>
+      </div>
+
+      <div class="auth-setup-buttons">
+        <button class="auth-setup-btn-skip" onclick="closeAuthSetupModal()">건너뛰기</button>
+        <button class="auth-setup-btn-ok" onclick="confirmAuthSetup()">완료</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  document.getElementById("authNicknameInput").focus();
+
+  // 초기 그리드 렌더링
+  renderAuthFandomGrid(ALL_GROUPS);
+}
+
+// 팬덤 검색 필터링
+function filterAuthFandoms(query) {
+  const searchInput = query.toLowerCase().trim();
+
+  let filtered;
+  if (!searchInput) {
+    filtered = ALL_GROUPS;
+  } else {
+    filtered = ALL_GROUPS.filter(group => {
+      const groupLower = group.toLowerCase();
+      // 이름에 포함되거나 시작하거나, 한 글자만 입력했을 때만 첫 글자 비교
+      return groupLower.includes(searchInput) ||
+             groupLower.startsWith(searchInput) ||
+             (searchInput.length === 1 && group.charAt(0).toLowerCase() === searchInput.charAt(0));
+    });
+  }
+
+  renderAuthFandomGrid(filtered, searchInput);
+}
+
+// 팬덤 그리드 렌더링
+function renderAuthFandomGrid(groups, highlight = "") {
+  const grid = document.getElementById("authFandomGrid");
+  if (!grid) return;
+
+  if (groups.length === 0) {
+    grid.className = "auth-fandom-grid empty";
+    grid.innerHTML = `<div class="auth-fandom-empty-msg">검색 결과가 없어요 😢</div>`;
+    return;
+  }
+
+  grid.className = "auth-fandom-grid";
+  grid.innerHTML = groups.map(g => {
+    const meta = GROUP_META[g] || { emoji: "🌟" };
+    const displayName = highlight ? highlightSearchText(g, highlight) : escHtml(g);
+    return `<button class="auth-fandom-btn" onclick="selectAuthFandom('${escAttr(g)}')" data-fandom="${escAttr(g)}">
+      ${meta.emoji} <span>${displayName}</span>
+    </button>`;
+  }).join("");
+}
+
+// 검색어 하이라이팅
+function highlightSearchText(text, search) {
+  if (!search) return escHtml(text);
+
+  const regex = new RegExp(`(${search})`, "gi");
+  return escHtml(text).replace(regex, '<span class="auth-fandom-highlight">$1</span>');
+}
+
+function selectAuthFandom(fandom) {
+  document.querySelectorAll(".auth-fandom-btn").forEach(btn => {
+    btn.classList.toggle("selected", btn.dataset.fandom === fandom);
+  });
+}
+
+function confirmAuthSetup() {
+  const nickname = document.getElementById("authNicknameInput").value.trim();
+  const selectedBtn = document.querySelector(".auth-fandom-btn.selected");
+  const fandom = selectedBtn ? selectedBtn.dataset.fandom : null;
+
+  if (!nickname) {
+    showToast("닉네임을 입력해주세요!");
+    return;
+  }
+
+  saveAuthUserData(nickname, fandom);
+}
+
+function closeAuthSetupModal() {
+  document.getElementById("authSetupModal")?.remove();
+  updateAuthUI();
+  showToast("👤 닉네임 설정을 건너뛰었어요!");
+}
+
+// Firebase에 사용자 데이터 저장
+function saveAuthUserData(nickname, fandom) {
+  if (!currentUser || !db) return;
+
+  currentUser.customNickname = nickname;
+  currentUser.customFandom = fandom;
+
+  const userData = {
+    nickname: nickname,
+    fandom: fandom || "",
+    createdAt: Date.now()
+  };
+
+  db.ref(`users/${currentUser.uid}`).set(userData)
+    .then(() => {
+      setMyFav(fandom); // 최애팬덤 설정
+      document.getElementById("authSetupModal")?.remove();
+      updateAuthUI();
+      showToast(`👤 ${nickname}님 정보가 저장되었어요! 💜`);
+
+      // 투표 대기 중이면 투표 진행
+      if (window.pendingVoteGroup) {
+        const group = window.pendingVoteGroup;
+        window.pendingVoteGroup = null;
+        setTimeout(() => voteForGroup(group), 500);
+      }
+    })
+    .catch(err => {
+      showToast("저장 실패: " + err.message);
+      console.error(err);
+    });
+}
+
+// 투표 시 로그인 모달 표시
+function showVoteLoginModal(group) {
+  if (document.getElementById("voteLoginModal")) return;
+
+  const modal = document.createElement("div");
+  modal.id = "voteLoginModal";
+  modal.className = "auth-setup-modal";
+
+  const meta = GROUP_META[group] || { emoji: "🌟" };
+
+  modal.innerHTML = `
+    <div class="auth-setup-box" style="text-align: center;">
+      <div style="font-size: 2rem; margin-bottom: 12px;">${meta.emoji}</div>
+      <div class="auth-setup-title">${escHtml(group)}에 투표하시나요?</div>
+      <div style="font-size: 0.85rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5;">
+        로그인 후 투표할 수 있어요!<br>
+        휴대폰·PC 등 여러 기기에서<br>부정 투표를 방지합니다! 🔐
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button class="auth-setup-btn-ok" onclick="loginFromVoteModal('${escAttr(group)}')" style="width: 100%;">
+          🔍 Google로 로그인
+        </button>
+        <button class="auth-setup-btn-ok" onclick="loginFromVoteModalKakao('${escAttr(group)}')" style="width: 100%; background: rgba(255,195,0,0.2); color: #ffc300; border: 1px solid #ffc300;">
+          ☀️ Kakao로 로그인
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+// 실제 투표 진행 (로그인 모달 닫은 후)
+async function proceedWithVote(group) {
+  const meta = GROUP_META[group] || { emoji: "🌟" };
+
+  const already = await checkUserVotedToday();
+  if (already) {
+    showToast(`📺 광고를 보고 추가로 투표할 수 있어! 광고 영역에서 시작하세요!`);
+    return;
+  }
+
+  // 첫 무료 투표
+  db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
+  await recordUserVote(group);
+  recordVote(group);
+  addActivity(group);
+  const streak = updateVotingStreak();
+  const streakMsg = streak > 1 ? `🔥 ${streak}일 연속 투표 중!` : "";
+  showToast(meta.emoji + " " + group + " 투표 완료! 1등을 향해!" + (streakMsg ? " " + streakMsg : ""));
+  showConfetti(meta.color);
+  if (allRankingsData) {
+    allRankingsData[group] = (allRankingsData[group] || 0) + 1;
+    renderRankings(allRankingsData);
+  }
+  renderMyVotingHistory();
+  showMyVotedBar(group);
+}
+
 function init() {
   try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
+    setupAuthListener();
     listenRankings();
     listenComments();
     listenPrizeNotice();
@@ -829,9 +1266,15 @@ function listenPrizeNotice() {
 }
 
 // ── 투표 (그룹 선택) ──
-function voteForGroup(group) {
+async function voteForGroup(group) {
   if (!db) return;
   const meta = GROUP_META[group] || { emoji: "🌟" };
+
+  // 비로그인 상태면 로그인 모달 띄우기
+  if (!isLoggedIn) {
+    showVoteLoginModal(group);
+    return;
+  }
 
   if (adPending) {
     // 광고 시청 후 추가 투표
@@ -851,7 +1294,7 @@ function voteForGroup(group) {
     return;
   }
 
-  const already = getMyVote();
+  const already = await checkUserVotedToday();
   if (already) {
     // 이미 오늘 투표함 → 광고 안내
     if (canVoteMore()) {
@@ -865,7 +1308,7 @@ function voteForGroup(group) {
 
   // 첫 무료 투표
   db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
-  setMyVote(group);
+  await recordUserVote(group);
   recordVote(group);
   addActivity(group);
   const streak = updateVotingStreak();
