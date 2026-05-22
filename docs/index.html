@@ -543,16 +543,6 @@
       <div class="countdown" id="countdownEl">계산 중...</div>
       <div class="total-votes-label">총 <strong id="totalVotesEl">0</strong>명 참여 · 하루 1표 무료 + 광고시청 시 최대 10표</div>
     </div>
-
-    <!-- 투표 완료 상태 (조건부 표시) -->
-    <div id="myVotedBar" style="display:none" class="voted-overlay show">
-      <div class="voted-msg" id="myVotedMsg"></div>
-      <div class="voted-sub" id="myVotedSub"></div>
-      <div class="share-row" style="margin-top:8px">
-        <button class="share-btn kakao" onclick="shareKakao()">🟨 카카오톡</button>
-        <button class="share-btn" onclick="shareToX()" style="background:#000;border-color:#000;color:#fff">𝕏</button>
-      </div>
-    </div>
   </div>
 
 
@@ -563,6 +553,16 @@
     </div>
     <div style="font-size:.7rem;color:var(--muted)">
       🎯 하루 1표 무료 + 📺 광고로 최대 9표 더
+    </div>
+  </div>
+
+  <!-- 투표 완료 상태 (조건부 표시) -->
+  <div id="myVotedBar" style="display:none" class="voted-overlay show;margin-bottom:12px">
+    <div class="voted-msg" id="myVotedMsg"></div>
+    <div class="voted-sub" id="myVotedSub"></div>
+    <div class="share-row" style="margin-top:8px">
+      <button class="share-btn kakao" onclick="shareKakao()">🟨 카카오톡</button>
+      <button class="share-btn" onclick="shareToX()" style="background:#000;border-color:#000;color:#fff">𝕏</button>
     </div>
   </div>
 
