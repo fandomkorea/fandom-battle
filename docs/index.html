@@ -288,6 +288,9 @@
     .quick-access-btn:hover { background: #6a3de8; transform: scale(1.05); }
     .quick-access-emoji { font-size: 1.1rem; }
 
+    /* ── 투표 스트릭 뱃지 ── */
+    .streak-badge { display: inline-block; padding: 4px 10px; background: linear-gradient(135deg, rgba(255,107,53,0.2), rgba(255,77,141,0.1)); border: 1px solid rgba(255,107,53,0.3); border-radius: 20px; color: #ff6b35; font-size: 0.75rem; font-weight: 700; margin-top: 6px; animation: pulse 1.2s infinite; }
+
     /* ── Skeleton Loader ── */
     @keyframes shimmerPulse { 0%,100% { background-position: -200% center; } 50% { background-position: 200% center; } }
     .skeleton { background: linear-gradient(90deg, var(--border) 0%, rgba(124,77,255,0.08) 50%, var(--border) 100%); background-size: 200% 100%; animation: shimmerPulse 1.5s infinite; border-radius: 10px; }
@@ -542,6 +545,46 @@ function addExtraVote()     { localStorage.setItem("extra_votes_" + getTodayKey(
 function getTodayVoteCount(){ return (getMyVote() ? 1 : 0) + getExtraVotes(); }
 function canVoteMore()      { return getTodayVoteCount() < MAX_VOTES_PER_DAY; }
 
+// ── 투표 스트릭 (연속 투표 일수) ──
+function updateVotingStreak() {
+  const today = getTodayKey();
+  const lastVoteDate = localStorage.getItem("last_vote_date");
+  const currentStreak = parseInt(localStorage.getItem("voting_streak") || "0", 10);
+
+  if (lastVoteDate === today) {
+    // 오늘 이미 투표함
+    return currentStreak;
+  }
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayKey = yesterday.toISOString().slice(0, 10);
+
+  let newStreak = 0;
+  if (lastVoteDate === yesterdayKey) {
+    // 어제 투표했음 → 스트릭 계속
+    newStreak = currentStreak + 1;
+  } else {
+    // 어제 투표 안함 → 스트릭 초기화
+    newStreak = 1;
+  }
+
+  localStorage.setItem("voting_streak", newStreak);
+  localStorage.setItem("last_vote_date", today);
+  return newStreak;
+}
+
+function getVotingStreak() {
+  const today = getTodayKey();
+  const lastVoteDate = localStorage.getItem("last_vote_date");
+  const streak = parseInt(localStorage.getItem("voting_streak") || "0", 10);
+  // 오늘 투표하지 않았고 어제도 투표하지 않았으면 스트릭 0
+  if (lastVoteDate !== today && lastVoteDate !== new Date(Date.now() - 86400000).toISOString().slice(0, 10)) {
+    return 0;
+  }
+  return streak;
+}
+
 // ── 월 라벨 & 카운트다운 ──
 function setMonthLabel() {
   const el = document.getElementById("monthLabel");
@@ -589,7 +632,8 @@ function voteForGroup(group) {
     addExtraVote();
     adPending = false;
     addActivity(group);
-    showToast(`${meta.emoji} ${group} 추가 투표 완료! 오늘 ${getTodayVoteCount()}/${MAX_VOTES_PER_DAY}표 🎉`);
+    const todayCount = getTodayVoteCount() + 1; // 방금 투표한 것 포함
+    showToast(`${meta.emoji} ${group} 추가 투표 완료! 오늘 ${todayCount}/${MAX_VOTES_PER_DAY}표 🎉`);
     if (allRankingsData) {
       allRankingsData[group] = (allRankingsData[group] || 0) + 1;
       renderRankings(allRankingsData);
@@ -613,7 +657,9 @@ function voteForGroup(group) {
   db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
   setMyVote(group);
   addActivity(group);
-  showToast(meta.emoji + " " + group + " 투표 완료! 1등을 향해!");
+  const streak = updateVotingStreak();
+  const streakMsg = streak > 1 ? `🔥 ${streak}일 연속 투표 중!` : "";
+  showToast(meta.emoji + " " + group + " 투표 완료! 1등을 향해!" + (streakMsg ? " " + streakMsg : ""));
   showConfetti(meta.color);
   if (allRankingsData) {
     allRankingsData[group] = (allRankingsData[group] || 0) + 1;
@@ -639,6 +685,7 @@ function showMyVotedBar(group) {
   const total = Object.values(rankData).reduce((s, v) => s + v, 0);
   const myVotes = rankData[group] || 0;
   const pct = total ? Math.round(myVotes / total * 100) : 0;
+  const streak = getVotingStreak();
 
   // 현재 순위 계산
   const sorted = Object.entries(rankData).sort((a, b) => b[1] - a[1]);
@@ -646,19 +693,20 @@ function showMyVotedBar(group) {
 
   // 순위별 감성 메시지
   let msg, sub;
+  const streakDisplay = streak > 1 ? ` 🔥 ${streak}일 연속!` : "";
   if (myRank === 1 && myVotes > 0) {
-    msg = `👑 ${meta.emoji} ${group} 현재 1위! 이 기세 유지하자!`;
+    msg = `👑 ${meta.emoji} ${group} 현재 1위! 이 기세 유지하자!${streakDisplay}`;
     sub = `현재 ${pct}% (${myVotes.toLocaleString()}표) · 친구 불러서 격차 벌리자! 💪`;
   } else if (myRank === 2 || myRank === 3) {
     const leader = sorted[0];
     const gap = leader ? (leader[1] - myVotes) : 0;
-    msg = `🔥 ${meta.emoji} ${group} ${myRank}위! 1위까지 ${gap.toLocaleString()}표 차이!`;
+    msg = `🔥 ${meta.emoji} ${group} ${myRank}위! 1위까지 ${gap.toLocaleString()}표 차이!${streakDisplay}`;
     sub = `현재 ${pct}% · 지금 공유해서 역전 노려봐! 📢`;
   } else if (myVotes === 0 || total === 0) {
-    msg = `${meta.emoji} ${group} 투표 완료! 첫 표를 던졌어!`;
+    msg = `${meta.emoji} ${group} 투표 완료! 첫 표를 던졌어!${streakDisplay}`;
     sub = `친구한테도 알려서 우리 팀 1위 만들자! 💜`;
   } else {
-    msg = `${meta.emoji} ${group} 투표 완료! 현재 ${myRank}위 · ${pct}%`;
+    msg = `${meta.emoji} ${group} 투표 완료! 현재 ${myRank}위 · ${pct}%${streakDisplay}`;
     sub = `${myVotes.toLocaleString()}표 · 친구 불러서 순위 올리자! 🚀`;
   }
 
