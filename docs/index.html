@@ -143,7 +143,7 @@
     .comment-input { flex: 1; padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: inherit; font-size: 0.84rem; outline: none; }
     .comment-input:focus { border-color: var(--primary); }
     .comment-submit { padding: 8px 16px; border-radius: 10px; background: var(--primary); color: #fff; border: none; font-weight: 700; font-family: inherit; font-size: 0.82rem; cursor: pointer; flex-shrink: 0; }
-    .comment-list { display: flex; flex-direction: column; gap: 6px; }
+    .comment-list { display: flex; flex-direction: column-reverse; gap: 6px; }
     .comment-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; display: flex; gap: 8px; align-items: flex-start; }
     .comment-badge { font-size: 0.63rem; padding: 2px 7px; border-radius: 7px; font-weight: 700; white-space: nowrap; flex-shrink: 0; margin-top: 1px; }
     .comment-body { flex: 1; min-width: 0; }
@@ -193,7 +193,7 @@
     .ranking-empty-hint p { font-size: 0.84rem; color: var(--muted); margin-top: 4px; }
 
     /* ── 랭킹 투표 버튼 ── */
-    .vote-rank-btn { padding: 5px 13px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.72rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
+    .vote-rank-btn { padding: 5px 13px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.72rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; min-width: 60px; text-align: center; }
     .vote-rank-btn:hover:not(:disabled) { background: var(--primary); color: #fff; border-color: var(--primary); }
     .vote-rank-btn.voted { background: var(--primary); color: #fff; border-color: var(--primary); }
     .vote-rank-btn:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -278,6 +278,10 @@
     @keyframes rankHighlight { 0%,100% { box-shadow: none; } 30% { box-shadow: 0 0 0 3px var(--primary); } }
     .rank-item.highlight-flash { animation: rankHighlight 0.8s ease-in-out 2 !important; }
 
+    /* ── footer ── */
+    footer a { transition: color 0.15s; }
+    footer a:hover { color: var(--pink); }
+
     /* ── 모바일 ── */
     @media (max-width: 480px) {
       header h1 { font-size: 1.7rem; }
@@ -288,6 +292,7 @@
       .vote-rank-btn { padding: 6px 12px; font-size: 0.72rem; font-weight: 700; border-radius: 14px; }
       .rank-pct-bar-wrap { height: 8px; }
       #groupSearchInput { font-size: 0.75rem !important; padding: 8px 10px !important; }
+      .rank-fandom { display: none; }
     }
   </style>
 </head>
@@ -323,8 +328,7 @@
       </button>
       <div class="share-row" style="margin-top:8px">
         <button class="share-btn native" onclick="shareNative()">📤 공유하기</button>
-        <button class="share-btn kakao" onclick="shareKakao()">💛 카카오</button>
-        <button class="share-btn x-btn" onclick="shareToX()">𝕏 트위터</button>
+        <button class="share-btn native" onclick="shareToX()" style="background:#000;border-color:#000">𝕏</button>
       </div>
     </div>
   </div>
@@ -378,6 +382,10 @@
     <div id="adminMsg" style="font-size:.78rem;color:var(--muted);margin-top:6px"></div>
   </div>
 </main>
+
+<footer style="text-align:center;padding:28px 16px 40px;color:var(--muted);font-size:.75rem;border-top:1px solid var(--border);margin-top:40px">
+  Made with 💜 for K-pop fans | <a href="https://github.com/fandomkorea/fandom-battle" target="_blank" style="color:var(--primary);text-decoration:none">GitHub</a>
+</footer>
 
 <div class="toast" id="toast"></div>
 
