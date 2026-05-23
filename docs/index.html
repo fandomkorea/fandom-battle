@@ -457,12 +457,6 @@
       .section-title { font-size: 0.75rem; margin: 10px 0 6px; letter-spacing: 0.5px; }
 
       /* 검색 입력창 */
-      #groupSearchInput {
-        font-size: 0.75rem !important;
-        padding: 10px 10px !important;
-        flex: 0.5 !important;
-      }
-
       /* 랭킹 아이템 */
       .rank-item {
         padding: 12px;
@@ -616,10 +610,6 @@
   <!-- 실시간 팬덤 파워 랭킹 + 투표 -->
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
     <div class="section-title" style="flex:1;margin:0">🏆 실시간 팬덤 파워 랭킹</div>
-    <div style="flex:0.45;display:flex;gap:4px;align-items:center">
-      <span style="color:var(--muted);font-size:.75rem">🔍</span>
-      <input class="comment-input" id="groupSearchInput" placeholder="팀 이름 검색..." style="flex:1;padding:8px 10px;font-size:.8rem;border:1px solid var(--primary)" onkeyup="filterRankings(this.value)" />
-    </div>
   </div>
   <div class="ranking-list" id="rankingList">
     <div id="skeletonLoader">
@@ -2149,6 +2139,16 @@ function renderRankings(data) {
       </div>`;
     }
   }
+
+  // ★ 그룹 추천 메시지 추가
+  html += `<div style="margin-top:28px;padding:20px;border-top:1px solid var(--border);text-align:center;color:var(--muted)">
+    <div style="font-size:1.2rem;margin-bottom:8px">💜</div>
+    <div style="font-weight:700;margin-bottom:6px">찾는 팬덤이 없다면?</div>
+    <div style="font-size:.85rem;line-height:1.5;margin-bottom:12px">
+      좋아하는 그룹을 추천해주세요!<br>
+      더 많은 팬들과 응원할 수 있어요 ✨
+    </div>
+  </div>`;
 
   el.innerHTML = html;
 }
