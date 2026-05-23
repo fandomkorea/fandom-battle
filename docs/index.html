@@ -914,7 +914,7 @@ function updateAuthUI() {
 // 사용자가 오늘 투표했는지 확인
 async function checkUserVotedToday() {
   if (!isLoggedIn || !currentUser) {
-    return getMyVote(); // 익명: localStorage 사용
+    return cachedTodayFreeVote; // 익명: localStorage 사용
   }
 
   const today = getTodayKey();
@@ -934,10 +934,10 @@ async function recordUserVote(group) {
     // Firebase에 저장
     await db.ref(`votes/${today}/${currentUser.uid}`).set(record);
     // localStorage에도 저장 (UI와 getTodayVoteCount()에서 사용)
-    setMyVote(group);
+    cachedTodayFreeVote = group; // Firebase에 저장됨
   } else {
     // 익명: localStorage 사용
-    setMyVote(group);
+    cachedTodayFreeVote = group; // Firebase에 저장됨
   }
 }
 
@@ -1672,12 +1672,12 @@ async function claimAdReward() {
     if (ranking) ranking.scrollIntoView({ behavior: "smooth", block: "start" });
   }, 300);
 
-  showMyVotedBar(getMyVote());
+  showMyVotedBar(cachedTodayFreeVote);
 }
 
 // ── 투표 후 상태 복원 (페이지 로드 시) ──
 function restoreVotedState() {
-  const group = getMyVote();
+  const group = cachedTodayFreeVote;
   if (!group) return;
   showMyVotedBar(group);
   updateFavBar(); // 광고 바 상태 복원
@@ -1759,7 +1759,7 @@ function showConfetti(baseColor) {
 
 // ── 내 최애 그룹으로 스크롤 ──
 function scrollToMyGroup(group) {
-  const target = group || getMyFav() || getMyVote();
+  const target = group || getMyFav() || cachedTodayFreeVote;
   if (!target) { showToast("먼저 최애 그룹을 설정해봐! 💜"); return; }
 
   let el = document.querySelector(`.rank-item[data-group="${CSS.escape(target)}"]`);
@@ -1802,7 +1802,7 @@ function showVoteGuideBanner() {
   const banner = document.getElementById("voteGuideBanner");
   if (!banner) return;
   // 오늘 이미 투표했으면 배너 숨기기
-  if (getMyVote()) {
+  if (cachedTodayFreeVote) {
     banner.style.display = "none";
   } else {
     banner.style.display = "block";
@@ -1917,7 +1917,7 @@ function filterRankings(query) {
 
 function renderRankings(data) {
   const el = document.getElementById("rankingList");
-  const myVotedGroup = getMyVote();       // 오늘 투표한 그룹명 or null
+  const myVotedGroup = cachedTodayFreeVote;       // 오늘 투표한 그룹명 or null
   const alreadyVoted = !!myVotedGroup;
   const myFavGroup = getMyFav();
 
@@ -2074,7 +2074,7 @@ function loadMonthlyHistory() {
 const SITE_URL = "https://fandomkorea.github.io/fandom-battle/";
 
 function getShareText() {
-  const myGroup = getMyVote();
+  const myGroup = cachedTodayFreeVote;
   const now = new Date();
   const monthStr = (now.getMonth() + 1) + "월";
   const title = `🏆 ${monthStr} 팬덤 파워 랭킹 — 팬덤배틀`;
@@ -2348,25 +2348,16 @@ function loadGroupRecords() {
 }
 
 // ── 내 투표 기록 ──
+// ★ Firebase만 사용하므로 로컬 히스토리는 불필요
 function recordVote(group) {
-  const today = getTodayKey();
-  const history = JSON.parse(localStorage.getItem("my_voting_history") || "{}");
-  history[today] = group;
-  localStorage.setItem("my_voting_history", JSON.stringify(history));
+  // Firebase에 이미 저장됨 (votes/{date}/{uid})
+  // 로컬 히스토리 저장 안 함
 }
 
 function getMyVotingHistory() {
-  const history = JSON.parse(localStorage.getItem("my_voting_history") || "{}");
-  // 현재 월만 필터링
-  const now = new Date();
-  const monthPrefix = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
-  const filtered = {};
-  Object.entries(history).forEach(([date, group]) => {
-    if (date.startsWith(monthPrefix)) {
-      filtered[date] = group;
-    }
-  });
-  return filtered;
+  // ★ Firebase만 사용하므로 로컬 히스토리는 불필요
+  // TODO: Firebase에서 투표 히스토리를 비동기로 로드하는 기능이 필요하면 추가
+  return {};
 }
 
 let showDetailedHistory = false;
