@@ -1257,6 +1257,7 @@ const isAdmin = new URLSearchParams(location.search).has("admin");
 let auth = null;
 let currentUser = null;
 let isLoggedIn = false;
+let currentUserFav = null; // 사용자의 최애 팬덤
 
 // Google 로그인
 function signInWithGoogle() {
@@ -1802,6 +1803,10 @@ function init() {
   try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
+
+    // 최애팬덤 로드
+    getMyFav();
+
     setupAuthListener();
     listenRankings();
     listenPrizeNotice();
@@ -2875,9 +2880,14 @@ function renderMyVotingHistory() {
 }
 
 // ── 내 최애 그룹 ──
-function getMyFav() { return localStorage.getItem("my_fav_group"); }
+function getMyFav() {
+  const fav = localStorage.getItem("my_fav_group");
+  currentUserFav = fav; // 전역 변수에도 설정
+  return fav;
+}
 function setMyFav(g) {
   localStorage.setItem("my_fav_group", g);
+  currentUserFav = g; // 전역 변수에도 설정
 
   // Firebase에도 저장 (다른 기기에서 로그인 시 복구용)
   if (isLoggedIn && currentUser && db) {
