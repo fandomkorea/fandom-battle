@@ -3207,25 +3207,44 @@ function showCommunityPage() {
   // 팬덤 드롭다운 초기화
   const select = document.getElementById("communityFandomSelect");
 
+  if (!select) {
+    console.error("[ERROR] communityFandomSelect 요소를 찾을 수 없음");
+    return;
+  }
+
+  console.log("[DEBUG] GROUP_META 존재?", !!GROUP_META);
+  console.log("[DEBUG] GROUP_META 타입:", typeof GROUP_META);
+  console.log("[DEBUG] select.options.length:", select.options.length);
+
   // 팬덤 목록이 없으면 채우기
   if (select.options.length <= 1) {
     if (GROUP_META && typeof GROUP_META === 'object') {
-      Object.keys(GROUP_META).forEach(groupName => {
+      console.log("[DEBUG] GROUP_META 옵션 추가 시작...");
+      const groupNames = Object.keys(GROUP_META);
+      console.log("[DEBUG] 추가할 팬덤 수:", groupNames.length);
+
+      groupNames.forEach(groupName => {
         const meta = GROUP_META[groupName];
         const option = document.createElement("option");
         option.value = groupName;
         option.textContent = `${meta.emoji} ${groupName}`;
         select.appendChild(option);
+        console.log("[DEBUG] 옵션 추가됨:", groupName);
       });
+      console.log("[DEBUG] 총 옵션 개수:", select.options.length);
+    } else {
+      console.error("[ERROR] GROUP_META가 객체가 아님");
     }
   }
 
   // 최애팬덤이 있으면 자동 선택
   if (currentUserFav) {
-    console.log("[DEBUG] Setting community dropdown to:", currentUserFav);
+    console.log("[DEBUG] currentUserFav 설정 중:", currentUserFav);
     select.value = currentUserFav;
-    console.log("[DEBUG] Dropdown value after setting:", select.value);
+    console.log("[DEBUG] select.value 설정됨:", select.value);
     loadCommunityPosts();
+  } else {
+    console.log("[DEBUG] currentUserFav가 비어있음");
   }
 }
 
