@@ -1199,6 +1199,17 @@
     <option value="">— 팬덤을 선택해주세요 —</option>
   </select>
 
+  <!-- 커뮤니티 헤더 -->
+  <div style="margin-bottom:24px;display:none" id="communityHeaderInfo">
+    <div style="background:linear-gradient(135deg,rgba(124,77,255,0.15) 0%,rgba(100,200,255,0.1) 100%);padding:20px;border-radius:12px;border:1px solid rgba(124,77,255,0.2)">
+      <h2 id="communityHeaderTitle" style="font-size:1.5rem;font-weight:900;color:var(--text);margin:0;display:flex;align-items:center;gap:8px">
+        <span id="communityHeaderEmoji">💜</span>
+        <span id="communityHeaderFandom">팬덤 선택</span>
+      </h2>
+      <p style="margin:8px 0 0 0;color:var(--muted);font-size:0.9rem">여기는 <span id="communityHeaderText" style="font-weight:700"></span> 커뮤니티입니다</p>
+    </div>
+  </div>
+
   <!-- 게시물 리스트 (깔끔함) -->
   <div class="community-posts-section" id="communityPostsList">
     <div class="community-empty">
@@ -3592,14 +3603,27 @@ function loadCommunityPosts() {
     const sortedPosts = Object.entries(posts)
       .sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
 
+    // 팬덤 헤더 업데이트
+    const fandomHeader = document.getElementById("communityHeaderInfo");
+    const fandomMeta = GROUP_META[selectedFandom];
+    if (fandomMeta) {
+      document.getElementById("communityHeaderEmoji").textContent = fandomMeta.emoji;
+      document.getElementById("communityHeaderFandom").textContent = selectedFandom;
+      document.getElementById("communityHeaderText").textContent = selectedFandom;
+      fandomHeader.style.display = "block";
+    }
+
     postsList.innerHTML = `<div style="padding:16px;background:linear-gradient(135deg, rgba(124,77,255,0.1), rgba(255,77,141,0.05));border:1px solid var(--border);border-radius:10px;margin-bottom:16px">
       <div style="font-size:1.3rem;font-weight:700;color:var(--text)">📖 커뮤니티 게시물</div>
       <div style="font-size:1.8rem;font-weight:900;background:linear-gradient(135deg, var(--primary), var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-top:6px">${Object.keys(posts).filter(id => !posts[id].isHidden).length}개</div>
     </div>`;
+
+    let visibleIndex = 0;
     sortedPosts.forEach(([postId, post]) => {
       if (!post.isHidden) {
-        const postEl = renderPost(selectedFandom, postId, post);
+        const postEl = renderPost(selectedFandom, postId, post, visibleIndex);
         postsList.appendChild(postEl);
+        visibleIndex++;
       }
     });
   });
@@ -3707,8 +3731,9 @@ function getRelativeTime(timestamp) {
 
 // ── 게시물 렌더링 ──
 // ── 게시물 목록 아이템 렌더링 (컴팩트 리스트) ──
-function renderPost(fandom, postId, post) {
+function renderPost(fandom, postId, post, index) {
   const timeStr = getRelativeTime(post.timestamp);
+  const postNumber = index + 1; // 1부터 시작하는 순번
 
   const postEl = document.createElement("div");
   postEl.className = "post-item post-list-compact";
@@ -3717,11 +3742,13 @@ function renderPost(fandom, postId, post) {
   postEl.setAttribute("onclick", `showPostDetail('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()`);
   postEl.style.cursor = "pointer";
   postEl.innerHTML = `
-    <div style="flex: 1; min-width: 0;">
+    <div style="flex: 1; min-width: 0; display: flex; gap: 12px; align-items: center">
+      <div style="background:linear-gradient(135deg,rgba(124,77,255,0.2) 0%,rgba(100,150,255,0.15) 100%);border-radius:8px;padding:6px 10px;font-size:0.85rem;font-weight:700;color:var(--primary);white-space:nowrap;min-width:50px;text-align:center">No.${postNumber}</div>
       <div class="post-list-title">${escHtml(post.title)}</div>
     </div>
     <div class="post-list-meta-row">
       <span class="post-list-meta">👤 ${escHtml(post.authorName)}</span>
+      <span class="post-list-meta">👁️ <span id="view-count-${postId}">${post.views || 0}</span></span>
       <span class="post-list-meta">💬 <span id="comment-count-${postId}">0</span></span>
       <span class="post-list-meta">❤️ <span id="like-count-${postId}">0</span></span>
       <span class="post-list-meta">📅 ${timeStr}</span>
@@ -3733,6 +3760,9 @@ function renderPost(fandom, postId, post) {
 
   // 댓글 개수 업데이트
   updateCommentCount(fandom, postId);
+
+  // 조회수 리스너 설정
+  loadViews(fandom, postId);
 
   return postEl;
 }
@@ -3753,6 +3783,10 @@ async function showPostDetail(fandom, postId) {
     const post = snap.val();
     const isAuthor = isLoggedIn && currentUser && post.authorUid === currentUser.uid;
     const timeStr = getRelativeTime(post.timestamp);
+
+    // 조회수 증가
+    const currentViews = post.views || 0;
+    await db.ref(`community/${fandom}/${postId}/views`).set(currentViews + 1);
 
     // 제목 설정
     document.getElementById("postDetailTitle").textContent = escHtml(post.title);
@@ -4177,7 +4211,8 @@ async function submitPost() {
       authorName: currentUser.customNickname || currentUser.displayName || "익명",
       timestamp: Date.now(),
       isHidden: false,
-      reportCount: 0
+      reportCount: 0,
+      views: 0
     });
 
     showToast("✅ 게시물이 작성되었어요!");
@@ -4284,6 +4319,17 @@ function loadLikes(fandom, postId) {
     const likeCountEl = document.getElementById(`like-count-${postId}`);
     if (likeCountEl) {
       likeCountEl.textContent = likeCount;
+    }
+  });
+}
+
+// ── 조회수 로드 ──
+function loadViews(fandom, postId) {
+  db.ref(`community/${fandom}/${postId}/views`).on("value", snap => {
+    const viewCount = snap.val() || 0;
+    const viewCountEl = document.getElementById(`view-count-${postId}`);
+    if (viewCountEl) {
+      viewCountEl.textContent = viewCount;
     }
   });
 }
