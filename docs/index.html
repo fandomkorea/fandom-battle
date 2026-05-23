@@ -612,14 +612,6 @@
 
 
   <!-- 오늘 투표권 상태 배너 (항상 표시) -->
-  <div id="todayVoteCountBanner" style="background:linear-gradient(135deg,rgba(124,77,255,0.12),rgba(255,77,141,0.08));border:1px solid rgba(124,77,255,0.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;text-align:center;display:flex;justify-content:space-between;align-items:center">
-    <div style="font-size:.8rem;color:var(--text);font-weight:700">
-      <span id="todayVoteDisplay">오늘 투표: 0/10</span>
-    </div>
-    <div style="font-size:.7rem;color:var(--muted)">
-      🎯 하루 1표 무료 + 📺 광고로 최대 9표 더
-    </div>
-  </div>
 
   <!-- 투표 완료 상태 - 투표인증하기 버튼 -->
   <button id="myVotedBar" style="display:none;width:100%;margin-bottom:12px;padding:12px 14px;background:#000;border:1px solid #000;border-radius:var(--radius);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.15s" onclick="shareToX()">𝕏 투표인증하기</button>
@@ -644,8 +636,8 @@
   </div>
 
   <!-- 광고 시청 버튼 -->
-  <button class="ad-vote-cta" id="adVoteCta" onclick="watchAdWithLoginCheck()" style="display:none;width:100%;margin-bottom:12px;padding:12px;background:linear-gradient(135deg,rgba(77,158,255,0.3),rgba(124,77,255,0.3));border:2px solid var(--blue);border-radius:var(--radius);color:var(--blue);font-weight:700;font-size:0.9rem;cursor:pointer;transition:all 0.15s">
-    [광고보기] 9표 투표하기
+  <button class="ad-vote-cta" id="adVoteCta" onclick="watchAdWithLoginCheck()" style="display:none;width:100%;margin-bottom:12px;padding:16px;background:linear-gradient(135deg,#4d9eff,#7c4dff);border:none;border-radius:var(--radius);color:#fff;font-weight:900;font-size:1rem;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 12px rgba(77,158,255,0.3)">
+    📺 광고보기 • 9표 투표하기
   </button>
 
   <!-- 실시간 투표 활동 피드 -->
@@ -1439,7 +1431,7 @@ function showMyVotedBar(group) {
       adCtaEl.innerHTML = `<span class="ad-pending-badge">NEW</span> 🎁 투표권 획득! 아래에서 투표 그룹을 선택하세요!`;
       adCtaEl.disabled = false;
     } else {
-      adCtaEl.innerHTML = `[광고보기] 9표 투표하기`;
+      adCtaEl.innerHTML = `📺 광고보기 • 9표 투표하기`;
       adCtaEl.disabled = false;
       adCtaEl.onclick = watchAdWithLoginCheck;
     }
@@ -1465,7 +1457,7 @@ function showAdButtonAlways() {
   const adCtaEl = document.getElementById("adVoteCta");
   if (!adCtaEl) return;
 
-  adCtaEl.innerHTML = `[광고보기] 9표 투표하기`;
+  adCtaEl.innerHTML = `📺 광고보기 • 9표 투표하기`;
   adCtaEl.disabled = false;
   adCtaEl.onclick = watchAdWithLoginCheck;
   adCtaEl.style.display = "flex";
@@ -1828,11 +1820,7 @@ function renderRankings(data) {
     let distanceBar = "";
     if (!isFirst && votes > 0 && firstPlaceVotes > 0) {
       const gap = firstPlaceVotes - votes;
-      const distancePct = Math.min(100, Math.round((votes / firstPlaceVotes) * 100));
-      distanceBar = `<div style="margin-top:6px;font-size:.73rem;color:var(--primary);margin-bottom:4px;font-weight:700">🎯 1위까지 <span style="color:var(--pink);font-size:.8rem">${gap.toLocaleString()}표</span> 남음!</div>
-        <div class="rank-pct-bar-wrap" style="height:6px">
-          <div class="rank-pct-bar" style="width:${distancePct}%;background:linear-gradient(90deg,${meta.color},${meta.color}dd)"></div>
-        </div>`;
+      distanceBar = `<div style="margin-top:6px;font-size:.73rem;color:var(--primary);margin-bottom:4px;font-weight:700">🎯 1위까지 <span style="color:var(--pink);font-size:.8rem">${gap.toLocaleString()}표</span> 남음!</div>`;
     }
 
     const rec = groupRecords[group];
