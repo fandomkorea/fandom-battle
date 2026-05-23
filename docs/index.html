@@ -3343,7 +3343,22 @@ function renderPost(fandom, postId, post) {
       ${isAuthor ? `<button class="post-action-btn danger" onclick="deletePost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🗑️ 삭제</button>` : ''}
       ${!isAuthor ? `<button class="post-action-btn" onclick="reportPost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🚩 신고</button>` : ''}
     </div>
+    <div id="comments-section-${postId}" class="post-comments" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:12px">💬 댓글</div>
+      <div id="comments-list-${postId}" style="margin-bottom:12px;max-height:200px;overflow-y:auto"></div>
+      ${isLoggedIn ? `
+        <div style="display:flex;gap:8px">
+          <input type="text" id="comment-input-${postId}" placeholder="댓글을 입력해주세요..." style="flex:1;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:0.9rem">
+          <button onclick="submitComment('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()" style="padding:8px 12px;background:var(--primary);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-family:inherit">등록</button>
+        </div>
+      ` : `<div style="font-size:0.8rem;color:var(--muted);text-align:center;padding:12px">댓글을 작성하려면 로그인해주세요</div>`}
+    </div>
   `;
+
+  // 댓글 리스너 설정
+  if (postEl.querySelector(`#comments-list-${postId}`)) {
+    loadComments(fandom, postId);
+  }
 
   return postEl;
 }
@@ -3517,6 +3532,82 @@ async function deletePost(fandom, postId) {
     // Database에서 게시물 삭제
     await db.ref(`community/${fandom}/${postId}`).remove();
     showToast("✅ 게시물이 삭제되었어요");
+  } catch (error) {
+    showToast("삭제 실패: " + error.message);
+    console.error(error);
+  }
+}
+
+// ── 댓글 로드 ──
+function loadComments(fandom, postId) {
+  const commentsList = document.getElementById(`comments-list-${postId}`);
+  if (!commentsList) return;
+
+  db.ref(`community/${fandom}/${postId}/comments`).on("value", snap => {
+    const comments = snap.val() || {};
+    commentsList.innerHTML = "";
+
+    Object.entries(comments).forEach(([commentId, comment]) => {
+      if (comment.isHidden) return;
+
+      const commentDate = new Date(comment.timestamp);
+      const timeStr = commentDate.toLocaleTimeString('ko-KR', {hour: '2-digit', minute:'2-digit'});
+      const isCommentAuthor = isLoggedIn && currentUser && comment.authorUid === currentUser.uid;
+
+      const commentEl = document.createElement("div");
+      commentEl.style.cssText = "padding:8px;background:rgba(124,77,255,0.05);border-radius:6px;margin-bottom:8px;font-size:0.9rem";
+      commentEl.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-weight:600;color:var(--text)">${escHtml(comment.authorName)}</span>
+          <span style="font-size:0.75rem;color:var(--muted)">${timeStr}</span>
+        </div>
+        <div style="color:var(--text);margin-bottom:6px">${escHtml(comment.content)}</div>
+        ${isCommentAuthor ? `<button onclick="deleteComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="font-size:0.75rem;background:none;border:none;color:var(--pink);cursor:pointer;padding:0">삭제</button>` : ''}
+      `;
+      commentsList.appendChild(commentEl);
+    });
+  });
+}
+
+// ── 댓글 작성 ──
+async function submitComment(fandom, postId) {
+  if (!isLoggedIn || !currentUser) {
+    showToast("로그인 후 댓글을 작성할 수 있습니다");
+    return;
+  }
+
+  const input = document.getElementById(`comment-input-${postId}`);
+  const content = input.value.trim();
+
+  if (!content) {
+    showToast("댓글 내용을 입력해주세요");
+    return;
+  }
+
+  try {
+    const commentId = db.ref().push().key;
+    await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).set({
+      content,
+      authorUid: currentUser.uid,
+      authorName: currentUser.customNickname || currentUser.displayName || "익명",
+      timestamp: Date.now(),
+      isHidden: false
+    });
+    input.value = "";
+    showToast("💬 댓글이 등록되었어요!");
+  } catch (error) {
+    showToast("댓글 작성 실패: " + error.message);
+    console.error(error);
+  }
+}
+
+// ── 댓글 삭제 ──
+async function deleteComment(fandom, postId, commentId) {
+  if (!confirm("댓글을 삭제하시겠어요?")) return;
+
+  try {
+    await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).remove();
+    showToast("댓글이 삭제되었어요");
   } catch (error) {
     showToast("삭제 실패: " + error.message);
     console.error(error);
