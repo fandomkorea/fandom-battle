@@ -982,6 +982,22 @@ function showAuthSetupModal() {
 
   // 초기 그리드 렌더링
   renderAuthFandomGrid(ALL_GROUPS);
+
+  // 배경 클릭으로 모달 닫기
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      closeAuthSetupModal();
+    }
+  });
+
+  // ESC 키로 모달 닫기
+  const handleAuthEsc = (e) => {
+    if (e.key === "Escape") {
+      closeAuthSetupModal();
+      document.removeEventListener("keydown", handleAuthEsc);
+    }
+  };
+  document.addEventListener("keydown", handleAuthEsc);
 }
 
 // 팬덤 검색 필터링
@@ -1122,6 +1138,28 @@ function showVoteLoginModal(group) {
   `;
 
   document.body.appendChild(modal);
+
+  // 배경 클릭으로 모달 닫기
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      closeVoteLoginModal();
+    }
+  });
+
+  // ESC 키로 모달 닫기
+  const handleEsc = (e) => {
+    if (e.key === "Escape") {
+      closeVoteLoginModal();
+      document.removeEventListener("keydown", handleEsc);
+    }
+  };
+  document.addEventListener("keydown", handleEsc);
+}
+
+// 로그인 모달 닫기
+function closeVoteLoginModal() {
+  const modal = document.getElementById("voteLoginModal");
+  if (modal) modal.remove();
 }
 
 // 실제 투표 진행 (로그인 모달 닫은 후)
