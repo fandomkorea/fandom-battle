@@ -310,6 +310,32 @@
         max-width: 95vw;
       }
     }
+
+    /* ── 댓글 모달 모바일 최적화 ── */
+    #commentsModal {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 999 !important;
+    }
+    #commentsModal > div {
+      width: 100%;
+      max-width: 500px;
+      max-height: 85vh;
+    }
+    @media (max-width: 480px) {
+      #commentsModal {
+        padding: 12px !important;
+      }
+      #commentsModal > div {
+        border-radius: 12px;
+        max-height: 80vh;
+        padding: 16px;
+      }
+      #commentsModal textarea {
+        min-height: 80px !important;
+        font-size: 1rem;
+      }
+    }
     .ad-modal-title { font-size: 1.1rem; font-weight: 900; margin-bottom: 6px; }
     .ad-modal-desc { font-size: 0.8rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
     .ad-countdown-ring { width: 72px; height: 72px; border-radius: 50%; border: 4px solid var(--border); border-top-color: var(--primary); animation: spin 1s linear infinite; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; }
@@ -745,8 +771,15 @@
       display: flex;
       gap: 12px;
       align-items: center;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       color: var(--muted);
+      flex-wrap: wrap;
+    }
+    @media (max-width: 480px) {
+      .post-meta {
+        font-size: 0.8rem;
+        gap: 8px;
+      }
     }
     .post-author {
       font-weight: 700;
@@ -767,8 +800,14 @@
       color: var(--text);
       margin-bottom: 14px;
       word-break: break-word;
-      max-height: 150px;
-      overflow-y: auto;
+      max-height: none;
+      overflow: visible;
+    }
+    @media (max-width: 480px) {
+      .post-content {
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
     }
     .post-image {
       width: 100%;
@@ -780,28 +819,54 @@
     }
 
     .post-actions {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
       gap: 8px;
-      justify-content: flex-end;
       margin-top: 14px;
       padding-top: 12px;
       border-top: 1px solid var(--border);
     }
     .post-action-btn {
-      padding: 6px 12px;
+      padding: 10px 12px;
       background: transparent;
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 8px;
       color: var(--muted);
-      font-size: 0.75rem;
+      font-size: 0.85rem;
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
       transition: all 0.15s;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
-    .post-action-btn:hover { border-color: var(--primary); color: var(--primary); }
-    .post-action-btn.danger { color: #ff4d4d; border-color: #ff4d4d55; }
-    .post-action-btn.danger:hover { background: rgba(255,77,77,0.1); }
+    .post-action-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: rgba(124,77,255,0.08);
+    }
+    .post-action-btn.danger {
+      color: #ff4d4d;
+      border-color: #ff4d4d55;
+    }
+    .post-action-btn.danger:hover {
+      background: rgba(255,77,77,0.1);
+      border-color: #ff4d4d;
+    }
+    @media (max-width: 480px) {
+      .post-actions {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+      }
+      .post-action-btn {
+        padding: 10px 8px;
+        font-size: 0.8rem;
+        min-height: 44px;
+      }
+    }
 
     .community-empty {
       text-align: center;
@@ -836,7 +901,6 @@
       background: rgba(0,0,0,0.7) !important;
       z-index: 999 !important;
       padding: 16px !important;
-      padding-bottom: 80px !important;
       align-items: center !important;
       justify-content: center !important;
       overflow-y: auto !important;
@@ -852,9 +916,24 @@
       overflow-y: auto;
       animation: slideUp 0.3s ease;
     }
+    @media (max-width: 480px) {
+      #postCreateModal {
+        padding: 12px !important;
+        padding-bottom: 12px !important;
+      }
+      #postCreateModal > div {
+        max-height: 80vh;
+        padding: 16px;
+        border-radius: 12px;
+      }
+    }
     @keyframes slideUp {
       from { transform: translateY(30px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); max-height: 0; }
+      to { opacity: 1; transform: translateY(0); max-height: 200px; }
     }
     #postCreateModal h2 {
       font-size: 1.2rem;
@@ -1070,14 +1149,20 @@
         <option value="">— 팬덤을 선택해주세요 —</option>
       </select>
     </div>
-    <div style="margin-bottom: 16px">
-      <input type="text" id="communitySearchInput" placeholder="🔍 게시물 검색 (제목/내용)..." style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.95rem" oninput="filterCommunityPosts()">
+
+    <!-- 검색 & 정렬 토글 섹션 -->
+    <div style="margin-bottom: 12px;display:flex;gap:8px;align-items:center">
+      <button onclick="toggleSearchSort()" style="flex:1;padding:10px 12px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;font-size:0.9rem">🔍 검색 & 정렬</button>
+      <button id="toggleSearchSortBtn" class="community-new-post-btn" onclick="showPostCreateForm()" style="flex:1;padding:10px 12px;margin:0;font-size:0.9rem">✏️ 새 글</button>
     </div>
-    <div style="margin-bottom: 16px;display:flex;gap:8px">
-      <button id="sortBtn-latest" class="community-sort-btn active" onclick="sortCommunityPosts('latest')" style="flex:1;padding:10px;background:var(--primary);border:1px solid var(--primary);border-radius:8px;color:#fff;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s">📅 최신순</button>
-      <button id="sortBtn-popular" class="community-sort-btn" onclick="sortCommunityPosts('popular')" style="flex:1;padding:10px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s">⭐ 인기순</button>
+
+    <!-- 검색 & 정렬 (토글로 접을 수 있음) -->
+    <div id="searchSortSection" style="margin-bottom: 16px;display:none">
+      <div style="margin-bottom: 12px">
+        <input type="text" id="communitySearchInput" placeholder="🔍 제목이나 내용으로 검색..." style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.9rem" oninput="filterCommunityPosts()">
+      </div>
+      <button id="sortToggleBtn" onclick="toggleSortMode()" style="width:100%;padding:10px;background:var(--primary);border:1px solid var(--primary);border-radius:8px;color:#fff;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;font-size:0.9rem">📅 최신순으로 정렬 중</button>
     </div>
-    <button class="community-new-post-btn" onclick="showPostCreateForm()">✏️ 새 글 쓰기</button>
   </div>
 
   <!-- 게시물 리스트 -->
@@ -1119,6 +1204,35 @@
     <div style="display:flex;gap:8px">
       <button onclick="closePostCreateModal()" style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:600;font-family:inherit;cursor:pointer">취소</button>
       <button onclick="submitPost()" style="flex:1;padding:12px;background:var(--primary);border:none;border-radius:8px;color:#fff;font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.15s">작성하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 전체 콘텐츠 모달 -->
+<div id="fullContentModal" style="display:none !important;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;padding:16px;overflow-y:auto">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 style="font-size:1.1rem;font-weight:700">📄 전체 내용</h2>
+      <button onclick="closeFullContentModal()" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer">✕</button>
+    </div>
+    <div id="fullContentText" style="font-size:0.95rem;line-height:1.6;color:var(--text);white-space:pre-wrap;word-break:break-word"></div>
+  </div>
+</div>
+
+<!-- 댓글 모달 -->
+<div id="commentsModal" style="display:none !important;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;padding:16px;overflow-y:auto">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 style="font-size:1.1rem;font-weight:700">💬 댓글</h2>
+      <button onclick="closeCommentsModal()" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer">✕</button>
+    </div>
+
+    <!-- 댓글 리스트 -->
+    <div id="commentsModalList" style="margin-bottom:16px;max-height:400px;overflow-y:auto;border-bottom:1px solid var(--border);padding-bottom:16px"></div>
+
+    <!-- 댓글 입력 -->
+    <div id="commentsModalInput">
+      <!-- 동적으로 로드됨 -->
     </div>
   </div>
 </div>
@@ -3320,10 +3434,19 @@ function loadCommunityPosts() {
   });
 }
 
+// ── 검색 & 정렬 섹션 토글 ──
+function toggleSearchSort() {
+  const section = document.getElementById("searchSortSection");
+  const isVisible = section.style.display !== "none";
+
+  section.style.display = isVisible ? "none" : "block";
+}
+
 // ── 게시물 검색/필터 ──
 function filterCommunityPosts() {
   const searchText = document.getElementById("communitySearchInput").value.toLowerCase();
   const postItems = document.querySelectorAll(".post-item");
+  let visibleCount = 0;
 
   if (!searchText.trim()) {
     postItems.forEach(item => item.style.display = "block");
@@ -3336,22 +3459,38 @@ function filterCommunityPosts() {
 
     const isMatch = title.includes(searchText) || content.includes(searchText);
     item.style.display = isMatch ? "block" : "none";
+    if (isMatch) visibleCount++;
   });
+
+  // 검색 결과 없음 메시지 표시
+  let emptyMsg = document.getElementById("searchEmptyMsg");
+  if (visibleCount === 0) {
+    if (!emptyMsg) {
+      const postsList = document.getElementById("communityPostsList");
+      emptyMsg = document.createElement("div");
+      emptyMsg.id = "searchEmptyMsg";
+      emptyMsg.style.cssText = "text-align:center;padding:40px 20px;color:var(--muted);background:rgba(124,77,255,0.04);border:1px dashed var(--border);border-radius:12px;margin:16px 0;font-size:0.9rem";
+      emptyMsg.innerHTML = `<div style="font-size:2rem;margin-bottom:12px">🔍</div><div>"<strong>${escHtml(searchText)}</strong>"에 대한 검색 결과가 없어요</div>`;
+      postsList.appendChild(emptyMsg);
+    }
+    emptyMsg.style.display = "block";
+  } else if (emptyMsg) {
+    emptyMsg.style.display = "none";
+  }
 }
 
 // ── 게시물 정렬 ──
 let currentSortMode = "latest";
+
+function toggleSortMode() {
+  currentSortMode = currentSortMode === "latest" ? "popular" : "latest";
+  const btn = document.getElementById("sortToggleBtn");
+  btn.textContent = currentSortMode === "latest" ? "📅 최신순으로 정렬 중" : "⭐ 인기순으로 정렬 중";
+  sortCommunityPosts(currentSortMode);
+}
+
 function sortCommunityPosts(mode) {
   currentSortMode = mode;
-
-  // 버튼 스타일 업데이트
-  document.getElementById("sortBtn-latest").style.background = mode === "latest" ? "var(--primary)" : "transparent";
-  document.getElementById("sortBtn-latest").style.borderColor = mode === "latest" ? "var(--primary)" : "var(--border)";
-  document.getElementById("sortBtn-latest").style.color = mode === "latest" ? "#fff" : "var(--text)";
-
-  document.getElementById("sortBtn-popular").style.background = mode === "popular" ? "var(--primary)" : "transparent";
-  document.getElementById("sortBtn-popular").style.borderColor = mode === "popular" ? "var(--primary)" : "var(--border)";
-  document.getElementById("sortBtn-popular").style.color = mode === "popular" ? "#fff" : "var(--text)";
 
   // 게시물 재정렬
   const postsList = document.getElementById("communityPostsList");
@@ -3364,10 +3503,10 @@ function sortCommunityPosts(mode) {
       const timeB = parseInt(b.getAttribute("data-timestamp") || 0);
       return timeB - timeA;
     } else if (mode === "popular") {
-      // 인기순: 댓글 수 내림차순
-      const commentsA = a.querySelectorAll("#comments-list-* > div").length;
-      const commentsB = b.querySelectorAll("#comments-list-* > div").length;
-      return commentsB - commentsA;
+      // 인기순: 좋아요 수 또는 댓글 수 내림차순
+      const likesA = parseInt(a.getAttribute("data-likes") || 0);
+      const likesB = parseInt(b.getAttribute("data-likes") || 0);
+      return likesB - likesA;
     }
   });
 
@@ -3420,35 +3559,148 @@ function renderPost(fandom, postId, post) {
     </div>
     <div class="post-actions" style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="post-action-btn" onclick="toggleLike('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()" style="flex:1">❤️ <span id="like-count-${postId}">0</span></button>
+      <button class="post-action-btn" onclick="showCommentsModal('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">💬 <span id="comment-count-${postId}">0</span></button>
       ${isAuthor ? `<button class="post-action-btn" onclick="editPost('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(post.title)}', '${escAttr(post.content)}'); event.stopPropagation()">✏️ 수정</button>` : ''}
-      ${isAuthor ? `<button class="post-action-btn danger" onclick="deletePost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🗑️ 삭제</button>` : ''}
+      ${isAuthor ? `<button class="post-action-btn danger" onclick="confirmDeletePost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🗑️ 삭제</button>` : ''}
       ${!isAuthor ? `<button class="post-action-btn" onclick="reportPost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🚩 신고</button>` : ''}
     </div>
-    <div id="comments-section-${postId}" class="post-comments" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-      <div style="font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:12px">💬 댓글</div>
-      <div id="comments-list-${postId}" style="margin-bottom:12px;max-height:200px;overflow-y:auto"></div>
-      ${isLoggedIn ? `
-        <div style="display:flex;gap:8px">
-          <input type="text" id="comment-input-${postId}" placeholder="댓글을 입력해주세요..." style="flex:1;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:0.9rem">
-          <button onclick="submitComment('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()" style="padding:8px 12px;background:var(--primary);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-family:inherit">등록</button>
-        </div>
-      ` : `<div style="font-size:0.8rem;color:var(--muted);text-align:center;padding:12px">댓글을 작성하려면 로그인해주세요</div>`}
-    </div>
   `;
-
-  // 댓글 리스너 설정
-  if (postEl.querySelector(`#comments-list-${postId}`)) {
-    loadComments(fandom, postId);
-  }
 
   // 좋아요 리스너 설정
   loadLikes(fandom, postId);
 
+  // 댓글 개수 업데이트
+  updateCommentCount(fandom, postId);
+
   return postEl;
+}
+
+// ── 댓글 모달 열기 ──
+function showCommentsModal(fandom, postId) {
+  const modal = document.getElementById("commentsModal");
+  modal.style.display = "flex";
+
+  // 댓글 목록 로드
+  const commentsList = document.getElementById("commentsModalList");
+  commentsList.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">댓글을 불러오는 중...</div>';
+
+  // 댓글 리스너 설정
+  db.ref(`community/${fandom}/${postId}/comments`).on("value", snap => {
+    const comments = snap.val() || {};
+    commentsList.innerHTML = "";
+
+    if (Object.keys(comments).length === 0) {
+      commentsList.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">댓글이 없어요. 첫 댓글을 남겨보세요!</div>';
+    } else {
+      Object.entries(comments).forEach(([commentId, comment]) => {
+        if (comment.isHidden) return;
+
+        const isCommentAuthor = isLoggedIn && currentUser && comment.authorUid === currentUser.uid;
+        const timeStr = getRelativeTime(comment.timestamp);
+
+        const commentEl = document.createElement("div");
+        commentEl.style.cssText = "padding:12px;background:rgba(124,77,255,0.05);border-radius:8px;margin-bottom:8px";
+        commentEl.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+            <div>
+              <span style="font-weight:700;color:var(--text);font-size:0.9rem">${escHtml(comment.authorName)}</span>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${timeStr}</div>
+            </div>
+            ${isCommentAuthor ? `<button onclick="deleteComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="font-size:0.7rem;background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.3);color:var(--pink);cursor:pointer;padding:4px 8px;border-radius:4px">삭제</button>` : ''}
+          </div>
+          <div style="color:var(--text);font-size:0.9rem;line-height:1.5">${escHtml(comment.content)}</div>
+        `;
+        commentsList.appendChild(commentEl);
+      });
+    }
+  });
+
+  // 댓글 입력 섹션 업데이트
+  const inputSection = document.getElementById("commentsModalInput");
+  if (isLoggedIn) {
+    inputSection.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <textarea id="modal-comment-input" placeholder="댓글을 입력해주세요..." style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.9rem;resize:none;min-height:60px" maxlength="500"></textarea>
+        <button onclick="submitCommentFromModal('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()" style="padding:12px;background:var(--primary);border:none;border-radius:8px;color:#fff;font-weight:700;font-family:inherit;cursor:pointer">댓글 작성</button>
+      </div>
+    `;
+  } else {
+    inputSection.innerHTML = '<div style="text-align:center;padding:16px;background:rgba(124,77,255,0.1);border-radius:8px;color:var(--muted);font-size:0.9rem">댓글을 작성하려면 로그인해주세요</div>';
+  }
+}
+
+// ── 댓글 모달 닫기 ──
+function closeCommentsModal() {
+  const modal = document.getElementById("commentsModal");
+  modal.style.display = "none";
+
+  // 리스너 해제
+  const postItems = document.querySelectorAll(".post-item");
+  postItems.forEach(item => {
+    const postId = item.getAttribute("data-postid");
+    if (postId) {
+      db.ref(`community/${postId}/comments`).off("value");
+    }
+  });
+}
+
+// ── 모달에서 댓글 작성 ──
+async function submitCommentFromModal(fandom, postId) {
+  if (!isLoggedIn || !currentUser) {
+    showToast("로그인이 필요합니다");
+    return;
+  }
+
+  const textarea = document.getElementById("modal-comment-input");
+  const content = textarea.value.trim();
+
+  if (!content) {
+    showToast("댓글 내용을 입력해주세요");
+    return;
+  }
+
+  try {
+    const commentId = db.ref().push().key;
+    await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).set({
+      content,
+      authorUid: currentUser.uid,
+      authorName: currentUser.customNickname || currentUser.displayName || "익명",
+      timestamp: Date.now(),
+      isHidden: false
+    });
+    textarea.value = "";
+    showToast("댓글이 작성됐어요!");
+  } catch (e) {
+    console.error("댓글 작성 실패:", e);
+    showToast("댓글 작성에 실패했어요");
+  }
+}
+
+// ── 댓글 개수 업데이트 ──
+function updateCommentCount(fandom, postId) {
+  db.ref(`community/${fandom}/${postId}/comments`).on("value", snap => {
+    const comments = snap.val() || {};
+    const count = Object.keys(comments).filter(id => !comments[id].isHidden).length;
+    const btn = document.getElementById(`comment-count-${postId}`);
+    if (btn) btn.textContent = count;
+  });
+}
+
+// ── 게시물 삭제 확인 ──
+function confirmDeletePost(fandom, postId) {
+  if (confirm("정말 이 게시물을 삭제하시겠어요?\n삭제하면 댓글도 함께 사라져요.")) {
+    deletePost(fandom, postId);
+  }
 }
 
 // ── 게시물 작성 폼 ──
 function showPostCreateForm() {
+  if (!isLoggedIn || !currentUser) {
+    showToast("로그인이 필요합니다");
+    document.getElementById("authContainer").style.display = "block";
+    return;
+  }
+
   const selectedFandom = document.getElementById("communityFandomSelect").value;
   if (!selectedFandom) {
     showToast("먼저 팬덤을 선택해주세요");
@@ -3624,8 +3876,33 @@ async function deletePost(fandom, postId) {
 
 // ── 게시물 전체 내용 보기 ──
 function showFullContent(postId, content) {
-  alert(content);
+  const modal = document.getElementById("fullContentModal");
+  const textEl = document.getElementById("fullContentText");
+  textEl.textContent = content;
+  modal.style.display = "flex";
 }
+
+function closeFullContentModal() {
+  document.getElementById("fullContentModal").style.display = "none";
+}
+
+// 모달 외부 클릭 시 닫기
+document.addEventListener("click", (e) => {
+  const modal = document.getElementById("fullContentModal");
+  if (modal && e.target === modal) {
+    closeFullContentModal();
+  }
+});
+
+// ESC 키로 모달 닫기
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    const modal = document.getElementById("fullContentModal");
+    if (modal && modal.style.display === "flex") {
+      closeFullContentModal();
+    }
+  }
+});
 
 // ── 좋아요 토글 ──
 async function toggleLike(fandom, postId) {
