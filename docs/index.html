@@ -724,7 +724,6 @@
       border-radius: var(--radius);
       padding: 20px;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
       position: relative;
       overflow: hidden;
     }
@@ -732,6 +731,60 @@
       border-color: var(--primary);
       box-shadow: 0 4px 16px rgba(124,77,255,0.15);
       transform: translateY(-2px);
+    }
+
+    /* ── 컴팩트 게시물 목록 ── */
+    .post-list-compact {
+      padding: 12px 16px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    .post-list-compact:hover {
+      background: rgba(124,77,255,0.08);
+    }
+    .post-list-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text);
+      word-break: break-word;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .post-list-meta-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .post-list-meta {
+      font-size: 0.8rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    @media (max-width: 480px) {
+      .post-list-compact {
+        padding: 10px 12px;
+        gap: 8px;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .post-list-title {
+        font-size: 0.9rem;
+      }
+      .post-list-meta-row {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 8px;
+      }
+      .post-list-meta {
+        font-size: 0.75rem;
+      }
     }
     .post-item::before {
       content: '';
@@ -1205,6 +1258,25 @@
       <button onclick="closePostCreateModal()" style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:600;font-family:inherit;cursor:pointer">취소</button>
       <button onclick="submitPost()" style="flex:1;padding:12px;background:var(--primary);border:none;border-radius:8px;color:#fff;font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.15s">작성하기</button>
     </div>
+  </div>
+</div>
+
+<!-- 게시물 상세 모달 -->
+<div id="postDetailModal" style="display:none !important;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;padding:16px;overflow-y:auto">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+      <div style="flex:1">
+        <h2 id="postDetailTitle" style="font-size:1.3rem;font-weight:900;color:var(--text);margin-bottom:8px"></h2>
+        <div id="postDetailMeta" style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.85rem;color:var(--muted)"></div>
+      </div>
+      <button onclick="closePostDetail()" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;flex-shrink:0">✕</button>
+    </div>
+
+    <div id="postDetailContent" style="font-size:0.95rem;line-height:1.6;color:var(--text);margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);white-space:pre-wrap;word-break:break-word"></div>
+
+    <div id="postDetailActions" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)"></div>
+
+    <div id="postDetailComments"></div>
   </div>
 </div>
 
@@ -3535,34 +3607,25 @@ function getRelativeTime(timestamp) {
 }
 
 // ── 게시물 렌더링 ──
+// ── 게시물 목록 아이템 렌더링 (컴팩트 리스트) ──
 function renderPost(fandom, postId, post) {
-  const isAuthor = isLoggedIn && currentUser && post.authorUid === currentUser.uid;
   const timeStr = getRelativeTime(post.timestamp);
 
   const postEl = document.createElement("div");
-  postEl.className = "post-item";
+  postEl.className = "post-item post-list-compact";
   postEl.setAttribute("data-timestamp", post.timestamp || 0);
+  postEl.setAttribute("data-postid", postId);
+  postEl.setAttribute("onclick", `showPostDetail('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()`);
+  postEl.style.cursor = "pointer";
   postEl.innerHTML = `
-    <div class="post-header">
-      <div>
-        <div class="post-title">${escHtml(post.title)}</div>
-        <div class="post-meta">
-          <span class="post-author">👤 ${escHtml(post.authorName)}</span>
-          <span class="post-date">📅 ${timeStr}</span>
-        </div>
-      </div>
+    <div style="flex: 1; min-width: 0;">
+      <div class="post-list-title">${escHtml(post.title)}</div>
     </div>
-    <div class="post-content" id="preview-${postId}">
-      ${post.content.length > 200 ?
-        `${escHtml(post.content.substring(0, 200))}... <a onclick="showFullContent('${escAttr(postId)}', \`${escAttr(post.content)}\`); event.stopPropagation()" style="color:var(--primary);cursor:pointer;text-decoration:underline">더 보기</a>`
-        : escHtml(post.content).replace(/\n/g, '<br>')}
-    </div>
-    <div class="post-actions" style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="post-action-btn" onclick="toggleLike('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()" style="flex:1">❤️ <span id="like-count-${postId}">0</span></button>
-      <button class="post-action-btn" onclick="showCommentsModal('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">💬 <span id="comment-count-${postId}">0</span></button>
-      ${isAuthor ? `<button class="post-action-btn" onclick="editPost('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(post.title)}', '${escAttr(post.content)}'); event.stopPropagation()">✏️ 수정</button>` : ''}
-      ${isAuthor ? `<button class="post-action-btn danger" onclick="confirmDeletePost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🗑️ 삭제</button>` : ''}
-      ${!isAuthor ? `<button class="post-action-btn" onclick="reportPost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🚩 신고</button>` : ''}
+    <div class="post-list-meta-row">
+      <span class="post-list-meta">👤 ${escHtml(post.authorName)}</span>
+      <span class="post-list-meta">💬 <span id="comment-count-${postId}">0</span></span>
+      <span class="post-list-meta">❤️ <span id="like-count-${postId}">0</span></span>
+      <span class="post-list-meta">📅 ${timeStr}</span>
     </div>
   `;
 
@@ -3573,6 +3636,154 @@ function renderPost(fandom, postId, post) {
   updateCommentCount(fandom, postId);
 
   return postEl;
+}
+
+// ── 게시물 상세 페이지 열기 ──
+async function showPostDetail(fandom, postId) {
+  const modal = document.getElementById("postDetailModal");
+  modal.style.display = "flex";
+
+  try {
+    // 게시물 데이터 로드
+    const snap = await db.ref(`community/${fandom}/${postId}`).once("value");
+    if (!snap.exists()) {
+      showToast("게시물을 찾을 수 없어요");
+      return;
+    }
+
+    const post = snap.val();
+    const isAuthor = isLoggedIn && currentUser && post.authorUid === currentUser.uid;
+    const timeStr = getRelativeTime(post.timestamp);
+
+    // 제목 설정
+    document.getElementById("postDetailTitle").textContent = escHtml(post.title);
+
+    // 메타 정보 설정
+    const metaHTML = `
+      <span class="post-author">👤 ${escHtml(post.authorName)}</span>
+      <span class="post-date">📅 ${timeStr}</span>
+    `;
+    document.getElementById("postDetailMeta").innerHTML = metaHTML;
+
+    // 내용 설정
+    document.getElementById("postDetailContent").textContent = post.content;
+
+    // 액션 버튼 설정
+    const actionsHTML = `
+      <button class="post-action-btn" onclick="toggleLike('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">❤️ <span id="detail-like-count-${postId}">0</span></button>
+      <button class="post-action-btn" onclick="document.getElementById('postDetailCommentsList').scrollIntoView({behavior:'smooth'}); event.stopPropagation()">💬 <span id="detail-comment-count-${postId}">0</span></button>
+      ${isAuthor ? `<button class="post-action-btn" onclick="editPost('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(post.title)}', '${escAttr(post.content)}'); event.stopPropagation()">✏️ 수정</button>` : ''}
+      ${isAuthor ? `<button class="post-action-btn danger" onclick="confirmDeletePost('${escAttr(fandom)}', '${escAttr(postId)}'); closePostDetail(); event.stopPropagation()">🗑️ 삭제</button>` : ''}
+      ${!isAuthor ? `<button class="post-action-btn" onclick="reportPost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🚩 신고</button>` : ''}
+    `;
+    document.getElementById("postDetailActions").innerHTML = actionsHTML;
+
+    // 좋아요 수 업데이트
+    db.ref(`community/${fandom}/${postId}/likes`).on("value", snap => {
+      const likes = snap.val() || {};
+      const likeCount = Object.keys(likes).length;
+      const el = document.getElementById(`detail-like-count-${postId}`);
+      if (el) el.textContent = likeCount;
+    });
+
+    // 댓글 섹션 설정
+    const commentsHTML = `
+      <div style="font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:12px">💬 댓글</div>
+      <div id="postDetailCommentsList" style="margin-bottom:12px;max-height:300px;overflow-y:auto"></div>
+      ${isLoggedIn ? `
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <textarea id="detail-comment-input-${postId}" placeholder="댓글을 입력해주세요..." style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.9rem;resize:none;min-height:60px" maxlength="500"></textarea>
+          <button onclick="submitDetailComment('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()" style="padding:10px;background:var(--primary);border:none;border-radius:8px;color:#fff;font-weight:700;font-family:inherit;cursor:pointer">댓글 작성</button>
+        </div>
+      ` : `<div style="text-align:center;padding:12px;background:rgba(124,77,255,0.1);border-radius:8px;color:var(--muted);font-size:0.9rem">댓글을 작성하려면 로그인해주세요</div>`}
+    `;
+    document.getElementById("postDetailComments").innerHTML = commentsHTML;
+
+    // 댓글 로드
+    loadDetailComments(fandom, postId);
+
+  } catch (e) {
+    console.error("게시물 로드 실패:", e);
+    showToast("게시물을 불러올 수 없어요");
+  }
+}
+
+// ── 게시물 상세 페이지 닫기 ──
+function closePostDetail() {
+  document.getElementById("postDetailModal").style.display = "none";
+}
+
+// ── 상세 페이지에서 댓글 로드 ──
+function loadDetailComments(fandom, postId) {
+  const commentsList = document.getElementById("postDetailCommentsList");
+
+  db.ref(`community/${fandom}/${postId}/comments`).on("value", snap => {
+    const comments = snap.val() || {};
+    commentsList.innerHTML = "";
+    let commentCount = 0;
+
+    if (Object.keys(comments).length === 0) {
+      commentsList.innerHTML = '<div style="text-align:center;padding:12px;color:var(--muted);font-size:0.9rem">댓글이 없어요</div>';
+    } else {
+      Object.entries(comments).forEach(([commentId, comment]) => {
+        if (comment.isHidden) return;
+        commentCount++;
+
+        const isCommentAuthor = isLoggedIn && currentUser && comment.authorUid === currentUser.uid;
+        const timeStr = getRelativeTime(comment.timestamp);
+
+        const commentEl = document.createElement("div");
+        commentEl.style.cssText = "padding:10px;background:rgba(124,77,255,0.05);border-radius:8px;margin-bottom:8px;font-size:0.9rem";
+        commentEl.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+            <div>
+              <span style="font-weight:700;color:var(--text)">${escHtml(comment.authorName)}</span>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${timeStr}</div>
+            </div>
+            ${isCommentAuthor ? `<button onclick="deleteComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="font-size:0.7rem;background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.3);color:var(--pink);cursor:pointer;padding:4px 8px;border-radius:4px">삭제</button>` : ''}
+          </div>
+          <div style="color:var(--text)">${escHtml(comment.content)}</div>
+        `;
+        commentsList.appendChild(commentEl);
+      });
+    }
+
+    // 댓글 수 업데이트
+    const countEl = document.getElementById(`detail-comment-count-${postId}`);
+    if (countEl) countEl.textContent = commentCount;
+  });
+}
+
+// ── 상세 페이지에서 댓글 작성 ──
+async function submitDetailComment(fandom, postId) {
+  if (!isLoggedIn || !currentUser) {
+    showToast("로그인이 필요합니다");
+    return;
+  }
+
+  const textarea = document.getElementById(`detail-comment-input-${postId}`);
+  const content = textarea.value.trim();
+
+  if (!content) {
+    showToast("댓글 내용을 입력해주세요");
+    return;
+  }
+
+  try {
+    const commentId = db.ref().push().key;
+    await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).set({
+      content,
+      authorUid: currentUser.uid,
+      authorName: currentUser.customNickname || currentUser.displayName || "익명",
+      timestamp: Date.now(),
+      isHidden: false
+    });
+    textarea.value = "";
+    showToast("댓글이 작성됐어요!");
+  } catch (e) {
+    console.error("댓글 작성 실패:", e);
+    showToast("댓글 작성에 실패했어요");
+  }
 }
 
 // ── 댓글 모달 열기 ──
