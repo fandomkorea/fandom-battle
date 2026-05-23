@@ -1194,35 +1194,16 @@
 
 <!-- 커뮤니티 페이지 -->
 <div id="communityPage">
-  <div class="community-header">
-    <div class="community-title">💬 팬덤 커뮤니티</div>
-    <div style="margin-bottom: 16px">
-      <label class="community-fandom-label" style="display: block; margin-bottom: 10px">🎯 팬덤 선택</label>
-      <select id="communityFandomSelect" class="community-fandom-dropdown" onchange="loadCommunityPosts()">
-        <option value="">— 팬덤을 선택해주세요 —</option>
-      </select>
-    </div>
+  <!-- 숨겨진 팬덤 선택기 (팬덤 변경용) -->
+  <select id="communityFandomSelect" style="display:none" onchange="handleFandomChange()">
+    <option value="">— 팬덤을 선택해주세요 —</option>
+  </select>
 
-    <!-- 검색 & 정렬 토글 섹션 -->
-    <div style="margin-bottom: 12px;display:flex;gap:8px;align-items:center">
-      <button onclick="toggleSearchSort()" style="flex:1;padding:10px 12px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;font-size:0.9rem">🔍 검색 & 정렬</button>
-      <button id="toggleSearchSortBtn" class="community-new-post-btn" onclick="showPostCreateForm()" style="flex:1;padding:10px 12px;margin:0;font-size:0.9rem">✏️ 새 글</button>
-    </div>
-
-    <!-- 검색 & 정렬 (토글로 접을 수 있음) -->
-    <div id="searchSortSection" style="margin-bottom: 16px;display:none">
-      <div style="margin-bottom: 12px">
-        <input type="text" id="communitySearchInput" placeholder="🔍 제목이나 내용으로 검색..." style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.9rem" oninput="filterCommunityPosts()">
-      </div>
-      <button id="sortToggleBtn" onclick="toggleSortMode()" style="width:100%;padding:10px;background:var(--primary);border:1px solid var(--primary);border-radius:8px;color:#fff;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;font-size:0.9rem">📅 최신순으로 정렬 중</button>
-    </div>
-  </div>
-
-  <!-- 게시물 리스트 -->
+  <!-- 게시물 리스트 (깔끔함) -->
   <div class="community-posts-section" id="communityPostsList">
     <div class="community-empty">
       <div class="community-empty-icon">📝</div>
-      <div class="community-empty-text">팬덤을 선택하여 커뮤니티에 참여해보세요!</div>
+      <div class="community-empty-text">팬덤을 선택하여 커뮤니티를 시작해보세요!</div>
     </div>
   </div>
 </div><!-- communityPage 닫기 -->
@@ -1719,12 +1700,111 @@ function loadAuthUserData(callback) {
       const data = snap.val();
       currentUser.customNickname = data.nickname || null;
       currentUser.customFandom = data.fandom || null;
+      currentUser.primaryFandom = data.primaryFandom || null; // 기본 팬덤
+      currentUser.lastFandomChangeTime = data.lastFandomChangeTime || 0; // 마지막 팬덤 변경 시간
     }
     if (callback) callback();
   }).catch(err => {
     console.error("Failed to load user data:", err);
     if (callback) callback();
   });
+}
+
+// ── 팬덤 변경 (24시간 + 48시간 투표 제약) ──
+async function changePrimaryFandom(newFandom) {
+  if (!isLoggedIn || !currentUser) {
+    showToast("로그인이 필요합니다");
+    return;
+  }
+
+  if (!newFandom || !GROUP_META[newFandom]) {
+    showToast("올바른 팬덤을 선택해주세요");
+    return;
+  }
+
+  // 같은 팬덤으로 변경하려는 경우
+  if (currentUser.primaryFandom === newFandom) {
+    showToast("이미 선택된 팬덤입니다");
+    return;
+  }
+
+  // 변경 전 확인 메시지
+  const emoji = GROUP_META[newFandom]?.emoji || "💜";
+  const confirmed = confirm(
+    `${emoji} ${newFandom}로 팬덤을 변경하시겠어요?\n\n⚠️ 변경 후:\n• 24시간 동안 게시글 작성 불가\n• 48시간 동안 투표 불가`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const now = Date.now();
+    await db.ref(`users/${currentUser.uid}`).update({
+      primaryFandom: newFandom,
+      lastFandomChangeTime: now
+    });
+
+    currentUser.primaryFandom = newFandom;
+    currentUser.lastFandomChangeTime = now;
+
+    // 커뮤니티 페이지로 이동
+    showVotePage();
+    document.querySelectorAll(".nav-tab").forEach(btn => btn.classList.remove("active"));
+    document.querySelectorAll(".nav-tab")[1].classList.add("active");
+
+    showToast(`✅ ${emoji} ${newFandom}으로 변경되었습니다!\n게시글: 24시간 후 | 투표: 48시간 후`);
+  } catch (e) {
+    console.error("팬덤 변경 실패:", e);
+    showToast("팬덤 변경에 실패했어요");
+  }
+}
+
+// ── 팬덤 변경 가능 여부 확인 ──
+function canChangeFandom() {
+  if (!isLoggedIn || !currentUser) return false;
+  // 언제든 변경 가능 (변경 후 제약이 생김)
+  return true;
+}
+
+// ── 게시글 작성 가능 여부 (팬덤 제약) ──
+function canWritePost(selectedFandom) {
+  if (!isLoggedIn || !currentUser) {
+    showToast("로그인이 필요합니다");
+    return false;
+  }
+
+  // 자신의 팬덤이 아니면 작성 불가
+  if (selectedFandom !== currentUser.primaryFandom) {
+    showToast(`❌ ${currentUser.primaryFandom} 커뮤니티에서만 게시글을 작성할 수 있어요!`);
+    return false;
+  }
+
+  // 팬덤 변경 후 24시간 이내 작성 불가
+  const now = Date.now();
+  const hoursPassedSinceChange = (now - currentUser.lastFandomChangeTime) / (1000 * 60 * 60);
+
+  if (hoursPassedSinceChange < 24) {
+    const hoursLeft = Math.ceil(24 - hoursPassedSinceChange);
+    showToast(`⏳ 팬덤 변경 후 ${hoursLeft}시간 후부터 게시글을 작성할 수 있어요`);
+    return false;
+  }
+
+  return true;
+}
+
+// ── 투표 가능 여부 (팬덤 변경 후 48시간 제약) ──
+function canVoteAfterFandomChange() {
+  if (!isLoggedIn || !currentUser) return true; // 로그인 안 한 사람은 제약 없음
+
+  const now = Date.now();
+  const hoursPassedSinceChange = (now - currentUser.lastFandomChangeTime) / (1000 * 60 * 60);
+
+  if (hoursPassedSinceChange < 48) {
+    const hoursLeft = Math.ceil(48 - hoursPassedSinceChange);
+    showToast(`⏳ 팬덤 변경 후 ${hoursLeft}시간 후부터 투표할 수 있어요`);
+    return false;
+  }
+
+  return true;
 }
 
 // 닉네임/팬덤 설정 모달 표시
@@ -2154,6 +2234,11 @@ async function voteForGroup(group) {
   // 비로그인 상태면 로그인 모달 띄우기
   if (!isLoggedIn) {
     showVoteLoginModal(group);
+    return;
+  }
+
+  // ★ 팬덤 변경 후 48시간 제약 확인
+  if (!canVoteAfterFandomChange()) {
     return;
   }
 
@@ -3915,6 +4000,11 @@ function showPostCreateForm() {
   const selectedFandom = document.getElementById("communityFandomSelect").value;
   if (!selectedFandom) {
     showToast("먼저 팬덤을 선택해주세요");
+    return;
+  }
+
+  // 권한 체크: 자신의 팬덤에서만 작성 가능 + 24시간 제약 확인
+  if (!canWritePost(selectedFandom)) {
     return;
   }
 
