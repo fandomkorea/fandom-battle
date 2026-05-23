@@ -767,6 +767,10 @@ let isLoggedIn = false;
 // Google 로그인
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
+  // 기존 로그인된 계정이 자동으로 나타나도록 설정
+  provider.setCustomParameters({
+    prompt: 'select_account' // 계정 선택 화면 표시 (기존 계정 포함)
+  });
   firebase.auth().signInWithPopup(provider)
     .then(result => {
       currentUser = result.user;
