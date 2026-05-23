@@ -3307,7 +3307,10 @@ function loadCommunityPosts() {
     const sortedPosts = Object.entries(posts)
       .sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
 
-    postsList.innerHTML = `<h3>📖 커뮤니티 게시물 (${Object.keys(posts).filter(id => !posts[id].isHidden).length}개)</h3>`;
+    postsList.innerHTML = `<div style="padding:16px;background:linear-gradient(135deg, rgba(124,77,255,0.1), rgba(255,77,141,0.05));border:1px solid var(--border);border-radius:10px;margin-bottom:16px">
+      <div style="font-size:1.3rem;font-weight:700;color:var(--text)">📖 커뮤니티 게시물</div>
+      <div style="font-size:1.8rem;font-weight:900;background:linear-gradient(135deg, var(--primary), var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-top:6px">${Object.keys(posts).filter(id => !posts[id].isHidden).length}개</div>
+    </div>`;
     sortedPosts.forEach(([postId, post]) => {
       if (!post.isHidden) {
         const postEl = renderPost(selectedFandom, postId, post);
