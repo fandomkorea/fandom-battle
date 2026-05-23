@@ -855,13 +855,29 @@ function setupAuthListener() {
     if (user) {
       currentUser = user;
       isLoggedIn = true;
+      loadUserAdVotes(); // Firebase에서 광고 투표권 로드
     } else {
       currentUser = null;
       isLoggedIn = false;
+      pendingAdVotes = 0;
     }
     updateAuthUI();
     updateFavBar(); // 로그인 상태 변경 시 팬덤 선택 바 업데이트 (광고 버튼 상태 포함)
   });
+}
+
+// ── Firebase에서 광고 투표권 로드 ──
+async function loadUserAdVotes() {
+  if (!currentUser) return;
+
+  try {
+    const snap = await db.ref(`users/${currentUser.uid}/pendingAdVotes`).once("value");
+    pendingAdVotes = snap.val() || 0;
+    updateFavBar(); // 로드 후 팬덤 선택 바 업데이트
+  } catch (e) {
+    console.error("광고 투표권 로드 실패:", e);
+    pendingAdVotes = 0;
+  }
 }
 
 // UI 업데이트
@@ -1354,7 +1370,7 @@ async function voteForGroup(group) {
     addExtraVote();
     recordVote(group); // 추가 투표도 기록
     pendingAdVotes -= 1; // 사용한 투표권 차감
-    savePendingAdVotes(); // localStorage 저장
+    await savePendingAdVotes(); // Firebase 저장 (동기화)
     addActivity(group);
 
     // Firebase에 투표 기록 (비동기)
@@ -1559,10 +1575,10 @@ function watchAd() {
   }, 1000);
 }
 
-function claimAdReward() {
+async function claimAdReward() {
   document.getElementById("adModal")?.remove();
   pendingAdVotes += 9; // 투표권 9개 누적
-  savePendingAdVotes(); // localStorage 저장
+  await savePendingAdVotes(); // Firebase 저장
   showToast(`🎁 투표권 획득! (누적: ${pendingAdVotes}개) 아래에서 팀을 선택해서 투표하세요! ⬇️`);
 
   // 팬덤 선택 바 업데이트
@@ -1579,33 +1595,23 @@ function claimAdReward() {
 
 // ── 투표 후 상태 복원 (페이지 로드 시) ──
 function restoreVotedState() {
-  // 광고 투표권 복원 (매일 초기화)
-  const today = getTodayKey();
-  const savedDate = localStorage.getItem("pending_ad_votes_date");
-
-  if (savedDate === today) {
-    // 오늘이면 저장된 투표권 복원
-    const saved = localStorage.getItem("pending_ad_votes");
-    if (saved) {
-      pendingAdVotes = parseInt(saved, 10) || 0;
-    }
-  } else {
-    // 새 날짜면 투표권 초기화
-    pendingAdVotes = 0;
-    localStorage.setItem("pending_ad_votes", "0");
-    localStorage.setItem("pending_ad_votes_date", today);
-  }
-
   const group = getMyVote();
   if (!group) return;
   showMyVotedBar(group);
   updateFavBar(); // 광고 바 상태 복원
+  // Firebase에서의 로드는 setupAuthListener()에서 처리됨
 }
 
-// ── 광고 투표권 저장 ──
-function savePendingAdVotes() {
-  localStorage.setItem("pending_ad_votes", String(pendingAdVotes));
-  localStorage.setItem("pending_ad_votes_date", getTodayKey());
+// ── Firebase에 광고 투표권 저장 ──
+async function savePendingAdVotes() {
+  if (!currentUser) return;
+
+  try {
+    await db.ref(`users/${currentUser.uid}/pendingAdVotes`).set(pendingAdVotes);
+  } catch (e) {
+    console.error("광고 투표권 저장 실패:", e);
+    showToast("⚠️ 데이터 저장에 실패했습니다. 다시 시도하세요.");
+  }
 }
 
 // ── 댓글 필터 탭을 상위 그룹으로 업데이트 ──
