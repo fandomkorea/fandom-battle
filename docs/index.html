@@ -576,11 +576,9 @@
   </button>
 </header>
 
-<!-- 인증 컨테이너 -->
-<div id="authContainer">
+<!-- 인증 컨테이너 (로그인 후만 표시) -->
+<div id="authContainer" style="display:none">
   <div id="authNotLoggedIn" style="display:flex;gap:8px;flex-wrap:wrap;width:100%;justify-content:center">
-    <button id="googleLoginBtn" onclick="signInWithGoogle()">🔍 Google로 로그인</button>
-    <button id="kakaoLoginBtn" onclick="signInWithKakao()">☀️ Kakao로 로그인</button>
   </div>
   <div id="authLoggedIn" style="display:none;width:100%">
     <div id="userDisplayName"></div>
@@ -850,18 +848,18 @@ function setupAuthListener() {
 
 // UI 업데이트
 function updateAuthUI() {
-  const notLoggedIn = document.getElementById("authNotLoggedIn");
+  const container = document.getElementById("authContainer");
   const loggedIn = document.getElementById("authLoggedIn");
 
-  if (!notLoggedIn || !loggedIn) return;
+  if (!container || !loggedIn) return;
 
   if (isLoggedIn && currentUser) {
-    notLoggedIn.style.display = "none";
+    container.style.display = "block"; // 로그인 후에만 표시
     loggedIn.style.display = "flex";
     const nickname = currentUser.customNickname || "👤 사용자";
     document.getElementById("userDisplayName").textContent = nickname;
   } else {
-    notLoggedIn.style.display = "flex";
+    container.style.display = "none"; // 로그인 전에는 숨김
     loggedIn.style.display = "none";
   }
 }
@@ -1086,12 +1084,8 @@ function saveAuthUserData(nickname, fandom) {
       updateAuthUI();
       showToast(`👤 ${nickname}님 정보가 저장되었어요! 💜`);
 
-      // 투표 대기 중이면 투표 진행
-      if (window.pendingVoteGroup) {
-        const group = window.pendingVoteGroup;
-        window.pendingVoteGroup = null;
-        setTimeout(() => voteForGroup(group), 500);
-      }
+      // 로그인 완료 - 투표는 사용자가 직접 선택하도록 (자동 투표 제거)
+      window.pendingVoteGroup = null;
     })
     .catch(err => {
       showToast("저장 실패: " + err.message);
