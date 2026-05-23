@@ -590,7 +590,9 @@
       background: rgba(124,77,255,0.04);
     }
 
-    /* ── 커뮤니티 페이지 ── */
+    /* ── 페이지 전환 ── */
+    #votePage { display: block; }
+    #votePage.hidden { display: none; }
     #communityPage { display: none; }
     #communityPage.show { display: block; }
 
@@ -957,7 +959,8 @@
   <button class="nav-tab" onclick="showCommunityPage()">💬 커뮤니티</button>
 </nav>
 
-<main id="votePage">
+<main>
+  <div id="votePage">
   <!-- 🎁 이달의 상품 & 투표 카운트다운 통합 배너 -->
   <div class="battle-card" style="margin-top:12px">
     <!-- 상품 배너 영역 -->
@@ -3169,23 +3172,28 @@ function closeFandomSetupPopup() {
 
 // ── 페이지 전환 함수 ──
 function showVotePage() {
-  document.getElementById("votePage").style.display = "";
-  document.getElementById("communityPage").classList.remove("show");
+  const votePage = document.getElementById("votePage");
+  const communityPage = document.getElementById("communityPage");
+
+  if (votePage) votePage.classList.remove("hidden");
+  if (communityPage) communityPage.classList.remove("show");
+
   document.querySelectorAll(".nav-tab").forEach((tab, i) => {
     tab.classList.toggle("active", i === 0);
   });
 }
 
 function showCommunityPage() {
-  if (!isLoggedIn) {
-    showToast("로그인 후 이용 가능해요");
-    return;
-  }
-  document.getElementById("votePage").style.display = "none";
-  document.getElementById("communityPage").classList.add("show");
+  const votePage = document.getElementById("votePage");
+  const communityPage = document.getElementById("communityPage");
+
+  if (votePage) votePage.classList.add("hidden");
+  if (communityPage) communityPage.classList.add("show");
+
   document.querySelectorAll(".nav-tab").forEach((tab, i) => {
     tab.classList.toggle("active", i === 1);
   });
+
   initCommunityPage();
 }
 
