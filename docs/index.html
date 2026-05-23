@@ -3376,7 +3376,7 @@ function showPostCreateForm() {
   document.getElementById("postContentCount").textContent = "0";
 
   // 선택된 팬덤명 표시
-  const fandomGroup = GROUP_META.find(g => g.name === selectedFandom);
+  const fandomGroup = GROUP_META[selectedFandom];
   document.getElementById("postCreateFandom").textContent = `${fandomGroup ? fandomGroup.emoji : ""} ${selectedFandom}`;
 
   // 제목 글자수 카운팅
