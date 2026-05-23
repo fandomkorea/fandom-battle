@@ -884,7 +884,11 @@ async function loadUserAdVotes() {
     // 오늘의 투표 정보도 함께 로드
     await loadTodayVotesFromFirebase();
 
+    // ★ 사용자 닉네임/팬덤 로드
+    await new Promise((resolve) => loadAuthUserData(resolve));
+
     updateFavBar(); // 로드 후 팬덤 선택 바 업데이트
+    updateAuthUI(); // ★ 닉네임 표시 업데이트
   } catch (e) {
     console.error("광고 투표권 로드 실패:", e);
     pendingAdVotes = 0;
@@ -1659,7 +1663,7 @@ function watchAd() {
 
 async function claimAdReward() {
   document.getElementById("adModal")?.remove();
-  pendingAdVotes += 9; // 투표권 9개 누적
+  pendingAdVotes += 1; // 투표권 1개 획득 (광고 1회 = 1표)
   await savePendingAdVotes(); // Firebase 저장
   showToast(`🎁 투표권 획득! (누적: ${pendingAdVotes}개) 아래에서 팀을 선택해서 투표하세요! ⬇️`);
 
