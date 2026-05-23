@@ -1109,17 +1109,6 @@
       <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;text-align:right"><span id="postContentCount">0</span>/2000</div>
     </div>
 
-    <div style="margin-bottom:16px">
-      <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px">이미지 (선택)</label>
-      <div style="position:relative;border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;background:rgba(124,77,255,0.03);cursor:pointer;transition:all 0.15s" id="imageUploadArea" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
-        <input type="file" id="postImage" accept="image/*" style="display:none" onchange="previewImage(event)">
-        <div style="font-size:1.5rem;margin-bottom:8px">🖼️</div>
-        <div style="font-size:0.9rem;color:var(--text);margin-bottom:4px">이미지를 클릭하여 선택</div>
-        <div style="font-size:0.75rem;color:var(--muted)">최대 5MB, PNG/JPG/GIF</div>
-        <div id="imagePreviewContainer" style="margin-top:12px"></div>
-      </div>
-    </div>
-
     <div style="display:flex;gap:8px">
       <button onclick="closePostCreateModal()" style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:600;font-family:inherit;cursor:pointer">취소</button>
       <button onclick="submitPost()" style="flex:1;padding:12px;background:var(--primary);border:none;border-radius:8px;color:#fff;font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.15s">작성하기</button>
@@ -3349,7 +3338,6 @@ function renderPost(fandom, postId, post) {
       </div>
     </div>
     <div class="post-content">${escHtml(post.content).replace(/\n/g, '<br>')}</div>
-    ${post.imageUrl ? `<img src="${escAttr(post.imageUrl)}" class="post-image" alt="게시물 이미지" onerror="this.style.display='none'">` : ''}
     <div class="post-actions">
       ${isAuthor ? `<button class="post-action-btn danger" onclick="deletePost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🗑️ 삭제</button>` : ''}
       ${!isAuthor ? `<button class="post-action-btn" onclick="reportPost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🚩 신고</button>` : ''}
@@ -3370,8 +3358,6 @@ function showPostCreateForm() {
   // 입력값 초기화
   document.getElementById("postTitle").value = "";
   document.getElementById("postContent").value = "";
-  document.getElementById("postImage").value = "";
-  document.getElementById("imagePreviewContainer").innerHTML = "";
   document.getElementById("postTitleCount").textContent = "0";
   document.getElementById("postContentCount").textContent = "0";
 
@@ -3392,11 +3378,6 @@ function showPostCreateForm() {
   // 모달 표시
   const modal = document.getElementById("postCreateModal");
   modal.style.display = "flex";
-
-  // 이미지 업로드 영역 클릭
-  document.getElementById("imageUploadArea").onclick = () => {
-    document.getElementById("postImage").click();
-  };
 
   // 포커스 설정
   setTimeout(() => {
@@ -3467,7 +3448,6 @@ async function submitPost() {
 
   const title = document.getElementById("postTitle").value.trim();
   const content = document.getElementById("postContent").value.trim();
-  const imageFile = document.getElementById("postImage").files[0];
   const selectedFandom = document.getElementById("communityFandomSelect").value;
 
   if (!title) {
@@ -3485,14 +3465,6 @@ async function submitPost() {
 
   try {
     const postId = db.ref().push().key;
-    let imageUrl = null;
-
-    // 이미지 업로드
-    if (imageFile) {
-      const storageRef = firebase.storage().ref(`community/${selectedFandom}/${postId}`);
-      await storageRef.put(imageFile);
-      imageUrl = await storageRef.getDownloadURL();
-    }
 
     // 게시물 저장
     await db.ref(`community/${selectedFandom}/${postId}`).set({
@@ -3501,7 +3473,6 @@ async function submitPost() {
       authorUid: currentUser.uid,
       authorName: currentUser.customNickname || currentUser.displayName || "익명",
       timestamp: Date.now(),
-      imageUrl,
       isHidden: false,
       reportCount: 0
     });
@@ -3522,14 +3493,6 @@ async function deletePost(fandom, postId) {
   if (!confirm("정말 삭제하시겠어요? 복구할 수 없습니다.")) return;
 
   try {
-    // Storage에서 이미지 삭제
-    try {
-      const imageRef = firebase.storage().ref(`community/${fandom}/${postId}`);
-      await imageRef.delete();
-    } catch (e) {
-      // 이미지가 없을 수 있으므로 무시
-    }
-
     // Database에서 게시물 삭제
     await db.ref(`community/${fandom}/${postId}`).remove();
     showToast("✅ 게시물이 삭제되었어요");
