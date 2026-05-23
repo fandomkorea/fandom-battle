@@ -1070,6 +1070,9 @@
         <option value="">— 팬덤을 선택해주세요 —</option>
       </select>
     </div>
+    <div style="margin-bottom: 16px">
+      <input type="text" id="communitySearchInput" placeholder="🔍 게시물 검색 (제목/내용)..." style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.95rem" oninput="filterCommunityPosts()">
+    </div>
     <button class="community-new-post-btn" onclick="showPostCreateForm()">✏️ 새 글 쓰기</button>
   </div>
 
@@ -3307,6 +3310,25 @@ function loadCommunityPosts() {
         postsList.appendChild(postEl);
       }
     });
+  });
+}
+
+// ── 게시물 검색/필터 ──
+function filterCommunityPosts() {
+  const searchText = document.getElementById("communitySearchInput").value.toLowerCase();
+  const postItems = document.querySelectorAll(".post-item");
+
+  if (!searchText.trim()) {
+    postItems.forEach(item => item.style.display = "block");
+    return;
+  }
+
+  postItems.forEach(item => {
+    const title = item.querySelector(".post-title")?.textContent.toLowerCase() || "";
+    const content = item.querySelector(".post-content")?.textContent.toLowerCase() || "";
+
+    const isMatch = title.includes(searchText) || content.includes(searchText);
+    item.style.display = isMatch ? "block" : "none";
   });
 }
 
