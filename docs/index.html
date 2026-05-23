@@ -28,6 +28,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3646896464963069"
@@ -746,6 +747,69 @@
       line-height: 1.5;
     }
 
+    /* ── 게시물 작성 모달 ── */
+    #postCreateModal {
+      position: fixed !important;
+      inset: 0 !important;
+      background: rgba(0,0,0,0.7) !important;
+      z-index: 999 !important;
+      padding: 16px !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    #postCreateModal > div {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    #postCreateModal h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0;
+    }
+    #postCreateModal input,
+    #postCreateModal textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: all 0.15s;
+    }
+    #postCreateModal input:focus,
+    #postCreateModal textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: rgba(124,77,255,0.05);
+    }
+    #postCreateModal textarea {
+      resize: vertical;
+      min-height: 150px;
+    }
+    #imageUploadArea {
+      position: relative;
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      background: rgba(124,77,255,0.03);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    #imageUploadArea:hover {
+      border-color: var(--primary);
+      background: rgba(124,77,255,0.08);
+    }
+
     @media (max-width: 480px) {
       .nav-tab { padding: 10px 12px; font-size: 0.85rem; }
       .community-header { padding: 12px; margin-bottom: 12px; }
@@ -905,6 +969,49 @@
 </div><!-- communityPage 닫기 -->
 
 </main>
+
+<!-- 게시물 작성 모달 -->
+<div id="postCreateModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h2 style="font-size:1.2rem;font-weight:700">새 글 쓰기</h2>
+      <button onclick="closePostCreateModal()" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer">✕</button>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px">팬덤</label>
+      <div style="padding:10px 12px;background:rgba(124,77,255,0.1);border:1px solid var(--primary);border-radius:8px;color:var(--text);font-weight:600;font-size:0.9rem" id="postCreateFandom">선택됨</div>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px">제목</label>
+      <input type="text" id="postTitle" placeholder="게시물 제목을 입력해주세요" style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.95rem" maxlength="100">
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;text-align:right"><span id="postTitleCount">0</span>/100</div>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px">내용</label>
+      <textarea id="postContent" placeholder="게시물 내용을 입력해주세요" style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.95rem;resize:vertical;min-height:150px;max-length:2000" maxlength="2000"></textarea>
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;text-align:right"><span id="postContentCount">0</span>/2000</div>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px">이미지 (선택)</label>
+      <div style="position:relative;border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;background:rgba(124,77,255,0.03);cursor:pointer;transition:all 0.15s" id="imageUploadArea" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
+        <input type="file" id="postImage" accept="image/*" style="display:none" onchange="previewImage(event)">
+        <div style="font-size:1.5rem;margin-bottom:8px">🖼️</div>
+        <div style="font-size:0.9rem;color:var(--text);margin-bottom:4px">이미지를 클릭하여 선택</div>
+        <div style="font-size:0.75rem;color:var(--muted)">최대 5MB, PNG/JPG/GIF</div>
+        <div id="imagePreviewContainer" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button onclick="closePostCreateModal()" style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:600;font-family:inherit;cursor:pointer">취소</button>
+      <button onclick="submitPost()" style="flex:1;padding:12px;background:var(--primary);border:none;border-radius:8px;color:#fff;font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.15s">작성하기</button>
+    </div>
+  </div>
+</div>
 
 <footer style="text-align:center;padding:28px 16px 40px;color:var(--muted);font-size:.75rem;border-top:1px solid var(--border);margin-top:40px">
   Made with 💜 for K-pop fans | <a href="https://github.com/fandomkorea/fandom-battle" target="_blank" style="color:var(--primary);text-decoration:none">GitHub</a>
@@ -3001,7 +3108,7 @@ function initCommunityPage() {
   }
 }
 
-// ── 커뮤니티 게시물 로드 (임시 - Phase 3에서 구현) ──
+// ── 커뮤니티 게시물 로드 (실시간 리스너) ──
 function loadCommunityPosts() {
   const selectedFandom = document.getElementById("communityFandomSelect").value;
   if (!selectedFandom) {
@@ -3014,19 +3121,220 @@ function loadCommunityPosts() {
     return;
   }
 
-  // TODO: Firebase에서 게시물 로드 (Phase 3)
-  document.getElementById("communityPostsList").innerHTML = `
-    <div class="community-empty">
-      <div class="community-empty-icon">🚀</div>
-      <div class="community-empty-text">첫 번째 게시물을 작성해보세요!</div>
-    </div>
-  `;
+  // Firebase 실시간 리스너
+  db.ref(`community/${selectedFandom}`).on("value", snap => {
+    const posts = snap.val() || {};
+    const postsList = document.getElementById("communityPostsList");
+
+    if (Object.keys(posts).length === 0) {
+      postsList.innerHTML = `
+        <div class="community-empty">
+          <div class="community-empty-icon">🚀</div>
+          <div class="community-empty-text">첫 번째 게시물을 작성해보세요!</div>
+        </div>
+      `;
+      return;
+    }
+
+    // 최신순으로 정렬
+    const sortedPosts = Object.entries(posts)
+      .sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
+
+    postsList.innerHTML = "";
+    sortedPosts.forEach(([postId, post]) => {
+      if (!post.isHidden) {
+        const postEl = renderPost(selectedFandom, postId, post);
+        postsList.appendChild(postEl);
+      }
+    });
+  });
 }
 
-// ── 게시물 작성 폼 (임시 - Phase 3에서 구현) ──
+// ── 게시물 렌더링 ──
+function renderPost(fandom, postId, post) {
+  const isAuthor = isLoggedIn && currentUser && post.authorUid === currentUser.uid;
+
+  const postEl = document.createElement("div");
+  postEl.className = "post-item";
+  postEl.innerHTML = `
+    <div class="post-header">
+      <div>
+        <div class="post-title">${escHtml(post.title)}</div>
+        <div class="post-meta">
+          <span class="post-author">${escHtml(post.authorName)}</span>
+          <span class="post-date">${new Date(post.timestamp).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})}</span>
+        </div>
+      </div>
+      ${isAuthor ? `<button class="post-action-btn danger" onclick="deletePost('${escAttr(fandom)}', '${escAttr(postId)}')">삭제</button>` : ''}
+    </div>
+    <div class="post-content">${escHtml(post.content).replace(/\n/g, '<br>')}</div>
+    ${post.imageUrl ? `<img src="${escAttr(post.imageUrl)}" class="post-image" alt="게시물 이미지">` : ''}
+  `;
+
+  return postEl;
+}
+
+// ── 게시물 작성 폼 ──
 function showPostCreateForm() {
-  showToast("곧 사용 가능합니다 🔜");
-  // TODO: 게시물 작성 폼 모달 (Phase 3)
+  const selectedFandom = document.getElementById("communityFandomSelect").value;
+  if (!selectedFandom) {
+    showToast("먼저 팬덤을 선택해주세요");
+    return;
+  }
+
+  document.getElementById("postTitle").value = "";
+  document.getElementById("postContent").value = "";
+  document.getElementById("postImage").value = "";
+  document.getElementById("imagePreviewContainer").innerHTML = "";
+  document.getElementById("postTitleCount").textContent = "0";
+  document.getElementById("postContentCount").textContent = "0";
+  document.getElementById("postCreateFandom").textContent = selectedFandom;
+
+  // 제목 글자수 카운팅
+  document.getElementById("postTitle").oninput = () => {
+    document.getElementById("postTitleCount").textContent = document.getElementById("postTitle").value.length;
+  };
+
+  // 내용 글자수 카운팅
+  document.getElementById("postContent").oninput = () => {
+    document.getElementById("postContentCount").textContent = document.getElementById("postContent").value.length;
+  };
+
+  document.getElementById("postCreateModal").style.display = "flex";
+  document.getElementById("imageUploadArea").onclick = () => {
+    document.getElementById("postImage").click();
+  };
+}
+
+function closePostCreateModal() {
+  document.getElementById("postCreateModal").style.display = "none";
+}
+
+// 모달 외부 클릭 시 닫기
+document.addEventListener("click", (e) => {
+  const modal = document.getElementById("postCreateModal");
+  if (e.target === modal) {
+    closePostCreateModal();
+  }
+});
+
+// ESC 키로 모달 닫기
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    const modal = document.getElementById("postCreateModal");
+    if (modal.style.display === "flex") {
+      closePostCreateModal();
+    }
+  }
+});
+
+// ── 이미지 미리보기 ──
+function previewImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (file.size > 5 * 1024 * 1024) {
+    showToast("파일 크기는 5MB 이하여야 합니다");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const container = document.getElementById("imagePreviewContainer");
+    container.innerHTML = `
+      <div style="position:relative;display:inline-block">
+        <img src="${e.target.result}" style="max-width:100%;border-radius:8px;max-height:200px">
+        <button onclick="removeImage()" style="position:absolute;top:8px;right:8px;background:#ff4d4d;border:none;color:#fff;border-radius:50%;width:32px;height:32px;cursor:pointer;font-weight:700;font-size:1rem">✕</button>
+      </div>
+    `;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage() {
+  document.getElementById("postImage").value = "";
+  document.getElementById("imagePreviewContainer").innerHTML = "";
+}
+
+// ── 게시물 저장 ──
+async function submitPost() {
+  if (!isLoggedIn || !currentUser) {
+    showToast("로그인이 필요합니다");
+    return;
+  }
+
+  const title = document.getElementById("postTitle").value.trim();
+  const content = document.getElementById("postContent").value.trim();
+  const imageFile = document.getElementById("postImage").files[0];
+  const selectedFandom = document.getElementById("communityFandomSelect").value;
+
+  if (!title) {
+    showToast("제목을 입력해주세요");
+    return;
+  }
+  if (!content) {
+    showToast("내용을 입력해주세요");
+    return;
+  }
+
+  const submitBtn = event.target;
+  submitBtn.disabled = true;
+  submitBtn.textContent = "작성 중...";
+
+  try {
+    const postId = db.ref().push().key;
+    let imageUrl = null;
+
+    // 이미지 업로드
+    if (imageFile) {
+      const storageRef = firebase.storage().ref(`community/${selectedFandom}/${postId}`);
+      await storageRef.put(imageFile);
+      imageUrl = await storageRef.getDownloadURL();
+    }
+
+    // 게시물 저장
+    await db.ref(`community/${selectedFandom}/${postId}`).set({
+      title,
+      content,
+      authorUid: currentUser.uid,
+      authorName: currentUser.displayName || "익명",
+      timestamp: Date.now(),
+      imageUrl,
+      isHidden: false,
+      reportCount: 0
+    });
+
+    showToast("✅ 게시물이 작성되었어요!");
+    closePostCreateModal();
+  } catch (error) {
+    showToast("게시물 작성 실패: " + error.message);
+    console.error(error);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "작성하기";
+  }
+}
+
+// ── 게시물 삭제 ──
+async function deletePost(fandom, postId) {
+  if (!confirm("정말 삭제하시겠어요? 복구할 수 없습니다.")) return;
+
+  try {
+    // Storage에서 이미지 삭제
+    try {
+      const imageRef = firebase.storage().ref(`community/${fandom}/${postId}`);
+      await imageRef.delete();
+    } catch (e) {
+      // 이미지가 없을 수 있으므로 무시
+    }
+
+    // Database에서 게시물 삭제
+    await db.ref(`community/${fandom}/${postId}`).remove();
+    showToast("✅ 게시물이 삭제되었어요");
+  } catch (error) {
+    showToast("삭제 실패: " + error.message);
+    console.error(error);
+  }
 }
 
 init();
