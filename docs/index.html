@@ -3204,24 +3204,11 @@ function showCommunityPage() {
     tab.classList.toggle("active", i === 1);
   });
 
-  // 초기화 & 최애팬덤 자동 선택
-  initCommunityPage();
-
-  setTimeout(() => {
-    if (currentUserFav) {
-      const select = document.getElementById("communityFandomSelect");
-      select.value = currentUserFav;
-      loadCommunityPosts();
-    }
-  }, 100);
-}
-
-// ── 커뮤니티 초기화 ──
-function initCommunityPage() {
+  // 팬덤 드롭다운 초기화
   const select = document.getElementById("communityFandomSelect");
 
-  // 팬덤 목록이 없으면 채우기 (한 번만)
-  if (select.options.length === 1) {
+  // 팬덤 목록이 없으면 채우기
+  if (select.options.length <= 1) {
     if (GROUP_META && Array.isArray(GROUP_META)) {
       GROUP_META.forEach(group => {
         const option = document.createElement("option");
@@ -3232,10 +3219,16 @@ function initCommunityPage() {
     }
   }
 
-  // 최애 팬덤 자동 선택
-  if (currentUserFav && select.value !== currentUserFav) {
+  // 최애팬덤이 있으면 자동 선택
+  if (currentUserFav) {
     select.value = currentUserFav;
+    loadCommunityPosts();
   }
+}
+
+// ── 커뮤니티 초기화 ──
+function initCommunityPage() {
+  // showCommunityPage()에서 처리하므로 여기서는 비움
 }
 
 // 현재 활성 리스너 추적
