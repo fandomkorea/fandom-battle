@@ -952,6 +952,11 @@ async function loadUserAdVotes() {
 
     updateFavBar(); // 로드 후 팬덤 선택 바 업데이트
     updateAuthUI(); // ★ 닉네임 표시 업데이트
+
+    // ★ 투표권 로드 후 랭킹 다시 렌더링 (버튼 활성화 상태 업데이트)
+    if (allRankingsData) {
+      renderRankings(allRankingsData);
+    }
   } catch (e) {
     console.error("광고 투표권 로드 실패:", e);
     pendingAdVotes = 0;
