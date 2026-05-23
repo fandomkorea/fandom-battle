@@ -2465,14 +2465,18 @@ function updateFavBar() {
     document.body.appendChild(bar);
   }
 
+  // ★ 한글 + 영문 이름 표시 (전체 함수에서 사용)
+  let displayName = '';
+  if (fav) {
+    const meta = GROUP_META[fav] || { emoji: "🌟", fandom: fav };
+    displayName = meta.kr ? `${meta.kr} (${fav})` : fav;
+  }
+
   // 팬덤 선택 여부에 따라 내용 업데이트
   let leftContent, centerContent, rightContent;
 
   if (fav) {
     const meta = GROUP_META[fav] || { emoji: "🌟", fandom: fav };
-
-    // ★ 한글 + 영문 이름 표시
-    const displayName = meta.kr ? `${meta.kr} (${fav})` : fav;
 
     // ★ 현재 순위 계산 및 표시
     let rankBadge = '';
