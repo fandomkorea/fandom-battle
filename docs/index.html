@@ -3209,11 +3209,12 @@ function showCommunityPage() {
 
   // 팬덤 목록이 없으면 채우기
   if (select.options.length <= 1) {
-    if (GROUP_META && Array.isArray(GROUP_META)) {
-      GROUP_META.forEach(group => {
+    if (GROUP_META && typeof GROUP_META === 'object') {
+      Object.keys(GROUP_META).forEach(groupName => {
+        const meta = GROUP_META[groupName];
         const option = document.createElement("option");
-        option.value = group.name;
-        option.textContent = `${group.emoji} ${group.name}`;
+        option.value = groupName;
+        option.textContent = `${meta.emoji} ${groupName}`;
         select.appendChild(option);
       });
     }
@@ -3221,7 +3222,9 @@ function showCommunityPage() {
 
   // 최애팬덤이 있으면 자동 선택
   if (currentUserFav) {
+    console.log("[DEBUG] Setting community dropdown to:", currentUserFav);
     select.value = currentUserFav;
+    console.log("[DEBUG] Dropdown value after setting:", select.value);
     loadCommunityPosts();
   }
 }
