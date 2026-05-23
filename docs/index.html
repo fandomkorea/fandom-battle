@@ -914,19 +914,20 @@ function loginFromVoteModalKakao(group) {
 
 // 로그인 상태 감시
 function setupAuthListener() {
-  firebase.auth().onAuthStateChanged(user => {
+  firebase.auth().onAuthStateChanged(async (user) => {
     if (user) {
       currentUser = user;
       isLoggedIn = true;
-      loadUserAdVotes(); // Firebase에서 광고 투표권 로드
+      await loadUserAdVotes(); // Firebase에서 광고 투표권 로드 (닉네임도 함께 로드)
+      // loadUserAdVotes() 내에서 updateAuthUI()를 호출하므로 여기서는 안 함
     } else {
       currentUser = null;
       isLoggedIn = false;
       pendingAdVotes = 0;
       adWatchCount = 0; // ★ 광고 시청 횟수도 초기화
+      updateAuthUI(); // 로그아웃 경로에서만 여기서 호출
+      updateFavBar();
     }
-    updateAuthUI();
-    updateFavBar(); // 로그인 상태 변경 시 팬덤 선택 바 업데이트 (광고 버튼 상태 포함)
   });
 }
 
