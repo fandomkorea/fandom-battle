@@ -657,65 +657,103 @@
     .community-posts-section {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 16px;
     }
 
     .post-item {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px;
-      transition: all 0.15s;
+      padding: 20px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
     }
-    .post-item:hover { border-color: var(--primary); }
+    .post-item:hover {
+      border-color: var(--primary);
+      box-shadow: 0 4px 16px rgba(124,77,255,0.15);
+      transform: translateY(-2px);
+    }
+    .post-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--pink), var(--primary), var(--blue));
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .post-item:hover::before {
+      opacity: 1;
+    }
 
     .post-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 10px;
+      margin-bottom: 14px;
+      gap: 12px;
+    }
+    .post-header > div:first-child {
+      flex: 1;
+      min-width: 0;
     }
     .post-title {
-      font-size: 1rem;
-      font-weight: 700;
+      font-size: 1.1rem;
+      font-weight: 800;
       color: var(--text);
-      flex: 1;
+      word-break: break-word;
+      line-height: 1.4;
+      margin-bottom: 8px;
     }
     .post-meta {
       display: flex;
-      gap: 8px;
+      gap: 12px;
       align-items: center;
-      margin-bottom: 8px;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       color: var(--muted);
     }
     .post-author {
-      font-weight: 600;
+      font-weight: 700;
       color: var(--primary);
+      padding: 2px 8px;
+      background: rgba(124,77,255,0.1);
+      border-radius: 4px;
     }
-    .post-date { }
+    .post-date {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
 
     .post-content {
       font-size: 0.95rem;
-      line-height: 1.5;
+      line-height: 1.6;
       color: var(--text);
-      margin-bottom: 12px;
+      margin-bottom: 14px;
+      word-break: break-word;
+      max-height: 150px;
+      overflow-y: auto;
     }
     .post-image {
       width: 100%;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      max-height: 300px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      max-height: 350px;
       object-fit: cover;
+      border: 1px solid var(--border);
     }
 
     .post-actions {
       display: flex;
       gap: 8px;
       justify-content: flex-end;
-      margin-top: 12px;
-      border-top: 1px solid var(--border);
+      margin-top: 14px;
       padding-top: 12px;
+      border-top: 1px solid var(--border);
     }
     .post-action-btn {
       padding: 6px 12px;
@@ -754,8 +792,10 @@
       background: rgba(0,0,0,0.7) !important;
       z-index: 999 !important;
       padding: 16px !important;
+      padding-bottom: 80px !important;
       align-items: center !important;
       justify-content: center !important;
+      overflow-y: auto !important;
     }
     #postCreateModal > div {
       background: var(--card);
@@ -764,8 +804,13 @@
       padding: 24px;
       width: 100%;
       max-width: 500px;
-      max-height: 85vh;
+      max-height: 90vh;
       overflow-y: auto;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
     #postCreateModal h2 {
       font-size: 1.2rem;
@@ -814,11 +859,18 @@
       .nav-tab { padding: 10px 12px; font-size: 0.85rem; }
       .community-header { padding: 12px; margin-bottom: 12px; }
       .community-title { font-size: 0.95rem; }
-      .community-fandom-dropdown { min-width: 120px; font-size: 0.85rem; }
-      .community-new-post-btn { font-size: 0.85rem; padding: 9px 12px; }
-      .post-item { padding: 12px; }
-      .post-title { font-size: 0.95rem; }
-      .post-content { font-size: 0.9rem; }
+      .community-fandom-dropdown { min-width: 100%; font-size: 0.85rem; }
+      .community-new-post-btn { font-size: 0.85rem; padding: 9px 12px; width: 100%; }
+      .community-action-buttons { flex-direction: column; }
+      .post-item { padding: 14px; gap: 8px; }
+      .post-title { font-size: 1rem; }
+      .post-meta { flex-wrap: wrap; }
+      .post-content { font-size: 0.9rem; max-height: 100px; }
+      .post-image { max-height: 250px; }
+      .post-actions { flex-wrap: wrap; }
+      .post-action-btn { font-size: 0.7rem; padding: 6px 10px; }
+      #postCreateModal > div { max-width: 95%; }
+      #postCreateModal { padding: 8px !important; }
     }
   </style>
 </head>
@@ -971,7 +1023,7 @@
 </main>
 
 <!-- 게시물 작성 모달 -->
-<div id="postCreateModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px">
+<div id="postCreateModal" style="display:none !important;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;padding:16px;padding-bottom:80px;overflow-y:auto">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
       <h2 style="font-size:1.2rem;font-weight:700">새 글 쓰기</h2>
@@ -3090,9 +3142,8 @@ function showCommunityPage() {
 // ── 커뮤니티 초기화 ──
 function initCommunityPage() {
   const select = document.getElementById("communityFandomSelect");
-  if (select.innerHTML.includes("— 팬덤을 선택")) {
+  if (select.options.length === 1) {
     // 팬덤 목록 채우기
-    select.innerHTML = '<option value="">— 팬덤을 선택해주세요 —</option>';
     GROUP_META.forEach(group => {
       const option = document.createElement("option");
       option.value = group.name;
@@ -3108,6 +3159,9 @@ function initCommunityPage() {
   }
 }
 
+// 현재 활성 리스너 추적
+let currentCommunityListener = null;
+
 // ── 커뮤니티 게시물 로드 (실시간 리스너) ──
 function loadCommunityPosts() {
   const selectedFandom = document.getElementById("communityFandomSelect").value;
@@ -3121,10 +3175,24 @@ function loadCommunityPosts() {
     return;
   }
 
+  // 기존 리스너 해제
+  if (currentCommunityListener) {
+    db.ref(currentCommunityListener).off("value");
+  }
+
+  // 로딩 상태 표시
+  const postsList = document.getElementById("communityPostsList");
+  postsList.innerHTML = `
+    <div class="community-empty">
+      <div class="spinner" style="display:inline-block;margin-bottom:12px"></div>
+      <div class="community-empty-text">게시물을 불러오는 중...</div>
+    </div>
+  `;
+
   // Firebase 실시간 리스너
-  db.ref(`community/${selectedFandom}`).on("value", snap => {
+  currentCommunityListener = `community/${selectedFandom}`;
+  db.ref(currentCommunityListener).on("value", snap => {
     const posts = snap.val() || {};
-    const postsList = document.getElementById("communityPostsList");
 
     if (Object.keys(posts).length === 0) {
       postsList.innerHTML = `
@@ -3153,6 +3221,17 @@ function loadCommunityPosts() {
 // ── 게시물 렌더링 ──
 function renderPost(fandom, postId, post) {
   const isAuthor = isLoggedIn && currentUser && post.authorUid === currentUser.uid;
+  const date = new Date(post.timestamp);
+  const today = new Date();
+
+  let timeStr = "";
+  if (date.toDateString() === today.toDateString()) {
+    const hours = date.getHours();
+    const mins = date.getMinutes();
+    timeStr = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+  } else {
+    timeStr = date.toLocaleDateString('ko-KR', {month:'short', day:'numeric'});
+  }
 
   const postEl = document.createElement("div");
   postEl.className = "post-item";
@@ -3161,16 +3240,16 @@ function renderPost(fandom, postId, post) {
       <div>
         <div class="post-title">${escHtml(post.title)}</div>
         <div class="post-meta">
-          <span class="post-author">${escHtml(post.authorName)}</span>
-          <span class="post-date">${new Date(post.timestamp).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})}</span>
+          <span class="post-author">👤 ${escHtml(post.authorName)}</span>
+          <span class="post-date">📅 ${timeStr}</span>
         </div>
       </div>
     </div>
     <div class="post-content">${escHtml(post.content).replace(/\n/g, '<br>')}</div>
-    ${post.imageUrl ? `<img src="${escAttr(post.imageUrl)}" class="post-image" alt="게시물 이미지">` : ''}
+    ${post.imageUrl ? `<img src="${escAttr(post.imageUrl)}" class="post-image" alt="게시물 이미지" onerror="this.style.display='none'">` : ''}
     <div class="post-actions">
-      ${isAuthor ? `<button class="post-action-btn danger" onclick="deletePost('${escAttr(fandom)}', '${escAttr(postId)}')">🗑️ 삭제</button>` : ''}
-      ${!isAuthor ? `<button class="post-action-btn" onclick="reportPost('${escAttr(fandom)}', '${escAttr(postId)}')">🚩 신고</button>` : ''}
+      ${isAuthor ? `<button class="post-action-btn danger" onclick="deletePost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🗑️ 삭제</button>` : ''}
+      ${!isAuthor ? `<button class="post-action-btn" onclick="reportPost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🚩 신고</button>` : ''}
     </div>
   `;
 
@@ -3185,13 +3264,17 @@ function showPostCreateForm() {
     return;
   }
 
+  // 입력값 초기화
   document.getElementById("postTitle").value = "";
   document.getElementById("postContent").value = "";
   document.getElementById("postImage").value = "";
   document.getElementById("imagePreviewContainer").innerHTML = "";
   document.getElementById("postTitleCount").textContent = "0";
   document.getElementById("postContentCount").textContent = "0";
-  document.getElementById("postCreateFandom").textContent = selectedFandom;
+
+  // 선택된 팬덤명 표시
+  const fandomGroup = GROUP_META.find(g => g.name === selectedFandom);
+  document.getElementById("postCreateFandom").textContent = `${fandomGroup ? fandomGroup.emoji : ""} ${selectedFandom}`;
 
   // 제목 글자수 카운팅
   document.getElementById("postTitle").oninput = () => {
@@ -3203,10 +3286,19 @@ function showPostCreateForm() {
     document.getElementById("postContentCount").textContent = document.getElementById("postContent").value.length;
   };
 
-  document.getElementById("postCreateModal").style.display = "flex";
+  // 모달 표시
+  const modal = document.getElementById("postCreateModal");
+  modal.style.display = "flex";
+
+  // 이미지 업로드 영역 클릭
   document.getElementById("imageUploadArea").onclick = () => {
     document.getElementById("postImage").click();
   };
+
+  // 포커스 설정
+  setTimeout(() => {
+    document.getElementById("postTitle").focus();
+  }, 100);
 }
 
 function closePostCreateModal() {
