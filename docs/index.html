@@ -1849,7 +1849,7 @@ function renderRankings(data) {
 
   // 투표 후 상태바 갱신
   if (alreadyVoted) restoreVotedState();
-  const isAdPending = adPending; // 광고 시청 후 추가 투표 대기
+  const isAdPending = pendingAdVotes > 0; // 광고로부터 얻은 투표권이 있는지 확인
 
   // 검색 필터 적용
   const filtered = rankingSearchQuery
