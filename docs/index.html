@@ -3195,25 +3195,27 @@ function showCommunityPage() {
   });
 
   initCommunityPage();
+
+  // 최애팬덤이 있으면 자동 선택
+  if (currentUserFav) {
+    const select = document.getElementById("communityFandomSelect");
+    select.value = currentUserFav;
+    loadCommunityPosts();
+  }
 }
 
 // ── 커뮤니티 초기화 ──
 function initCommunityPage() {
   const select = document.getElementById("communityFandomSelect");
+
+  // 팬덤 목록이 없으면 채우기 (한 번만)
   if (select.options.length === 1) {
-    // 팬덤 목록 채우기
     GROUP_META.forEach(group => {
       const option = document.createElement("option");
       option.value = group.name;
       option.textContent = `${group.emoji} ${group.name}`;
       select.appendChild(option);
     });
-
-    // 최애 팬덤으로 자동 선택
-    if (currentUserFav) {
-      select.value = currentUserFav;
-      loadCommunityPosts();
-    }
   }
 }
 
