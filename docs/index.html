@@ -791,7 +791,7 @@ const ALL_GROUPS = Object.keys(GROUP_META);
 // ── 초기화 ──
 let db = null;
 let allRankingsData = null;
-let showAllRankings = false;
+let showAllRankings = true; // ★ 투표 없는 그룹도 항상 펼쳐서 표시
 const ADMIN_PW = "fandom1234"; // 변경 가능
 const isAdmin = new URLSearchParams(location.search).has("admin");
 
@@ -2463,7 +2463,21 @@ function updateFavBar() {
 
   if (fav) {
     const meta = GROUP_META[fav] || { emoji: "🌟", fandom: fav };
-    leftContent = `<span class="fav-bar-text">${meta.emoji} ${fav}</span>`;
+
+    // ★ 현재 순위 계산 및 표시
+    let rankBadge = '';
+    if (allRankingsData) {
+      const votes = allRankingsData[fav] || 0;
+      const allEntries = ALL_GROUPS.map(g => [g, allRankingsData[g] || 0]).sort((a, b) => b[1] - a[1]);
+      const rank = allEntries.findIndex(([g]) => g === fav) + 1;
+
+      if (votes > 0) {
+        const rankEmoji = rank === 1 ? "👑" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : "🎯";
+        rankBadge = `<span style="font-size:0.7rem;color:var(--gold);font-weight:700;margin-left:6px">${rankEmoji} ${rank}위</span>`;
+      }
+    }
+
+    leftContent = `<span class="fav-bar-text">${meta.emoji} ${fav}${rankBadge}</span>`;
     centerContent = `<button class="fav-bar-btn" onclick="openFavPicker()" style="font-size:0.65rem;padding:6px 10px">변경</button>`;
   } else {
     leftContent = `<span class="fav-bar-text">💜 내 최애 그룹을 설정하면 더 편해요!</span>`;
