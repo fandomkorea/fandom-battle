@@ -1777,6 +1777,11 @@ async function claimAdReward() {
   updateFavBar();
   updateAuthUI(); // ★ 닉네임 옆 투표권 정보 업데이트
 
+  // ★ 투표권 획득 후 랭킹 버튼 상태 업데이트 (활성화)
+  if (allRankingsData) {
+    renderRankings(allRankingsData);
+  }
+
   // 랭킹으로 자동 스크롤
   setTimeout(() => {
     const ranking = document.getElementById("rankingList");
