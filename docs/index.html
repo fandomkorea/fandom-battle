@@ -918,6 +918,12 @@ async function loadUserAdVotes() {
     const adWatchSnap = await db.ref(`users/${currentUser.uid}/ad_watch_count_${today}`).once("value");
     adWatchCount = adWatchSnap.val() || 0;
 
+    // ★ 최애팬덤 로드 (다른 기기에서 복구)
+    const favSnap = await db.ref(`users/${currentUser.uid}/myFav`).once("value");
+    if (favSnap.exists()) {
+      localStorage.setItem("my_fav_group", favSnap.val());
+    }
+
     // 오늘의 투표 정보도 함께 로드
     await loadTodayVotesFromFirebase();
 
@@ -2391,6 +2397,12 @@ function renderMyVotingHistory() {
 function getMyFav() { return localStorage.getItem("my_fav_group"); }
 function setMyFav(g) {
   localStorage.setItem("my_fav_group", g);
+
+  // Firebase에도 저장 (다른 기기에서 로그인 시 복구용)
+  if (isLoggedIn && currentUser && db) {
+    db.ref(`users/${currentUser.uid}/myFav`).set(g);
+  }
+
   renderFavChip();
   updateQuickAccessBtn();
   updateFavBar(); // 하단 바 업데이트
