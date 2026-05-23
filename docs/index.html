@@ -192,19 +192,6 @@
     .show-all-btn:hover { border-color: var(--primary); color: var(--primary); }
 
 
-    /* ── 응원 댓글 ── */
-    .comment-input-row { display: flex; gap: 8px; margin-bottom: 10px; }
-    .comment-group-sel { padding: 10px 12px; background: var(--card); border: 1px solid var(--primary); border-radius: 10px; color: var(--text); font-family: inherit; font-size: 0.82rem; outline: none; cursor: pointer; flex: 0.35; }
-    .comment-group-sel:focus { border-color: var(--primary); }
-    .comment-input { flex: 1; padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: inherit; font-size: 0.84rem; outline: none; }
-    .comment-input:focus { border-color: var(--primary); }
-    .comment-submit { padding: 8px 16px; border-radius: 10px; background: var(--primary); color: #fff; border: none; font-weight: 700; font-family: inherit; font-size: 0.82rem; cursor: pointer; flex-shrink: 0; }
-    .comment-list { display: flex; flex-direction: column-reverse; gap: 6px; }
-    .comment-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; display: flex; gap: 8px; align-items: flex-start; }
-    .comment-badge { font-size: 0.63rem; padding: 2px 7px; border-radius: 7px; font-weight: 700; white-space: nowrap; flex-shrink: 0; margin-top: 1px; }
-    .comment-body { flex: 1; min-width: 0; }
-    .comment-text { font-size: 0.84rem; line-height: 1.4; word-break: break-all; }
-    .comment-meta { font-size: 0.65rem; color: var(--muted); margin-top: 3px; }
 
 
     /* ── 그룹 전적 뱃지 ── */
@@ -224,10 +211,6 @@
     @keyframes glowPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(124,77,255,0); } 50% { box-shadow: 0 0 12px 2px rgba(124,77,255,0.25); } }
 
     /* ── 댓글 필터 탭 ── */
-    .comment-filter-row { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
-    .cfilter-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.75rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.15s; }
-    .cfilter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-
     /* ── 투표 0개 빈 바 ── */
     .bar-empty-hint { text-align: center; font-size: 0.74rem; color: var(--muted); padding: 6px 0 2px; }
 
@@ -660,18 +643,6 @@
     <div id="activityList" style="display:flex;flex-direction:column;gap:3px"></div>
   </div>
 
-  <!-- 팬덤 응원 메시지 -->
-  <div class="section-title">💬 팬덤 응원 메시지 <span id="nickDisplay" style="font-size:.7rem;font-weight:400;color:var(--muted)"></span></div>
-  <div class="comment-input-row">
-    <select class="comment-group-sel" id="commentGroup"></select>
-    <input class="comment-input" id="commentInput" placeholder="팬덤을 응원해주세요!" maxlength="60" />
-    <button class="comment-submit" onclick="postComment()">등록</button>
-  </div>
-  <div class="comment-filter-row" id="commentFilterRow">
-    <button class="cfilter-btn active" data-filter="all" onclick="filterComments('all')">전체</button>
-  </div>
-  <div class="comment-list" id="commentList"></div>
-
   <!-- 내 투표 기록 -->
   <div id="myVotingHistorySection" style="display:none;margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -880,6 +851,9 @@ function signOut() {
     adWatchCount = 0; // ★ 광고 시청 횟수도 초기화
     cachedTodayFreeVote = null;
     cachedTodayAdVotes = 0;
+
+    // 최애팬덤 제거
+    localStorage.removeItem("my_fav_group");
 
     updateAuthUI();
     updateFavBar();
@@ -1356,7 +1330,6 @@ function init() {
     db = firebase.database();
     setupAuthListener();
     listenRankings();
-    listenComments();
     listenPrizeNotice();
     loadGroupRecords();
     loadMonthlyHistory();
@@ -2347,126 +2320,6 @@ function changeNick() {
   showToast(`닉네임이 "${trimmed}"(으)로 변경됐어! 💜`);
   renderNickDisplay();
 }
-function canPostComment() {
-  const key = "comment_ts";
-  const history = JSON.parse(localStorage.getItem(key) || "[]");
-  const now = Date.now();
-  const recent = history.filter(t => now - t < 60000); // 1분 내
-  if (recent.length >= 3) return false;
-  recent.push(now);
-  localStorage.setItem(key, JSON.stringify(recent));
-  return true;
-}
-
-function listenComments() {
-  db.ref("comments").limitToLast(30).on("value", snap => {
-    commentCache = [];
-    snap.forEach(c => commentCache.push(c.val()));
-    commentCache.reverse();
-    renderComments(commentCache);
-  });
-}
-
-const COMMENT_SHOW = 5;
-let showAllComments = false;
-let commentFilter = "all";
-let commentCache = [];
-
-function renderComments(list) {
-  const el = document.getElementById("commentList");
-  const filtered = commentFilter === "all" ? list : list.filter(c => c.group === commentFilter);
-  if (!filtered.length) {
-    const emptyMsg = commentFilter === "all"
-      ? `<div style="text-align:center;padding:18px;color:var(--muted)">
-          <div style="font-size:1.8rem;margin-bottom:8px">💬</div>
-          <div style="font-size:.84rem;font-weight:700;margin-bottom:4px">첫 응원 댓글을 남겨봐!</div>
-          <div style="font-size:.75rem;margin-bottom:12px;line-height:1.5">우리 팀에 응원 메시지를 보내면<br>다른 팬들과 함께 응원할 수 있어! 💜</div>
-          <button onclick="document.getElementById('commentInput').focus()" style="padding:8px 16px;border-radius:20px;background:var(--primary);color:#fff;border:none;font-weight:700;font-family:inherit;cursor:pointer">응원 댓글 작성</button>
-        </div>`
-      : `<div style="text-align:center;padding:18px;color:var(--muted)">
-          <div style="font-size:1.6rem;margin-bottom:8px">🤐</div>
-          <div style="font-size:.82rem">아직 ${escHtml(commentFilter)} 응원 댓글이 없어요!</div>
-          <div style="font-size:.73rem;margin-top:8px">첫 응원자가 되어볼래? 💜</div>
-        </div>`;
-    el.innerHTML = emptyMsg;
-    return;
-  }
-  const visible = showAllComments ? filtered : filtered.slice(0, COMMENT_SHOW);
-  const hidden = filtered.length - COMMENT_SHOW;
-
-  const rows = visible.map(c => {
-    const meta = GROUP_META[c.group] || { color:"#7c4dff" };
-    const userMeta = c.userFandom ? GROUP_META[c.userFandom] : null;
-    const ago = relTimeComment(c.time);
-    const userTag = userMeta ? `<span class="comment-badge" style="background:${userMeta.color}22;color:${userMeta.color};margin-right:4px">${userMeta.emoji} ${escHtml(c.userFandom)}</span>` : "";
-    return `<div class="comment-item">
-      <span class="comment-badge" style="background:${meta.color}22;color:${meta.color}">${escHtml(c.group)}</span>
-      <div class="comment-body">
-        <div class="comment-text">${escHtml(c.text)}</div>
-        <div class="comment-meta">${userTag}${escHtml(c.anon)} · ${ago}</div>
-      </div>
-    </div>`;
-  }).join("");
-
-  const moreBtn = !showAllComments && hidden > 0
-    ? `<button onclick="showMoreComments()" style="width:100%;padding:9px;background:none;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-size:0.78rem;font-family:inherit;cursor:pointer;margin-top:4px">▼ 이전 댓글 ${hidden}개 더보기</button>`
-    : showAllComments && hidden > 0
-    ? `<button onclick="showMoreComments()" style="width:100%;padding:9px;background:none;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-size:0.78rem;font-family:inherit;cursor:pointer;margin-top:4px">▲ 접기</button>`
-    : "";
-
-  el.innerHTML = rows + moreBtn;
-}
-
-function filterComments(f) {
-  commentFilter = f;
-  showAllComments = false;
-  document.querySelectorAll(".cfilter-btn").forEach(b => {
-    b.classList.toggle("active", b.dataset.filter === f);
-  });
-  renderComments(commentCache);
-}
-
-function showMoreComments() {
-  showAllComments = !showAllComments;
-  renderComments(commentCache);
-}
-
-function postComment() {
-  const text = document.getElementById("commentInput").value.trim();
-  const group = document.getElementById("commentGroup").value;
-  if (!text) { showToast("응원 메시지를 입력해줘!"); return; }
-  if (filterBad(text)) { showToast("부적절한 표현이 포함되어 있어요"); return; }
-  if (!canPostComment()) { showToast("1분에 3개까지만 쓸 수 있어요 ⏳"); return; }
-  if (!db) return;
-  const ref = db.ref("comments").push();
-  const userFandom = getMyFav(); // 사용자의 최애 팬덤도 함께 저장
-  ref.set({ text, group, anon: anonName(), userFandom: userFandom || "", time: Date.now() });
-  // 30개 초과 시 오래된 것 삭제
-  db.ref("comments").once("value", snap => {
-    const keys = []; snap.forEach(c => keys.push(c.key));
-    if (keys.length > 30) keys.slice(0, keys.length-30).forEach(k => db.ref("comments/"+k).remove());
-  });
-  document.getElementById("commentInput").value = "";
-  showToast("💬 응원 완료!");
-  // 댓글 영역 자동 스크롤
-  setTimeout(() => {
-    const commentList = document.getElementById("commentList");
-    if (commentList && commentList.children.length > 0) {
-      const lastComment = commentList.lastElementChild;
-      lastComment.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-  }, 300);
-}
-
-function relTimeComment(ts) {
-  const s = Math.floor((Date.now()-ts)/1000);
-  if (s<60) return "방금";
-  if (s<3600) return Math.floor(s/60)+"분 전";
-  if (s<86400) return Math.floor(s/3600)+"시간 전";
-  return Math.floor(s/86400)+"일 전";
-}
-
-
 // ── 그룹 역대 전적 ──
 let groupRecords = {};
 function loadGroupRecords() {
@@ -2541,9 +2394,6 @@ function setMyFav(g) {
   renderFavChip();
   updateQuickAccessBtn();
   updateFavBar(); // 하단 바 업데이트
-  // 댓글 셀렉트 자동 선택
-  const sel = document.getElementById("commentGroup");
-  if (sel && g) sel.value = g;
 }
 
 // ── 팀 빠른접근 버튼 업데이트 ──
