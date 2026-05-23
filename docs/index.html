@@ -988,6 +988,16 @@ function showAuthSetupModal() {
     }
   };
   document.addEventListener("keydown", handleAuthEsc);
+
+  // 모바일 뒤로가기 처리: 모달 열릴 때 history에 entry 추가
+  window.history.pushState({ modal: "authSetupModal" }, null, null);
+
+  // 모달이 닫힐 때 popstate 이벤트 제거를 위한 준비
+  const handleAuthPopstate = () => {
+    closeAuthSetupModal();
+    window.removeEventListener("popstate", handleAuthPopstate);
+  };
+  window.addEventListener("popstate", handleAuthPopstate);
 }
 
 // 팬덤 검색 필터링
@@ -1140,6 +1150,16 @@ function showVoteLoginModal(group) {
     }
   };
   document.addEventListener("keydown", handleEsc);
+
+  // 모바일 뒤로가기 처리: 모달 열릴 때 history에 entry 추가
+  window.history.pushState({ modal: "voteLoginModal" }, null, null);
+
+  // 모달이 닫힐 때 popstate 이벤트 제거를 위한 준비
+  const handlePopstate = () => {
+    closeVoteLoginModal();
+    window.removeEventListener("popstate", handlePopstate);
+  };
+  window.addEventListener("popstate", handlePopstate);
 }
 
 // 로그인 모달 닫기
@@ -2341,12 +2361,29 @@ function showFavBar() {
 }
 
 function openFavPicker() {
+  // 로그인 필수 확인
+  if (!isLoggedIn) {
+    showToast("💜 팬덤을 선택하려면 먼저 로그인하세요!");
+    showVoteLoginModal(null); // 로그인 모달 표시 (팬덤 선택용)
+    return;
+  }
+
   if (document.getElementById("favPicker")) return;
   const myFav = getMyFav();
   const overlay = document.createElement("div");
   overlay.id = "favPicker";
   overlay.className = "fav-picker";
   overlay.onclick = e => { if (e.target === overlay) closeFavPicker(); };
+
+  // ESC 키로도 닫기
+  const handleEsc = (e) => {
+    if (e.key === "Escape") {
+      closeFavPicker();
+      document.removeEventListener("keydown", handleEsc);
+    }
+  };
+  document.addEventListener("keydown", handleEsc);
+
   const grid = ALL_GROUPS.map(g => {
     const meta = GROUP_META[g] || { emoji:"🌟" };
     return `<button class="fav-picker-btn ${myFav===g?"selected":""}" onclick="pickFav('${escAttr(g)}')">
@@ -2359,6 +2396,16 @@ function openFavPicker() {
     <div class="fav-picker-grid">${grid}</div>
   </div>`;
   document.body.appendChild(overlay);
+
+  // 모바일 뒤로가기 처리: 모달 열릴 때 history에 entry 추가
+  window.history.pushState({ modal: "favPicker" }, null, null);
+
+  // 모달이 닫힐 때 popstate 이벤트 제거를 위한 준비
+  const handleFavPopstate = () => {
+    closeFavPicker();
+    window.removeEventListener("popstate", handleFavPopstate);
+  };
+  window.addEventListener("popstate", handleFavPopstate);
 }
 
 function closeFavPicker() { document.getElementById("favPicker")?.remove(); }
