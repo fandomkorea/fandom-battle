@@ -282,6 +282,12 @@
     .fav-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: linear-gradient(135deg,#1a0a2e,#0d0d1a); border-top: 1px solid var(--primary); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .fav-bar-text { font-size: 0.84rem; color: var(--text); }
     .fav-bar-btn { padding: 8px 20px; border-radius: 20px; border: none; background: var(--primary); color: #fff; font-weight: 700; font-family: inherit; font-size: 0.82rem; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+
+    /* ── 팬덤 선택 바 내 광고 버튼 ── */
+    .fav-bar-ad-btn { padding: 6px 14px; border-radius: 12px; border: none; background: linear-gradient(135deg, #4d9eff, #7c4dff); color: #fff; font-weight: 700; font-family: inherit; font-size: 0.75rem; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; display: none; }
+    .fav-bar-ad-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(77,158,255,0.4); }
+    .fav-bar-ad-btn.show { display: block; }
+    .fav-bar-ad-btn.ready { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1000; animation: pulse 1s infinite; font-weight: 900; }
     .fav-picker { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
     .fav-picker-sheet { background: var(--card); border-radius: 20px 20px 0 0; width: 100%; max-width: 680px; padding: 20px 16px 40px; border-top: 1px solid var(--border); animation: slideUp 0.25s ease; }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -433,6 +439,10 @@
       .fav-bar { padding: 10px 12px; display: flex !important; }
       .fav-bar-text { font-size: 0.75rem; }
       .fav-bar-btn { padding: 8px 14px; font-size: 0.75rem; }
+      .fav-bar-ad-btn { padding: 6px 10px; font-size: 0.7rem; }
+
+      /* 배틀 카드 내 광고 버튼 숨김 (모바일) */
+      #adVoteCta { display: none !important; }
 
       /* 주요 배너들 */
       #todayVoteCountBanner { padding: 10px; margin-bottom: 8px; font-size: 0.75rem; flex-direction: column; gap: 4px; text-align: center; }
@@ -850,6 +860,7 @@ function setupAuthListener() {
       isLoggedIn = false;
     }
     updateAuthUI();
+    updateFavBar(); // 로그인 상태 변경 시 팬덤 선택 바 업데이트 (광고 버튼 상태 포함)
   });
 }
 
@@ -1223,7 +1234,6 @@ function init() {
     renderNickDisplay();
     handleShareRef();
     restoreVotedState(); // 페이지 로드 시 투표 상태 복원
-    showAdButtonAlways(); // 광고 버튼 항상 표시
     setTimeout(showFavBar, 1500);
     if (isAdmin) {
       const pw = prompt("관리자 패스워드:");
@@ -1447,19 +1457,8 @@ function showMyVotedBar(group) {
   msgEl.textContent = msg;
   subEl.textContent = sub;
 
-  // 광고 투표 CTA 업데이트
-  const adCtaEl = document.getElementById("adVoteCta");
-  if (adCtaEl) {
-    if (adPending) {
-      adCtaEl.innerHTML = `<span class="ad-pending-badge">NEW</span> 🎁 투표권 획득! 아래에서 투표 그룹을 선택하세요!`;
-      adCtaEl.disabled = false;
-    } else {
-      adCtaEl.innerHTML = `📺 광고보기 • 9표 투표하기`;
-      adCtaEl.disabled = false;
-      adCtaEl.onclick = watchAdWithLoginCheck;
-    }
-    adCtaEl.style.display = "flex";
-  }
+  // 팬덤 선택 바 업데이트 (광고 버튼 상태 포함)
+  updateFavBar();
 
   // 친구 초대 권유 배너
   let shareCtaEl = document.getElementById("shareCtaBar");
@@ -2357,12 +2356,36 @@ function updateFavBar() {
   }
 
   // 팬덤 선택 여부에 따라 내용 업데이트
+  let leftContent, rightContent;
+
   if (fav) {
     const meta = GROUP_META[fav] || { emoji: "🌟", fandom: fav };
-    bar.innerHTML = `<span class="fav-bar-text">${meta.emoji} ${fav} (${meta.fandom})</span><button class="fav-bar-btn" onclick="openFavPicker()" style="font-size:0.65rem;padding:6px 10px">변경</button>`;
+    leftContent = `<span class="fav-bar-text">${meta.emoji} ${fav} (${meta.fandom})</span>`;
+    rightContent = `<button class="fav-bar-btn" onclick="openFavPicker()" style="font-size:0.65rem;padding:6px 10px">변경</button>`;
   } else {
-    bar.innerHTML = `<span class="fav-bar-text">💜 내 최애 그룹을 설정하면 더 편해요!</span><button class="fav-bar-btn" onclick="openFavPicker()">팬덤 선택</button>`;
+    leftContent = `<span class="fav-bar-text">💜 내 최애 그룹을 설정하면 더 편해요!</span>`;
+    rightContent = `<button class="fav-bar-btn" onclick="openFavPicker()">팬덤 선택</button>`;
   }
+
+  // 광고 버튼 상태 결정
+  let adButton = '';
+  if (isLoggedIn && fav) {
+    const todayCount = getTodayVoteCount();
+    if (adPending) {
+      // 광고 시청 후 투표권 획득 상태
+      adButton = `<button class="fav-bar-ad-btn show" onclick="voteForGroup('${escAttr(fav)}')">🎁 투표권 획득!</button>`;
+    } else if (todayCount < MAX_VOTES_PER_DAY) {
+      // 광고 시청 가능 상태
+      adButton = `<button class="fav-bar-ad-btn show ready" onclick="watchAdWithLoginCheck()">📺 광고보기</button>`;
+    }
+  }
+
+  // 광고 버튼이 있으면 오른쪽 영역에 함께 표시
+  if (adButton) {
+    rightContent = `<div style="display:flex;gap:8px;align-items:center">${rightContent}${adButton}</div>`;
+  }
+
+  bar.innerHTML = `${leftContent}<div style="display:flex;gap:8px;align-items:center">${rightContent}</div>`;
 }
 
 function showFavBar() {
