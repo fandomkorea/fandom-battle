@@ -1114,20 +1114,22 @@ function showVoteLoginModal(group) {
   const meta = GROUP_META[group] || { emoji: "🌟" };
 
   modal.innerHTML = `
-    <div class="auth-setup-box" style="text-align: center;">
-      <div style="font-size: 2rem; margin-bottom: 12px;">${meta.emoji}</div>
-      <div class="auth-setup-title">${escHtml(group)}에 투표하시나요?</div>
-      <div style="font-size: 0.85rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5;">
+    <div class="auth-setup-box" style="text-align: center; max-width: 360px;">
+      <div style="font-size: 2.4rem; margin-bottom: 16px;">${meta.emoji}</div>
+      <div class="auth-setup-title" style="font-size: 1.3rem; margin-bottom: 12px;">${escHtml(group)}에 투표하시나요?</div>
+      <div style="font-size: 0.88rem; color: var(--muted); margin-bottom: 28px; line-height: 1.6;">
         로그인 후 투표할 수 있어요!<br>
         휴대폰·PC 등 여러 기기에서<br>부정 투표를 방지합니다! 🔐
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 10px;">
-        <button class="auth-setup-btn-ok" onclick="loginFromVoteModal('${escAttr(group)}')" style="width: 100%;">
-          🔍 Google로 로그인
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <button onclick="loginFromVoteModal('${escAttr(group)}')" style="width: 100%; padding: 16px 12px; background: #fff; border: 1px solid #dadce0; border-radius: 8px; color: #202124; font-weight: 700; font-size: 1rem; font-family: inherit; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1)">
+          <span style="font-size: 1.2rem">🔍</span>
+          <span>Google로 로그인</span>
         </button>
-        <button class="auth-setup-btn-ok" onclick="loginFromVoteModalKakao('${escAttr(group)}')" style="width: 100%; background: rgba(255,195,0,0.2); color: #ffc300; border: 1px solid #ffc300;">
-          ☀️ Kakao로 로그인
+        <button onclick="loginFromVoteModalKakao('${escAttr(group)}')" style="width: 100%; padding: 16px 12px; background: #ffe812; border: none; border-radius: 8px; color: #000; font-weight: 700; font-size: 1rem; font-family: inherit; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.12)">
+          <span style="font-size: 1.2rem">☀️</span>
+          <span>Kakao로 로그인</span>
         </button>
       </div>
     </div>
