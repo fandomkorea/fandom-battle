@@ -986,8 +986,9 @@ function updateAuthUI() {
     const remainingAd = MAX_AD_VOTES_PER_DAY - adVotes;
     const remainingTotal = MAX_TOTAL_VOTES_PER_DAY - totalVotes;
 
-    // ★ 투표권 정보 텍스트
-    const voteInfo = `${nickname} · ${totalVotes}/11표 | 투표권: ${pendingAdVotes}개`;
+    // ★ 투표권 정보 텍스트 (무료 1개 + 광고권)
+    const availableVotes = (canUseFreeVote() ? 1 : 0) + pendingAdVotes; // 사용 가능한 투표권
+    const voteInfo = `${nickname} · ${totalVotes}/11표 | 투표권: ${availableVotes}개`;
     document.getElementById("userDisplayName").textContent = voteInfo;
 
     // ★ 상단 광고 버튼 렌더링
