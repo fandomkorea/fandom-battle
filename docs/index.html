@@ -908,7 +908,19 @@ function updateAuthUI() {
     container.style.display = "block"; // 로그인 후에만 표시
     loggedIn.style.display = "flex";
     const nickname = currentUser.customNickname || "👤 사용자";
-    document.getElementById("userDisplayName").textContent = nickname;
+
+    // ★ 투표 정보 계산
+    const freeVotes = getTodayFreeVoteCount();
+    const adVotes = getTodayAdVoteCount();
+    const totalVotes = getTodayVoteCount();
+    const remainingFree = MAX_FREE_VOTES_PER_DAY - freeVotes;
+    const remainingAd = MAX_AD_VOTES_PER_DAY - adVotes;
+    const remainingTotal = MAX_TOTAL_VOTES_PER_DAY - totalVotes;
+
+    // ★ 투표권 정보 텍스트
+    const voteInfo = `${nickname} · ${totalVotes}/11표 | 투표권: ${pendingAdVotes}개`;
+
+    document.getElementById("userDisplayName").textContent = voteInfo;
   } else {
     container.style.display = "none"; // 로그인 전에는 숨김
     loggedIn.style.display = "none";
@@ -1433,6 +1445,7 @@ async function voteForGroup(group) {
       renderMyVotingHistory();
       showMyVotedBar(group);
       updateFavBar(); // 광고 바 업데이트
+      updateAuthUI(); // ★ 닉네임 옆 투표권 정보 업데이트
 
       // 투표 가이드 배너 숨기기
       const banner = document.getElementById("voteGuideBanner");
@@ -1478,6 +1491,7 @@ async function voteForGroup(group) {
       renderMyVotingHistory();
       showMyVotedBar(cachedTodayFreeVote);
       updateFavBar(); // 광고 바 상태 업데이트 (남은 투표권 표시)
+      updateAuthUI(); // ★ 닉네임 옆 투표권 정보 업데이트
     } catch (e) {
       console.error("광고 투표 저장 실패:", e);
       showToast("⚠️ 투표 저장에 실패했습니다. 다시 시도해주세요.");
@@ -1669,6 +1683,7 @@ async function claimAdReward() {
 
   // 팬덤 선택 바 업데이트
   updateFavBar();
+  updateAuthUI(); // ★ 닉네임 옆 투표권 정보 업데이트
 
   // 랭킹으로 자동 스크롤
   setTimeout(() => {
