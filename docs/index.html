@@ -1621,16 +1621,7 @@ function scrollToMyGroup(group) {
 function updateTodayVoteDisplay() {
   const el = document.getElementById("todayVoteDisplay");
   if (!el) return;
-  const count = getTodayVoteCount();
-  const remaining = MAX_VOTES_PER_DAY - count;
-
-  if (count === 0) {
-    el.innerHTML = `📊 오늘 투표: <span style="color:var(--gold);font-weight:900">${count}/${MAX_VOTES_PER_DAY}</span> (광고로 최대 9표 더!)`;
-  } else if (count === MAX_VOTES_PER_DAY) {
-    el.innerHTML = `✅ 오늘 투표: <span style="color:var(--gold);font-weight:900">${count}/${MAX_VOTES_PER_DAY}</span> (최대 사용!)`;
-  } else {
-    el.innerHTML = `📊 오늘 투표: <span style="color:var(--primary);font-weight:900">${count}/${MAX_VOTES_PER_DAY}</span> (광고로 <span style="color:var(--pink)">${remaining}표</span> 더 가능!)`;
-  }
+  el.style.display = "none"; // 오늘 투표 표시 숨기기
 }
 
 // ── 투표 가이드 배너 표시 ──
