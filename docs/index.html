@@ -1247,7 +1247,7 @@ function init() {
 
 // ── 투표 제한 (하루 최대 MAX_VOTES_PER_DAY표) ──
 const MAX_VOTES_PER_DAY = 10;
-let adPending = false; // 광고 시청 후 추가 투표 대기 상태
+let pendingAdVotes = 0; // 광고로부터 얻은 미사용 투표권 개수
 
 function getTodayKey()      { return new Date().toISOString().slice(0, 10); }
 function getMyVote()        { return localStorage.getItem("voted_group_" + getTodayKey()); }   // 첫 무료 투표 그룹 or null
@@ -1349,22 +1349,24 @@ async function voteForGroup(group) {
     return;
   }
 
-  if (adPending) {
-    // 광고 시청 후 추가 투표
+  if (pendingAdVotes > 0) {
+    // 광고로부터 얻은 투표권으로 투표
     addExtraVote();
     recordVote(group); // 추가 투표도 기록
-    adPending = false; // 광고 보상 상태 해제
+    pendingAdVotes -= 1; // 사용한 투표권 차감
+    savePendingAdVotes(); // localStorage 저장
     addActivity(group);
 
     // Firebase에 투표 기록 (비동기)
     db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
 
     const todayCount = getTodayVoteCount() + 1; // 방금 투표한 것 포함
-    showToast(`${meta.emoji} ${group} 추가 투표 완료! 오늘 ${todayCount}/${MAX_VOTES_PER_DAY}표 🎉`);
+    const remaining = pendingAdVotes;
+    showToast(`${meta.emoji} ${group} 추가 투표 완료! 오늘 ${todayCount}/${MAX_VOTES_PER_DAY}표 🎉 ${remaining > 0 ? `(남은 투표권: ${remaining}개)` : ""}`);
 
     renderMyVotingHistory();
     showMyVotedBar(getMyVote());
-    updateFavBar(); // 광고 바 상태 업데이트 (투표권 획득 → 광고시청 으로 변경)
+    updateFavBar(); // 광고 바 상태 업데이트 (남은 투표권 표시)
 
     // listenRankings()에서 자동으로 Firebase 데이터 감지 후 renderRankings() 호출
     return;
@@ -1559,11 +1561,12 @@ function watchAd() {
 
 function claimAdReward() {
   document.getElementById("adModal")?.remove();
-  adPending = true;
-  showToast("🎁 투표권 획득! 아래에서 팀을 선택해서 투표하세요! ⬇️");
+  pendingAdVotes += 9; // 투표권 9개 누적
+  savePendingAdVotes(); // localStorage 저장
+  showToast(`🎁 투표권 획득! (누적: ${pendingAdVotes}개) 아래에서 팀을 선택해서 투표하세요! ⬇️`);
 
-  // 버튼 상태 업데이트
-  if (allRankingsData) renderRankings(allRankingsData);
+  // 팬덤 선택 바 업데이트
+  updateFavBar();
 
   // 랭킹으로 자동 스크롤
   setTimeout(() => {
@@ -1576,9 +1579,33 @@ function claimAdReward() {
 
 // ── 투표 후 상태 복원 (페이지 로드 시) ──
 function restoreVotedState() {
+  // 광고 투표권 복원 (매일 초기화)
+  const today = getTodayKey();
+  const savedDate = localStorage.getItem("pending_ad_votes_date");
+
+  if (savedDate === today) {
+    // 오늘이면 저장된 투표권 복원
+    const saved = localStorage.getItem("pending_ad_votes");
+    if (saved) {
+      pendingAdVotes = parseInt(saved, 10) || 0;
+    }
+  } else {
+    // 새 날짜면 투표권 초기화
+    pendingAdVotes = 0;
+    localStorage.setItem("pending_ad_votes", "0");
+    localStorage.setItem("pending_ad_votes_date", today);
+  }
+
   const group = getMyVote();
   if (!group) return;
   showMyVotedBar(group);
+  updateFavBar(); // 광고 바 상태 복원
+}
+
+// ── 광고 투표권 저장 ──
+function savePendingAdVotes() {
+  localStorage.setItem("pending_ad_votes", String(pendingAdVotes));
+  localStorage.setItem("pending_ad_votes_date", getTodayKey());
 }
 
 // ── 댓글 필터 탭을 상위 그룹으로 업데이트 ──
@@ -2377,12 +2404,12 @@ function updateFavBar() {
   let adButton = '';
   if (isLoggedIn && fav) {
     const todayCount = getTodayVoteCount();
-    if (adPending) {
-      // 광고 시청 후 투표권 획득 상태
-      adButton = `<button class="fav-bar-ad-btn show" onclick="voteForGroup('${escAttr(fav)}')">🎁 투표권 획득! (${todayCount}/${MAX_VOTES_PER_DAY})</button>`;
+    if (pendingAdVotes > 0) {
+      // 광고로부터 얻은 투표권이 있는 상태
+      adButton = `<button class="fav-bar-ad-btn show" onclick="voteForGroup('${escAttr(fav)}')">🎁 투표권 ${pendingAdVotes}개 · 투표하기</button>`;
     } else if (todayCount < MAX_VOTES_PER_DAY) {
       // 광고 시청 가능 상태
-      adButton = `<button class="fav-bar-ad-btn show ready" onclick="watchAdWithLoginCheck()">📺 광고 시청 · 투표권 +9 (${todayCount}/${MAX_VOTES_PER_DAY})</button>`;
+      adButton = `<button class="fav-bar-ad-btn show ready" onclick="watchAdWithLoginCheck()">📺 광고 시청 · 투표권 +9</button>`;
     }
   }
 
