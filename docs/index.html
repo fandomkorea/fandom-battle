@@ -3194,14 +3194,16 @@ function showCommunityPage() {
     tab.classList.toggle("active", i === 1);
   });
 
+  // 초기화 & 최애팬덤 자동 선택
   initCommunityPage();
 
-  // 최애팬덤이 있으면 자동 선택
-  if (currentUserFav) {
-    const select = document.getElementById("communityFandomSelect");
-    select.value = currentUserFav;
-    loadCommunityPosts();
-  }
+  setTimeout(() => {
+    if (currentUserFav) {
+      const select = document.getElementById("communityFandomSelect");
+      select.value = currentUserFav;
+      loadCommunityPosts();
+    }
+  }, 100);
 }
 
 // ── 커뮤니티 초기화 ──
@@ -3210,12 +3212,19 @@ function initCommunityPage() {
 
   // 팬덤 목록이 없으면 채우기 (한 번만)
   if (select.options.length === 1) {
-    GROUP_META.forEach(group => {
-      const option = document.createElement("option");
-      option.value = group.name;
-      option.textContent = `${group.emoji} ${group.name}`;
-      select.appendChild(option);
-    });
+    if (GROUP_META && Array.isArray(GROUP_META)) {
+      GROUP_META.forEach(group => {
+        const option = document.createElement("option");
+        option.value = group.name;
+        option.textContent = `${group.emoji} ${group.name}`;
+        select.appendChild(option);
+      });
+    }
+  }
+
+  // 최애 팬덤 자동 선택
+  if (currentUserFav && select.value !== currentUserFav) {
+    select.value = currentUserFav;
   }
 }
 
