@@ -3410,7 +3410,11 @@ function renderPost(fandom, postId, post) {
         </div>
       </div>
     </div>
-    <div class="post-content">${escHtml(post.content).replace(/\n/g, '<br>')}</div>
+    <div class="post-content" id="preview-${postId}">
+      ${post.content.length > 200 ?
+        `${escHtml(post.content.substring(0, 200))}... <a onclick="showFullContent('${escAttr(postId)}', \`${escAttr(post.content)}\`); event.stopPropagation()" style="color:var(--primary);cursor:pointer;text-decoration:underline">더 보기</a>`
+        : escHtml(post.content).replace(/\n/g, '<br>')}
+    </div>
     <div class="post-actions">
       ${isAuthor ? `<button class="post-action-btn" onclick="editPost('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(post.title)}', '${escAttr(post.content)}'); event.stopPropagation()">✏️ 수정</button>` : ''}
       ${isAuthor ? `<button class="post-action-btn danger" onclick="deletePost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🗑️ 삭제</button>` : ''}
@@ -3609,6 +3613,11 @@ async function deletePost(fandom, postId) {
     showToast("삭제 실패: " + error.message);
     console.error(error);
   }
+}
+
+// ── 게시물 전체 내용 보기 ──
+function showFullContent(postId, content) {
+  alert(content);
 }
 
 // ── 댓글 로드 ──
