@@ -3495,7 +3495,7 @@ async function submitPost() {
       title,
       content,
       authorUid: currentUser.uid,
-      authorName: currentUser.displayName || "익명",
+      authorName: currentUser.customNickname || currentUser.displayName || "익명",
       timestamp: Date.now(),
       imageUrl,
       isHidden: false,
