@@ -2356,15 +2356,15 @@ function updateFavBar() {
   }
 
   // 팬덤 선택 여부에 따라 내용 업데이트
-  let leftContent, rightContent;
+  let leftContent, centerContent, rightContent;
 
   if (fav) {
     const meta = GROUP_META[fav] || { emoji: "🌟", fandom: fav };
-    leftContent = `<span class="fav-bar-text">${meta.emoji} ${fav} (${meta.fandom})</span>`;
-    rightContent = `<button class="fav-bar-btn" onclick="openFavPicker()" style="font-size:0.65rem;padding:6px 10px">변경</button>`;
+    leftContent = `<span class="fav-bar-text">${meta.emoji} ${fav}</span>`;
+    centerContent = `<button class="fav-bar-btn" onclick="openFavPicker()" style="font-size:0.65rem;padding:6px 10px">변경</button>`;
   } else {
     leftContent = `<span class="fav-bar-text">💜 내 최애 그룹을 설정하면 더 편해요!</span>`;
-    rightContent = `<button class="fav-bar-btn" onclick="openFavPicker()">팬덤 선택</button>`;
+    centerContent = `<button class="fav-bar-btn" onclick="openFavPicker()">팬덤 선택</button>`;
   }
 
   // 광고 버튼 상태 결정
@@ -2373,19 +2373,25 @@ function updateFavBar() {
     const todayCount = getTodayVoteCount();
     if (adPending) {
       // 광고 시청 후 투표권 획득 상태
-      adButton = `<button class="fav-bar-ad-btn show" onclick="voteForGroup('${escAttr(fav)}')">🎁 투표권 획득!</button>`;
+      adButton = `<button class="fav-bar-ad-btn show" onclick="voteForGroup('${escAttr(fav)}')">🎁 투표권 획득! (${todayCount}/${MAX_VOTES_PER_DAY})</button>`;
     } else if (todayCount < MAX_VOTES_PER_DAY) {
       // 광고 시청 가능 상태
-      adButton = `<button class="fav-bar-ad-btn show ready" onclick="watchAdWithLoginCheck()">📺 광고보기</button>`;
+      adButton = `<button class="fav-bar-ad-btn show ready" onclick="watchAdWithLoginCheck()">📺 광고 시청 · 투표권 +9 (${todayCount}/${MAX_VOTES_PER_DAY})</button>`;
     }
   }
 
-  // 광고 버튼이 있으면 오른쪽 영역에 함께 표시
-  if (adButton) {
-    rightContent = `<div style="display:flex;gap:8px;align-items:center">${rightContent}${adButton}</div>`;
-  }
+  // 레이아웃: [팀 변경] | [광고버튼]
+  rightContent = adButton ? adButton : '';
 
-  bar.innerHTML = `${leftContent}<div style="display:flex;gap:8px;align-items:center">${rightContent}</div>`;
+  bar.innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center;flex:1">
+      ${leftContent}
+      ${centerContent}
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      ${rightContent}
+    </div>
+  `;
 }
 
 function showFavBar() {
