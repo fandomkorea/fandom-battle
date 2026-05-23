@@ -3339,6 +3339,7 @@ function renderPost(fandom, postId, post) {
     </div>
     <div class="post-content">${escHtml(post.content).replace(/\n/g, '<br>')}</div>
     <div class="post-actions">
+      ${isAuthor ? `<button class="post-action-btn" onclick="editPost('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(post.title)}', '${escAttr(post.content)}'); event.stopPropagation()">✏️ 수정</button>` : ''}
       ${isAuthor ? `<button class="post-action-btn danger" onclick="deletePost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🗑️ 삭제</button>` : ''}
       ${!isAuthor ? `<button class="post-action-btn" onclick="reportPost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()">🚩 신고</button>` : ''}
     </div>
@@ -3485,6 +3486,26 @@ async function submitPost() {
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = "작성하기";
+  }
+}
+
+// ── 게시물 수정 ──
+async function editPost(fandom, postId, title, content) {
+  const newTitle = prompt("제목을 수정해주세요:", title);
+  if (newTitle === null || newTitle.trim() === "") return;
+
+  const newContent = prompt("내용을 수정해주세요:", content);
+  if (newContent === null || newContent.trim() === "") return;
+
+  try {
+    await db.ref(`community/${fandom}/${postId}`).update({
+      title: newTitle.trim(),
+      content: newContent.trim()
+    });
+    showToast("✅ 게시물이 수정되었어요!");
+  } catch (error) {
+    showToast("수정 실패: " + error.message);
+    console.error(error);
   }
 }
 
