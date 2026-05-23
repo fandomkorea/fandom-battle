@@ -3165,10 +3165,13 @@ function renderPost(fandom, postId, post) {
           <span class="post-date">${new Date(post.timestamp).toLocaleDateString('ko-KR', {month:'short', day:'numeric'})}</span>
         </div>
       </div>
-      ${isAuthor ? `<button class="post-action-btn danger" onclick="deletePost('${escAttr(fandom)}', '${escAttr(postId)}')">삭제</button>` : ''}
     </div>
     <div class="post-content">${escHtml(post.content).replace(/\n/g, '<br>')}</div>
     ${post.imageUrl ? `<img src="${escAttr(post.imageUrl)}" class="post-image" alt="게시물 이미지">` : ''}
+    <div class="post-actions">
+      ${isAuthor ? `<button class="post-action-btn danger" onclick="deletePost('${escAttr(fandom)}', '${escAttr(postId)}')">🗑️ 삭제</button>` : ''}
+      ${!isAuthor ? `<button class="post-action-btn" onclick="reportPost('${escAttr(fandom)}', '${escAttr(postId)}')">🚩 신고</button>` : ''}
+    </div>
   `;
 
   return postEl;
@@ -3333,6 +3336,51 @@ async function deletePost(fandom, postId) {
     showToast("✅ 게시물이 삭제되었어요");
   } catch (error) {
     showToast("삭제 실패: " + error.message);
+    console.error(error);
+  }
+}
+
+// ── 게시물 신고 ──
+async function reportPost(fandom, postId) {
+  if (!isLoggedIn) {
+    showToast("로그인 후 신고할 수 있습니다");
+    return;
+  }
+
+  const reason = prompt("신고 사유를 선택하세요:\n1. 부적절한 내용\n2. 스팸\n3. 광고\n4. 욕설");
+  if (!reason) return;
+
+  try {
+    // 기존 신고 데이터 조회
+    const snap = await db.ref(`reports/${postId}`).once("value");
+    const reportData = snap.val() || { reports: [], count: 0 };
+
+    // 중복 신고 확인
+    if (reportData.reports.some(r => r.uid === currentUser.uid)) {
+      showToast("이미 신고한 게시물입니다");
+      return;
+    }
+
+    // 신고 추가
+    reportData.reports.push({
+      uid: currentUser.uid,
+      timestamp: Date.now(),
+      reason: reason
+    });
+    reportData.count = reportData.reports.length;
+
+    // 신고 저장
+    await db.ref(`reports/${postId}`).set(reportData);
+
+    // 3회 이상 신고 시 게시물 숨김
+    if (reportData.count >= 3) {
+      await db.ref(`community/${fandom}/${postId}/isHidden`).set(true);
+      showToast("✅ 신고가 접수되었습니다 (게시물이 숨겨졌습니다)");
+    } else {
+      showToast(`✅ 신고가 접수되었습니다 (${reportData.count}/3)`);
+    }
+  } catch (error) {
+    showToast("신고 실패: " + error.message);
     console.error(error);
   }
 }
