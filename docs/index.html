@@ -998,15 +998,7 @@ function updateAuthUI() {
       else if (adWatchCount >= MAX_AD_VOTES_PER_DAY) {
         adButton = `<span style="font-size:0.75rem;color:var(--gold);font-weight:700">🎁 광고 10회 완료!</span>`;
       }
-      // 광고 투표권이 있으면 광고 투표 버튼
-      else if (pendingAdVotes > 0 && adVotes < MAX_AD_VOTES_PER_DAY) {
-        adButton = `<button style="padding:6px 10px;font-size:0.75rem;border-radius:6px;border:1px solid var(--pink);background:rgba(255,77,141,0.2);color:var(--pink);cursor:pointer;transition:all 0.15s;white-space:nowrap" onclick="voteForGroup(getMyFav())">🎁 ${pendingAdVotes}개 투표</button>`;
-      }
-      // 무료 투표가 남았으면 무료 투표 버튼
-      else if (canUseFreeVote()) {
-        adButton = `<button style="padding:6px 10px;font-size:0.75rem;border-radius:6px;border:1px solid var(--primary);background:rgba(124,77,255,0.2);color:var(--primary);cursor:pointer;transition:all 0.15s;white-space:nowrap" onclick="voteForGroup(getMyFav())">🎁 무료투표</button>`;
-      }
-      // 광고 시청 버튼 (광고를 10회 미만으로 본 경우)
+      // ★ 광고 시청 버튼 (항상 표시 - 투표권 여부 관계없이)
       else if (totalVotes < MAX_TOTAL_VOTES_PER_DAY && adWatchCount < MAX_AD_VOTES_PER_DAY) {
         adButton = `<button style="padding:6px 10px;font-size:0.75rem;border-radius:6px;border:1px solid var(--primary);background:rgba(124,77,255,0.2);color:var(--primary);cursor:pointer;transition:all 0.15s;white-space:nowrap" onclick="watchAdWithLoginCheck()">🎁 광고 보고 투표권 획득</button>`;
       }
@@ -2119,7 +2111,7 @@ function renderRankings(data) {
           <div class="rank-votes">${fmtVotes(votes)}</div>
           <button class="vote-rank-btn ${isVoted ? "voted" : ""} ${isAdPending ? "ad-active" : ""}"
             onclick="voteForGroup('${escAttr(group)}')"
-            ${(alreadyVoted && !isAdPending) ? "disabled" : ""}>
+            ${(pendingAdVotes === 0 && !canUseFreeVote()) ? "disabled" : ""}>
             ${isAdPending ? "⚡ 추가 투표!" : isVoted ? "✅ 투표함" : meta.emoji + " 투표"}
           </button>
         </div>
