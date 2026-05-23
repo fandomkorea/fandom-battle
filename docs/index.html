@@ -819,7 +819,14 @@ function signOut() {
   firebase.auth().signOut().then(() => {
     currentUser = null;
     isLoggedIn = false;
+
+    // 캐시 초기화
+    pendingAdVotes = 0;
+    cachedTodayFreeVote = null;
+    cachedTodayAdVotes = 0;
+
     updateAuthUI();
+    updateFavBar();
     showToast("로그아웃되었어요! 👋");
   }).catch(error => {
     showToast("로그아웃 실패: " + error.message);
@@ -873,10 +880,16 @@ async function loadUserAdVotes() {
   try {
     const snap = await db.ref(`users/${currentUser.uid}/pendingAdVotes`).once("value");
     pendingAdVotes = snap.val() || 0;
+
+    // 오늘의 투표 정보도 함께 로드
+    await loadTodayVotesFromFirebase();
+
     updateFavBar(); // 로드 후 팬덤 선택 바 업데이트
   } catch (e) {
     console.error("광고 투표권 로드 실패:", e);
     pendingAdVotes = 0;
+    cachedTodayFreeVote = null;
+    cachedTodayAdVotes = 0;
   }
 }
 
@@ -1268,18 +1281,44 @@ const MAX_TOTAL_VOTES_PER_DAY = 11; // 무료(1) + 광고(10) 합계
 let pendingAdVotes = 0; // 광고로부터 얻은 미사용 투표권 개수
 
 function getTodayKey()      { return new Date().toISOString().slice(0, 10); }
-function getMyVote()        { return localStorage.getItem("voted_group_" + getTodayKey()); }   // 첫 무료 투표 그룹 or null
-function setMyVote(group)   { localStorage.setItem("voted_group_" + getTodayKey(), group); }
-function getExtraVotes()    { return parseInt(localStorage.getItem("extra_votes_" + getTodayKey()) || "0", 10); }
-function addExtraVote()     { localStorage.setItem("extra_votes_" + getTodayKey(), getExtraVotes() + 1); }
 
-// ── 투표 상태 함수들 ──
-function getTodayFreeVoteCount()  { return getMyVote() ? 1 : 0; } // 무료 투표 사용 여부 (0 or 1)
-function getTodayAdVoteCount()    { return getExtraVotes(); } // 광고 투표 사용 개수 (0-10)
+// ── Firebase 캐시 변수 ──
+let cachedTodayFreeVote = null;   // 오늘 무료 투표한 그룹 or null
+let cachedTodayAdVotes = 0;       // 오늘 사용한 광고 투표 개수 (0-10)
+
+// ── 투표 상태 함수들 (Firebase 기반) ──
+function getTodayFreeVoteCount()  { return cachedTodayFreeVote ? 1 : 0; } // 무료 투표 사용 여부 (0 or 1)
+function getTodayAdVoteCount()    { return cachedTodayAdVotes; } // 광고 투표 사용 개수 (0-10)
 function getTodayVoteCount()      { return getTodayFreeVoteCount() + getTodayAdVoteCount(); } // 총 투표 개수 (0-11)
 function canUseFreeVote()         { return getTodayFreeVoteCount() === 0; } // 무료 투표 가능 여부
 function canUseAdVotes()          { return getTodayAdVoteCount() < MAX_AD_VOTES_PER_DAY && pendingAdVotes > 0; } // 광고 투표 가능 여부
 function getRemainingAdVotes()    { return MAX_AD_VOTES_PER_DAY - getTodayAdVoteCount(); } // 남은 광고 투표권 개수
+
+// ── Firebase에서 오늘의 투표 데이터 로드 ──
+async function loadTodayVotesFromFirebase() {
+  if (!isLoggedIn || !currentUser || !db) return;
+
+  const today = getTodayKey();
+
+  // 1. 무료 투표 확인 (votes/{date}/{uid} 존재하는지 확인)
+  try {
+    const freeVoteSnap = await db.ref(`votes/${today}/${currentUser.uid}`).once("value");
+    cachedTodayFreeVote = freeVoteSnap.exists() ? freeVoteSnap.val().group : null;
+  } catch (e) {
+    console.error("무료 투표 로드 실패:", e);
+  }
+
+  // 2. 광고 투표 개수 확인 (users/{uid}/ad_votes_used_{date})
+  try {
+    const adVotesSnap = await db.ref(`users/${currentUser.uid}/ad_votes_used_${today}`).once("value");
+    cachedTodayAdVotes = adVotesSnap.val() || 0;
+  } catch (e) {
+    console.error("광고 투표 로드 실패:", e);
+    cachedTodayAdVotes = 0;
+  }
+
+  console.log(`오늘 투표 로드: 무료=${cachedTodayFreeVote}, 광고=${cachedTodayAdVotes}`);
+}
 
 // ── 투표 스트릭 (연속 투표 일수) ──
 function updateVotingStreak() {
@@ -1370,11 +1409,14 @@ async function voteForGroup(group) {
 
   // ★ 무료 투표가 아직 남아있으면 먼저 무료 투표 (우선순위 1)
   if (canUseFreeVote()) {
-    const already = await checkUserVotedToday();
-    if (!already) {
-      // 첫 무료 투표
+    try {
+      // Firebase에 무료 투표 기록
       await recordUserVote(group);
-      recordVote(group);
+
+      // 캐시 업데이트
+      cachedTodayFreeVote = group;
+
+      recordVote(group); // 로컬 히스토리 기록
       addActivity(group);
       const streak = updateVotingStreak();
       const streakMsg = streak > 1 ? `🔥 ${streak}일 연속 투표 중!` : "";
@@ -1394,32 +1436,48 @@ async function voteForGroup(group) {
       // 댓글 그룹 자동 선택
       const sel = document.getElementById("commentGroup");
       if (sel) sel.value = group;
-
-      // listenRankings()에서 자동으로 Firebase 데이터 감지 후 renderRankings() 호출
-      return;
+    } catch (e) {
+      console.error("무료 투표 저장 실패:", e);
+      showToast("⚠️ 투표 저장에 실패했습니다. 다시 시도해주세요.");
     }
+
+    // listenRankings()에서 자동으로 Firebase 데이터 감지 후 renderRankings() 호출
+    return;
   }
 
   // ★ 광고 투표 사용 가능할 때 (무료 투표 사용 후, 대기 중인 광고 투표권이 있을 때)
   if (canUseAdVotes()) {
-    // 광고로부터 얻은 투표권으로 투표
-    addExtraVote();
-    recordVote(group); // 추가 투표도 기록
-    pendingAdVotes -= 1; // 사용한 투표권 차감
-    await savePendingAdVotes(); // Firebase 저장 (동기화)
-    addActivity(group);
+    // Firebase에 광고 투표 기록
+    const today = getTodayKey();
+    const newAdVoteCount = cachedTodayAdVotes + 1;
 
-    // Firebase에 투표 기록 (비동기)
-    db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
+    try {
+      // Firebase에 광고 투표 개수 저장
+      await db.ref(`users/${currentUser.uid}/ad_votes_used_${today}`).set(newAdVoteCount);
 
-    const adVoteCount = getTodayAdVoteCount(); // 이미 addExtraVote()가 실행됨
-    const remaining = pendingAdVotes;
+      // 캐시 업데이트
+      cachedTodayAdVotes = newAdVoteCount;
 
-    showToast(`${meta.emoji} ${group} 광고 투표 완료! 광고투표 ${adVoteCount}/10표 🎉 ${remaining > 0 ? `(남은 투표권: ${remaining}개)` : ""}`);
+      // 광고 투표권 차감
+      pendingAdVotes -= 1;
+      await savePendingAdVotes();
 
-    renderMyVotingHistory();
-    showMyVotedBar(getMyVote());
-    updateFavBar(); // 광고 바 상태 업데이트 (남은 투표권 표시)
+      recordVote(group); // 로컬 히스토리 기록
+      addActivity(group);
+
+      // Firebase에 투표 기록 (비동기)
+      db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
+
+      const remaining = pendingAdVotes;
+      showToast(`${meta.emoji} ${group} 광고 투표 완료! 광고투표 ${newAdVoteCount}/10표 🎉 ${remaining > 0 ? `(남은 투표권: ${remaining}개)` : ""}`);
+
+      renderMyVotingHistory();
+      showMyVotedBar(cachedTodayFreeVote);
+      updateFavBar(); // 광고 바 상태 업데이트 (남은 투표권 표시)
+    } catch (e) {
+      console.error("광고 투표 저장 실패:", e);
+      showToast("⚠️ 투표 저장에 실패했습니다. 다시 시도해주세요.");
+    }
 
     // listenRankings()에서 자동으로 Firebase 데이터 감지 후 renderRankings() 호출
     return;
