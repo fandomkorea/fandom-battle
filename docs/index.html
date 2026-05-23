@@ -593,9 +593,12 @@
 <div id="authContainer" style="display:none">
   <div id="authNotLoggedIn" style="display:flex;gap:8px;flex-wrap:wrap;width:100%;justify-content:center">
   </div>
-  <div id="authLoggedIn" style="display:none;width:100%">
-    <div id="userDisplayName"></div>
-    <button onclick="signOut()">로그아웃</button>
+  <div id="authLoggedIn" style="display:none;width:100%;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+    <div style="display:flex;gap:12px;align-items:center;flex:1">
+      <div id="userDisplayName"></div>
+      <div id="adButtonContainer"></div>
+    </div>
+    <button onclick="signOut()" style="white-space:nowrap">로그아웃</button>
   </div>
 </div>
 
@@ -919,8 +922,32 @@ function updateAuthUI() {
 
     // ★ 투표권 정보 텍스트
     const voteInfo = `${nickname} · ${totalVotes}/11표 | 투표권: ${pendingAdVotes}개`;
-
     document.getElementById("userDisplayName").textContent = voteInfo;
+
+    // ★ 상단 광고 버튼 렌더링
+    const adButtonContainer = document.getElementById("adButtonContainer");
+    if (adButtonContainer) {
+      let adButton = '';
+
+      // 모든 투표를 사용한 경우
+      if (totalVotes >= MAX_TOTAL_VOTES_PER_DAY) {
+        adButton = `<span style="font-size:0.75rem;color:var(--gold);font-weight:700">🏆 완투!</span>`;
+      }
+      // 광고 투표권이 있으면 광고 투표 버튼
+      else if (pendingAdVotes > 0 && adVotes < MAX_AD_VOTES_PER_DAY) {
+        adButton = `<button style="padding:6px 10px;font-size:0.75rem;border-radius:6px;border:1px solid var(--pink);background:rgba(255,77,141,0.2);color:var(--pink);cursor:pointer;transition:all 0.15s;white-space:nowrap" onclick="voteForGroup(getMyFav())">🎁 ${pendingAdVotes}개 투표</button>`;
+      }
+      // 무료 투표가 남았으면 무료 투표 버튼
+      else if (canUseFreeVote()) {
+        adButton = `<button style="padding:6px 10px;font-size:0.75rem;border-radius:6px;border:1px solid var(--primary);background:rgba(124,77,255,0.2);color:var(--primary);cursor:pointer;transition:all 0.15s;white-space:nowrap" onclick="voteForGroup(getMyFav())">🎁 무료투표</button>`;
+      }
+      // 광고 시청 버튼
+      else if (totalVotes < MAX_TOTAL_VOTES_PER_DAY) {
+        adButton = `<button style="padding:6px 10px;font-size:0.75rem;border-radius:6px;border:1px solid var(--primary);background:rgba(124,77,255,0.2);color:var(--primary);cursor:pointer;transition:all 0.15s;white-space:nowrap" onclick="watchAdWithLoginCheck()">📺 광고보기</button>`;
+      }
+
+      adButtonContainer.innerHTML = adButton;
+    }
   } else {
     container.style.display = "none"; // 로그인 전에는 숨김
     loggedIn.style.display = "none";
