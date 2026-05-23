@@ -1073,6 +1073,10 @@
     <div style="margin-bottom: 16px">
       <input type="text" id="communitySearchInput" placeholder="🔍 게시물 검색 (제목/내용)..." style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.95rem" oninput="filterCommunityPosts()">
     </div>
+    <div style="margin-bottom: 16px;display:flex;gap:8px">
+      <button id="sortBtn-latest" class="community-sort-btn active" onclick="sortCommunityPosts('latest')" style="flex:1;padding:10px;background:var(--primary);border:1px solid var(--primary);border-radius:8px;color:#fff;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s">📅 최신순</button>
+      <button id="sortBtn-popular" class="community-sort-btn" onclick="sortCommunityPosts('popular')" style="flex:1;padding:10px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s">⭐ 인기순</button>
+    </div>
     <button class="community-new-post-btn" onclick="showPostCreateForm()">✏️ 새 글 쓰기</button>
   </div>
 
@@ -3332,6 +3336,44 @@ function filterCommunityPosts() {
   });
 }
 
+// ── 게시물 정렬 ──
+let currentSortMode = "latest";
+function sortCommunityPosts(mode) {
+  currentSortMode = mode;
+
+  // 버튼 스타일 업데이트
+  document.getElementById("sortBtn-latest").style.background = mode === "latest" ? "var(--primary)" : "transparent";
+  document.getElementById("sortBtn-latest").style.borderColor = mode === "latest" ? "var(--primary)" : "var(--border)";
+  document.getElementById("sortBtn-latest").style.color = mode === "latest" ? "#fff" : "var(--text)";
+
+  document.getElementById("sortBtn-popular").style.background = mode === "popular" ? "var(--primary)" : "transparent";
+  document.getElementById("sortBtn-popular").style.borderColor = mode === "popular" ? "var(--primary)" : "var(--border)";
+  document.getElementById("sortBtn-popular").style.color = mode === "popular" ? "#fff" : "var(--text)";
+
+  // 게시물 재정렬
+  const postsList = document.getElementById("communityPostsList");
+  const posts = Array.from(document.querySelectorAll(".post-item"));
+
+  posts.sort((a, b) => {
+    if (mode === "latest") {
+      // 최신순: timestamp 내림차순
+      const timeA = parseInt(a.getAttribute("data-timestamp") || 0);
+      const timeB = parseInt(b.getAttribute("data-timestamp") || 0);
+      return timeB - timeA;
+    } else if (mode === "popular") {
+      // 인기순: 댓글 수 내림차순
+      const commentsA = a.querySelectorAll("#comments-list-* > div").length;
+      const commentsB = b.querySelectorAll("#comments-list-* > div").length;
+      return commentsB - commentsA;
+    }
+  });
+
+  // 정렬된 순서대로 다시 추가
+  posts.forEach(post => {
+    postsList.appendChild(post);
+  });
+}
+
 // ── 게시물 렌더링 ──
 function renderPost(fandom, postId, post) {
   const isAuthor = isLoggedIn && currentUser && post.authorUid === currentUser.uid;
@@ -3349,6 +3391,7 @@ function renderPost(fandom, postId, post) {
 
   const postEl = document.createElement("div");
   postEl.className = "post-item";
+  postEl.setAttribute("data-timestamp", post.timestamp || 0);
   postEl.innerHTML = `
     <div class="post-header">
       <div>
