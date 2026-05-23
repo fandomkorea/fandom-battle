@@ -1351,19 +1351,22 @@ async function voteForGroup(group) {
 
   if (adPending) {
     // 광고 시청 후 추가 투표
-    db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
     addExtraVote();
-    adPending = false;
-    addActivity(group);
     recordVote(group); // 추가 투표도 기록
+    adPending = false; // 광고 보상 상태 해제
+    addActivity(group);
+
+    // Firebase에 투표 기록 (비동기)
+    db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
+
     const todayCount = getTodayVoteCount() + 1; // 방금 투표한 것 포함
     showToast(`${meta.emoji} ${group} 추가 투표 완료! 오늘 ${todayCount}/${MAX_VOTES_PER_DAY}표 🎉`);
-    if (allRankingsData) {
-      allRankingsData[group] = (allRankingsData[group] || 0) + 1;
-      renderRankings(allRankingsData);
-    }
+
     renderMyVotingHistory();
     showMyVotedBar(getMyVote());
+    updateFavBar(); // 광고 바 상태 업데이트 (투표권 획득 → 광고시청 으로 변경)
+
+    // listenRankings()에서 자동으로 Firebase 데이터 감지 후 renderRankings() 호출
     return;
   }
 
@@ -1381,7 +1384,6 @@ async function voteForGroup(group) {
   }
 
   // 첫 무료 투표
-  db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
   await recordUserVote(group);
   recordVote(group);
   addActivity(group);
@@ -1389,18 +1391,22 @@ async function voteForGroup(group) {
   const streakMsg = streak > 1 ? `🔥 ${streak}일 연속 투표 중!` : "";
   showToast(meta.emoji + " " + group + " 투표 완료! 1등을 향해!" + (streakMsg ? " " + streakMsg : ""));
   showConfetti(meta.color);
-  if (allRankingsData) {
-    allRankingsData[group] = (allRankingsData[group] || 0) + 1;
-    renderRankings(allRankingsData);
-  }
+
+  // Firebase에 투표 기록 (비동기)
+  db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
+
   renderMyVotingHistory();
   showMyVotedBar(group);
+  updateFavBar(); // 광고 바 업데이트
+
   // 투표 가이드 배너 숨기기
   const banner = document.getElementById("voteGuideBanner");
   if (banner) banner.style.display = "none";
   // 댓글 그룹 자동 선택
   const sel = document.getElementById("commentGroup");
   if (sel) sel.value = group;
+
+  // listenRankings()에서 자동으로 Firebase 데이터 감지 후 renderRankings() 호출
 }
 
 // ── 투표 후 상단 바 표시 ──
