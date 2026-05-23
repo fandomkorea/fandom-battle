@@ -3431,8 +3431,12 @@ function previewImage(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  if (file.size > 5 * 1024 * 1024) {
-    showToast("파일 크기는 5MB 이하여야 합니다");
+  // 이미지 크기 제한: 300KB
+  const MAX_SIZE = 300 * 1024; // 300KB
+  if (file.size > MAX_SIZE) {
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    showToast(`파일이 너무 커요! (${sizeMB}MB)\n300KB 이하 이미지를 선택해주세요`);
+    document.getElementById("postImage").value = "";
     return;
   }
 
