@@ -1261,8 +1261,10 @@ function init() {
   }
 }
 
-// ── 투표 제한 (하루 최대 MAX_VOTES_PER_DAY표) ──
-const MAX_VOTES_PER_DAY = 10;
+// ── 투표 제한 (하루 최대: 무료 1표 + 광고 10표 = 11표) ──
+const MAX_FREE_VOTES_PER_DAY = 1;
+const MAX_AD_VOTES_PER_DAY = 10;
+const MAX_TOTAL_VOTES_PER_DAY = 11; // 무료(1) + 광고(10) 합계
 let pendingAdVotes = 0; // 광고로부터 얻은 미사용 투표권 개수
 
 function getTodayKey()      { return new Date().toISOString().slice(0, 10); }
@@ -1270,13 +1272,14 @@ function getMyVote()        { return localStorage.getItem("voted_group_" + getTo
 function setMyVote(group)   { localStorage.setItem("voted_group_" + getTodayKey(), group); }
 function getExtraVotes()    { return parseInt(localStorage.getItem("extra_votes_" + getTodayKey()) || "0", 10); }
 function addExtraVote()     { localStorage.setItem("extra_votes_" + getTodayKey(), getExtraVotes() + 1); }
-function getTodayVoteCount(){
-  // 로그인 유저는 Firebase에서 checkUserVotedToday() 사용해야 하지만,
-  // 이 동기 함수에서는 localStorage만 사용
-  // 로그인 유저는 항상 localStorage에도 저장하도록 recordUserVote 수정됨
-  return (getMyVote() ? 1 : 0) + getExtraVotes();
-}
-function canVoteMore()      { return getTodayVoteCount() < MAX_VOTES_PER_DAY; }
+
+// ── 투표 상태 함수들 ──
+function getTodayFreeVoteCount()  { return getMyVote() ? 1 : 0; } // 무료 투표 사용 여부 (0 or 1)
+function getTodayAdVoteCount()    { return getExtraVotes(); } // 광고 투표 사용 개수 (0-10)
+function getTodayVoteCount()      { return getTodayFreeVoteCount() + getTodayAdVoteCount(); } // 총 투표 개수 (0-11)
+function canUseFreeVote()         { return getTodayFreeVoteCount() === 0; } // 무료 투표 가능 여부
+function canUseAdVotes()          { return getTodayAdVoteCount() < MAX_AD_VOTES_PER_DAY && pendingAdVotes > 0; } // 광고 투표 가능 여부
+function getRemainingAdVotes()    { return MAX_AD_VOTES_PER_DAY - getTodayAdVoteCount(); } // 남은 광고 투표권 개수
 
 // ── 투표 스트릭 (연속 투표 일수) ──
 function updateVotingStreak() {
@@ -1365,7 +1368,8 @@ async function voteForGroup(group) {
     return;
   }
 
-  if (pendingAdVotes > 0) {
+  // ★ 광고 투표 사용 가능할 때 (이미 무료 투표 했거나 대기 중인 광고 투표권이 있을 때)
+  if (canUseAdVotes()) {
     // 광고로부터 얻은 투표권으로 투표
     addExtraVote();
     recordVote(group); // 추가 투표도 기록
@@ -1376,9 +1380,10 @@ async function voteForGroup(group) {
     // Firebase에 투표 기록 (비동기)
     db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
 
-    const todayCount = getTodayVoteCount() + 1; // 방금 투표한 것 포함
+    const adVoteCount = getTodayAdVoteCount(); // 이미 addExtraVote()가 실행됨
     const remaining = pendingAdVotes;
-    showToast(`${meta.emoji} ${group} 추가 투표 완료! 오늘 ${todayCount}/${MAX_VOTES_PER_DAY}표 🎉 ${remaining > 0 ? `(남은 투표권: ${remaining}개)` : ""}`);
+
+    showToast(`${meta.emoji} ${group} 광고 투표 완료! 광고투표 ${adVoteCount}/10표 🎉 ${remaining > 0 ? `(남은 투표권: ${remaining}개)` : ""}`);
 
     renderMyVotingHistory();
     showMyVotedBar(getMyVote());
@@ -1388,43 +1393,53 @@ async function voteForGroup(group) {
     return;
   }
 
-  const already = await checkUserVotedToday();
-  if (already) {
-    // 이미 오늘 투표함 → 광고 버튼 업데이트 후 안내
-    showMyVotedBar(already); // 광고 버튼이 나타나도록 업데이트
-    if (canVoteMore()) {
-      const remaining = MAX_VOTES_PER_DAY - getTodayVoteCount();
-      showToast(`📺 광고를 보고 ${remaining}표 더 투표할 수 있어! 아래 광고 버튼을 클릭하세요!`);
-    } else {
-      showToast(`🏆 오늘 ${MAX_VOTES_PER_DAY}표를 모두 사용했어요! 내일 또 와줘 💜`);
+  // ★ 무료 투표가 아직 남아있으면 먼저 무료 투표
+  if (canUseFreeVote()) {
+    const already = await checkUserVotedToday();
+    if (!already) {
+      // 첫 무료 투표
+      await recordUserVote(group);
+      recordVote(group);
+      addActivity(group);
+      const streak = updateVotingStreak();
+      const streakMsg = streak > 1 ? `🔥 ${streak}일 연속 투표 중!` : "";
+      showToast(meta.emoji + " " + group + " 무료 투표 완료! 1등을 향해!" + (streakMsg ? " " + streakMsg : ""));
+      showConfetti(meta.color);
+
+      // Firebase에 투표 기록 (비동기)
+      db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
+
+      renderMyVotingHistory();
+      showMyVotedBar(group);
+      updateFavBar(); // 광고 바 업데이트
+
+      // 투표 가이드 배너 숨기기
+      const banner = document.getElementById("voteGuideBanner");
+      if (banner) banner.style.display = "none";
+      // 댓글 그룹 자동 선택
+      const sel = document.getElementById("commentGroup");
+      if (sel) sel.value = group;
+
+      // listenRankings()에서 자동으로 Firebase 데이터 감지 후 renderRankings() 호출
+      return;
     }
+  }
+
+  // ★ 이미 모든 투표를 사용한 경우
+  if (getTodayVoteCount() >= MAX_TOTAL_VOTES_PER_DAY) {
+    showToast(`🏆 오늘 최대 투표 11표를 모두 사용했어요! 내일 또 와줘 💜`);
+    updateFavBar();
     return;
   }
 
-  // 첫 무료 투표
-  await recordUserVote(group);
-  recordVote(group);
-  addActivity(group);
-  const streak = updateVotingStreak();
-  const streakMsg = streak > 1 ? `🔥 ${streak}일 연속 투표 중!` : "";
-  showToast(meta.emoji + " " + group + " 투표 완료! 1등을 향해!" + (streakMsg ? " " + streakMsg : ""));
-  showConfetti(meta.color);
+  // ★ 광고 투표권이 없는 경우
+  if (getTodayAdVoteCount() < MAX_AD_VOTES_PER_DAY && pendingAdVotes === 0) {
+    showToast(`📺 광고를 보고 투표권을 얻어보세요! 광고 1회 = 투표권 9개 🎁`);
+    return;
+  }
 
-  // Firebase에 투표 기록 (비동기)
-  db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
-
-  renderMyVotingHistory();
-  showMyVotedBar(group);
-  updateFavBar(); // 광고 바 업데이트
-
-  // 투표 가이드 배너 숨기기
-  const banner = document.getElementById("voteGuideBanner");
-  if (banner) banner.style.display = "none";
-  // 댓글 그룹 자동 선택
-  const sel = document.getElementById("commentGroup");
-  if (sel) sel.value = group;
-
-  // listenRankings()에서 자동으로 Firebase 데이터 감지 후 renderRankings() 호출
+  // 기타 경우
+  updateFavBar();
 }
 
 // ── 투표 후 상단 바 표시 ──
@@ -1471,8 +1486,8 @@ function showMyVotedBar(group) {
   const todayCount = getTodayVoteCount();
 
   // 모든 투표를 사용한 경우 특별 메시지
-  if (todayCount === MAX_VOTES_PER_DAY) {
-    sub = `🏆 오늘 최대 투표 ${MAX_VOTES_PER_DAY}/${MAX_VOTES_PER_DAY}표 모두 사용! 대단해! 💪`;
+  if (todayCount >= MAX_TOTAL_VOTES_PER_DAY) {
+    sub = `🏆 오늘 최대 투표 ${MAX_TOTAL_VOTES_PER_DAY}/${MAX_TOTAL_VOTES_PER_DAY}표 모두 사용! 대단해! 💪`;
     sub += `<br style="height:4px"> ⏰ 내일 ${h}시간 ${m}분 후 다시 투표할 수 있어요!`;
   } else {
     sub += `  ⏰ ${h}시간 ${m}분 후 재투표`;
@@ -1523,10 +1538,19 @@ function watchAdWithLoginCheck() {
 
 // ── 광고 시청 → 추가 투표권 ──
 function watchAd() {
-  if (!canVoteMore()) {
-    showToast(`오늘 최대 ${MAX_VOTES_PER_DAY}표를 모두 사용했어요! 내일 또 와줘 💜`);
+  // 총 투표를 모두 사용한 경우 광고 시청 불가
+  if (getTodayVoteCount() >= MAX_TOTAL_VOTES_PER_DAY) {
+    showToast(`🏆 오늘 최대 투표 11표를 모두 사용했어요! 내일 또 와줘 💜`);
     return;
   }
+
+  // 광고를 10번 이상 본 경우 (90 이상의 투표권 보유)
+  const adWatchCount = Math.floor(pendingAdVotes / 9);
+  if (adWatchCount >= MAX_AD_VOTES_PER_DAY) {
+    showToast(`🎁 광고 시청은 하루 최대 10회까지 가능해요! (현재: ${adWatchCount}회 시청, ${pendingAdVotes}개 투표권 보유)`);
+    return;
+  }
+
   if (document.getElementById("adModal")) return;
 
   const modal = document.createElement("div");
@@ -1540,7 +1564,7 @@ function watchAd() {
         <div class="ad-modal-title" style="margin:0">📺 광고 시청 중...</div>
         <button onclick="document.getElementById('adModal')?.remove()" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;padding:0;line-height:1">✕</button>
       </div>
-      <div class="ad-modal-desc">광고를 보면 투표권 1개를 드려요!<br>하루 최대 ${MAX_VOTES_PER_DAY}표까지 가능해요</div>
+      <div class="ad-modal-desc">광고를 보면 투표권 9개를 드려요!<br>광고 1회당 투표권 9개 (하루 최대 10회 = 90개)</div>
       <div class="ad-countdown-wrap">
         <div class="ad-countdown-ring" id="adRing"></div>
         <div class="ad-countdown-circle" id="adCircle">${sec}</div>
@@ -2406,21 +2430,33 @@ function updateFavBar() {
     centerContent = `<button class="fav-bar-btn" onclick="openFavPicker()">팬덤 선택</button>`;
   }
 
-  // 광고 버튼 상태 결정
-  let adButton = '';
+  // 버튼 상태 결정 (광고 투표권 있으면 우선, 없으면 무료 투표, 없으면 광고 시청)
+  let rightButton = '';
   if (isLoggedIn && fav) {
-    const todayCount = getTodayVoteCount();
-    if (pendingAdVotes > 0) {
-      // 광고로부터 얻은 투표권이 있는 상태
-      adButton = `<button class="fav-bar-ad-btn show" onclick="voteForGroup('${escAttr(fav)}')">🎁 투표권 ${pendingAdVotes}개 · 투표하기</button>`;
-    } else if (todayCount < MAX_VOTES_PER_DAY) {
-      // 광고 시청 가능 상태
-      adButton = `<button class="fav-bar-ad-btn show ready" onclick="watchAdWithLoginCheck()">📺 광고 시청 · 투표권 +9</button>`;
+    const freeVoteCount = getTodayFreeVoteCount();
+    const adVoteCount = getTodayAdVoteCount();
+    const totalVoteCount = getTodayVoteCount();
+
+    // ★ 모든 투표를 사용한 경우 축하 메시지
+    if (totalVoteCount >= MAX_TOTAL_VOTES_PER_DAY) {
+      rightButton = `<span style="font-size:0.85rem;color:var(--gold);font-weight:700">🏆 11표 완투! 내일 또 와줘!</span>`;
+    }
+    // ★ 광고 투표권이 있으면 광고 투표 버튼 표시 (우선순위 1)
+    else if (pendingAdVotes > 0 && adVoteCount < MAX_AD_VOTES_PER_DAY) {
+      rightButton = `<button class="fav-bar-ad-btn show" onclick="voteForGroup('${escAttr(fav)}')">🎁 투표권 ${pendingAdVotes}개 · 투표하기</button>`;
+    }
+    // ★ 무료 투표가 남아있으면 무료 투표 버튼 표시 (우선순위 2)
+    else if (canUseFreeVote()) {
+      rightButton = `<button class="fav-bar-ad-btn show ready" onclick="voteForGroup('${escAttr(fav)}')">🎁 무료 투표 · 클릭!</button>`;
+    }
+    // ★ 광고 시청 버튼 표시 (우선순위 3)
+    else {
+      rightButton = `<button class="fav-bar-ad-btn show ready" onclick="watchAdWithLoginCheck()">📺 광고 시청 · 투표권 +9</button>`;
     }
   }
 
-  // 레이아웃: [팀 변경] | [광고버튼]
-  rightContent = adButton ? adButton : '';
+  // 레이아웃: [팀 변경] | [버튼]
+  rightContent = rightButton ? rightButton : '';
 
   bar.innerHTML = `
     <div style="display:flex;gap:8px;align-items:center;flex:1">
