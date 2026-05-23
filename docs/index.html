@@ -729,6 +729,58 @@ const firebaseConfig = {
   appId: "1:9287384303:web:9e9fded2e119ae2a33af1a"
 };
 
+/*
+Firebase Rules를 Firebase Console에서 다음과 같이 설정하세요:
+{
+  "rules": {
+    "votes": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$date": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$uid": {
+          ".write": "$uid === auth.uid",
+          ".validate": "newData.hasChildren(['group', 'timestamp'])"
+        }
+      }
+    },
+    "rankings": {
+      ".read": true,
+      ".write": false
+    },
+    "users": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid",
+        "nickname": { ".validate": "newData.isString() && newData.val().length > 0" },
+        "fandom": { ".validate": "newData.isString()" },
+        "pendingAdVotes": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+        "ad_watch_count_*": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10" }
+      }
+    },
+    "comments": {
+      ".read": true,
+      ".write": true
+    },
+    "group_records": {
+      ".read": true,
+      ".write": false
+    },
+    "monthly_history": {
+      ".read": true,
+      ".write": false
+    },
+    "prize_notice": {
+      ".read": true,
+      ".write": false
+    }
+  }
+}
+*/
+
 // 그룹 이모지/색상 메타데이터
 const GROUP_META = {
   "BTS":               { emoji: "💜", color: "#7c4dff", fandom: "ARMY" },
@@ -825,6 +877,7 @@ function signOut() {
 
     // 캐시 초기화
     pendingAdVotes = 0;
+    adWatchCount = 0; // ★ 광고 시청 횟수도 초기화
     cachedTodayFreeVote = null;
     cachedTodayAdVotes = 0;
 
@@ -870,6 +923,7 @@ function setupAuthListener() {
       currentUser = null;
       isLoggedIn = false;
       pendingAdVotes = 0;
+      adWatchCount = 0; // ★ 광고 시청 횟수도 초기화
     }
     updateAuthUI();
     updateFavBar(); // 로그인 상태 변경 시 팬덤 선택 바 업데이트 (광고 버튼 상태 포함)
@@ -884,6 +938,11 @@ async function loadUserAdVotes() {
     const snap = await db.ref(`users/${currentUser.uid}/pendingAdVotes`).once("value");
     pendingAdVotes = snap.val() || 0;
 
+    // ★ 광고 시청 횟수 로드 (일일 리셋)
+    const today = getTodayKey();
+    const adWatchSnap = await db.ref(`users/${currentUser.uid}/ad_watch_count_${today}`).once("value");
+    adWatchCount = adWatchSnap.val() || 0;
+
     // 오늘의 투표 정보도 함께 로드
     await loadTodayVotesFromFirebase();
 
@@ -895,6 +954,7 @@ async function loadUserAdVotes() {
   } catch (e) {
     console.error("광고 투표권 로드 실패:", e);
     pendingAdVotes = 0;
+    adWatchCount = 0;
     cachedTodayFreeVote = null;
     cachedTodayAdVotes = 0;
   }
@@ -933,6 +993,10 @@ function updateAuthUI() {
       if (totalVotes >= MAX_TOTAL_VOTES_PER_DAY) {
         adButton = `<span style="font-size:0.75rem;color:var(--gold);font-weight:700">🏆 완투!</span>`;
       }
+      // 광고 시청을 10회 이상 한 경우
+      else if (adWatchCount >= MAX_AD_VOTES_PER_DAY) {
+        adButton = `<span style="font-size:0.75rem;color:var(--gold);font-weight:700">🎁 광고 10회 완료!</span>`;
+      }
       // 광고 투표권이 있으면 광고 투표 버튼
       else if (pendingAdVotes > 0 && adVotes < MAX_AD_VOTES_PER_DAY) {
         adButton = `<button style="padding:6px 10px;font-size:0.75rem;border-radius:6px;border:1px solid var(--pink);background:rgba(255,77,141,0.2);color:var(--pink);cursor:pointer;transition:all 0.15s;white-space:nowrap" onclick="voteForGroup(getMyFav())">🎁 ${pendingAdVotes}개 투표</button>`;
@@ -941,8 +1005,8 @@ function updateAuthUI() {
       else if (canUseFreeVote()) {
         adButton = `<button style="padding:6px 10px;font-size:0.75rem;border-radius:6px;border:1px solid var(--primary);background:rgba(124,77,255,0.2);color:var(--primary);cursor:pointer;transition:all 0.15s;white-space:nowrap" onclick="voteForGroup(getMyFav())">🎁 무료투표</button>`;
       }
-      // 광고 시청 버튼
-      else if (totalVotes < MAX_TOTAL_VOTES_PER_DAY) {
+      // 광고 시청 버튼 (광고를 10회 미만으로 본 경우)
+      else if (totalVotes < MAX_TOTAL_VOTES_PER_DAY && adWatchCount < MAX_AD_VOTES_PER_DAY) {
         adButton = `<button style="padding:6px 10px;font-size:0.75rem;border-radius:6px;border:1px solid var(--primary);background:rgba(124,77,255,0.2);color:var(--primary);cursor:pointer;transition:all 0.15s;white-space:nowrap" onclick="watchAdWithLoginCheck()">🎁 광고 보고 투표권 획득</button>`;
       }
 
@@ -1322,6 +1386,7 @@ const MAX_FREE_VOTES_PER_DAY = 1;
 const MAX_AD_VOTES_PER_DAY = 10;
 const MAX_TOTAL_VOTES_PER_DAY = 11; // 무료(1) + 광고(10) 합계
 let pendingAdVotes = 0; // 광고로부터 얻은 미사용 투표권 개수
+let adWatchCount = 0; // ★ 광고 시청 횟수 (0-10)
 
 function getTodayKey()      { return new Date().toISOString().slice(0, 10); }
 
@@ -1647,8 +1712,7 @@ function watchAd() {
     return;
   }
 
-  // 광고를 10번 이상 본 경우 (90 이상의 투표권 보유)
-  const adWatchCount = Math.floor(pendingAdVotes / 9);
+  // ★ 광고를 10번 이상 본 경우
   if (adWatchCount >= MAX_AD_VOTES_PER_DAY) {
     showToast(`🎁 광고 시청은 하루 최대 10회까지 가능해요! (현재: ${adWatchCount}회 시청, ${pendingAdVotes}개 투표권 보유)`);
     return;
@@ -1705,8 +1769,10 @@ function watchAd() {
 async function claimAdReward() {
   document.getElementById("adModal")?.remove();
   pendingAdVotes += 1; // 투표권 1개 획득 (광고 1회 = 1표)
+  adWatchCount += 1; // ★ 광고 시청 횟수 증가
   await savePendingAdVotes(); // Firebase 저장
-  showToast(`🎁 투표권 획득! (누적: ${pendingAdVotes}개) 아래에서 팀을 선택해서 투표하세요! ⬇️`);
+  await saveAdWatchCount(); // ★ 광고 시청 횟수 저장
+  showToast(`🎁 투표권 획득! (누적: ${pendingAdVotes}개, 광고: ${adWatchCount}/10회) 아래에서 팀을 선택해서 투표하세요! ⬇️`);
 
   // 팬덤 선택 바 업데이트
   updateFavBar();
@@ -1739,6 +1805,19 @@ async function savePendingAdVotes() {
   } catch (e) {
     console.error("광고 투표권 저장 실패:", e);
     showToast("⚠️ 데이터 저장에 실패했습니다. 다시 시도하세요.");
+  }
+}
+
+// ★ Firebase에 광고 시청 횟수 저장 (일일 리셋) ──
+async function saveAdWatchCount() {
+  if (!currentUser) return;
+
+  try {
+    const today = getTodayKey();
+    await db.ref(`users/${currentUser.uid}/ad_watch_count_${today}`).set(adWatchCount);
+  } catch (e) {
+    console.error("광고 시청 횟수 저장 실패:", e);
+    showToast("⚠️ 광고 횟수 저장에 실패했습니다. 다시 시도하세요.");
   }
 }
 
