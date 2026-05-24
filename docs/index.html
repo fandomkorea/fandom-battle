@@ -796,8 +796,9 @@
     }
     .post-list-left {
       display: flex;
-      align-items: center;
-      gap: 12px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
       flex: 1;
       min-width: 0;
     }
@@ -842,10 +843,10 @@
       flex-wrap: wrap;
     }
     .post-list-meta-divider {
-      color: var(--muted);
-      font-size: 0.8rem;
+      color: rgba(124, 77, 255, 0.5);
+      font-size: 1rem;
       font-weight: 400;
-      opacity: 0.7;
+      line-height: 0.8;
     }
     @media (max-width: 768px) {
       .post-list-compact {
@@ -877,7 +878,7 @@
         font-size: 0.8rem;
       }
       .post-list-meta-divider {
-        font-size: 0.8rem;
+        font-size: 1rem;
       }
     }
     .post-item::before {
@@ -4099,11 +4100,11 @@ function renderPost(fandom, postId, post, index) {
       </div>
       <div class="post-meta-row-mobile">
         <span class="post-list-meta">👤 <span id="author-${postId}">${escHtml(post.authorName)}</span></span>
-        <span class="post-list-meta-divider">|</span>
+        <span class="post-list-meta-divider">·</span>
         <span class="post-list-meta">📅 ${timeStr}</span>
-        <span class="post-list-meta-divider">|</span>
+        <span class="post-list-meta-divider">·</span>
         <span class="post-list-meta">👁️ <span id="view-count-${postId}">${post.views || 0}</span></span>
-        <span class="post-list-meta-divider">|</span>
+        <span class="post-list-meta-divider">·</span>
         <span class="post-list-meta">❤️ <span id="like-count-${postId}">0</span></span>
       </div>
     </div>
