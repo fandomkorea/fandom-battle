@@ -2057,9 +2057,16 @@ function loadAuthUserData(callback) {
       const data = snap.val();
       currentUser.customNickname = data.nickname || null;
       currentUser.customFandom = data.fandom || null;
-      currentUser.primaryFandom = data.primaryFandom || null; // 기본 팬덤
-      currentUserFav = data.primaryFandom || null; // ← Firebase에서 읽은 팬덤을 전역 변수에도 설정
+      // ★ 경로 수정: preferences/primaryFandom에서 읽기
+      currentUser.primaryFandom = data.preferences?.primaryFandom || null; // 기본 팬덤
+      currentUserFav = data.preferences?.primaryFandom || null; // ← Firebase에서 읽은 팬덤을 전역 변수에도 설정
       currentUser.lastFandomChangeTime = data.lastFandomChangeTime || 0; // 마지막 팬덤 변경 시간
+
+      console.log(`[DEBUG setupAuthListener] 사용자 데이터 로드:`, {
+        primaryFandom: currentUser.primaryFandom,
+        currentUserFav,
+        lastFandomChangeTime: currentUser.lastFandomChangeTime
+      });
     }
     if (callback) callback();
   }).catch(err => {
@@ -2274,14 +2281,22 @@ async function changePrimaryFandom(newFandom) {
     currentUser.lastFandomChangeTime = now;
     currentUserFav = newFandom; // Firebase에서 읽어온 것처럼 동기화
 
+    console.log(`[DEBUG] 팬덤 변경됨: ${newFandom}, currentUserFav=${currentUserFav}`);
+
     // 화면 갱신
+    console.log(`[DEBUG] renderFavChip() 호출 전`);
     renderFavChip(); // 하단 팬덤 표시 업데이트
+    console.log(`[DEBUG] renderFavChip() 호출 후, favChipArea:`, document.getElementById("favChipArea")?.innerHTML);
+
+    console.log(`[DEBUG] updateFavBar() 호출 전`);
     updateFavBar(); // 하단 바 업데이트
+    console.log(`[DEBUG] updateFavBar() 호출 후, favBar:`, document.getElementById("favBar")?.innerHTML.substring(0, 100));
 
     // 커뮤니티 페이지 재로드 (팬덤 변경 반영)
     document.getElementById("communityFandomSelect").value = newFandom;
     showCommunityPage();
     loadCommunityPosts();
+    console.log(`[DEBUG] 커뮤니티 페이지 로드 완료`);
 
     showToast(`✅ ${emoji} ${newFandom}으로 변경되었습니다!\n게시글: 24시간 후 | 투표: 48시간 후`);
   } catch (e) {
@@ -2485,18 +2500,25 @@ function saveAuthUserData(nickname, fandom) {
 
   currentUser.customNickname = nickname;
   currentUser.customFandom = fandom;
+  currentUser.primaryFandom = fandom; // ★ primaryFandom도 설정
+  currentUserFav = fandom; // ★ 전역 변수도 설정
 
+  // ★ update() 사용: 기존 데이터는 유지하고 필요한 부분만 업데이트
   const userData = {
     nickname: nickname,
     fandom: fandom || "",
+    "preferences/primaryFandom": fandom || "", // ★ 통합된 경로로 저장
     createdAt: Date.now()
   };
 
-  db.ref(`users/${currentUser.uid}`).set(userData)
+  db.ref(`users/${currentUser.uid}`).update(userData) // ★ set → update로 변경
     .then(() => {
-      setMyFav(fandom); // 최애팬덤 설정
+      console.log(`[DEBUG] 사용자 정보 저장 완료: ${nickname}, primaryFandom=${fandom}`);
+      // ★ setMyFav() 호출 제거 - 이미 위에서 설정함
       document.getElementById("authSetupModal")?.remove();
       updateAuthUI();
+      renderFavChip(); // 팬덤 표시 업데이트
+      updateFavBar(); // 하단 바 업데이트
       showToast(`👤 ${nickname}님 정보가 저장되었어요! 💜`);
 
       // 로그인 완료 - 투표는 사용자가 직접 선택하도록 (자동 투표 제거)
@@ -3705,9 +3727,12 @@ function setMyFav(g) {
   localStorage.setItem("my_fav_group", g);
   currentUserFav = g; // 전역 변수에도 설정
 
-  // Firebase에도 저장 (다른 기기에서 로그인 시 복구용)
+  // ★ Firebase에도 저장 (다른 기기에서 로그인 시 복구용) - preferences/primaryFandom으로 통일
   if (isLoggedIn && currentUser && db) {
-    db.ref(`users/${currentUser.uid}/myFav`).set(g);
+    db.ref(`users/${currentUser.uid}`).update({
+      "preferences/primaryFandom": g
+    });
+    console.log(`[DEBUG setMyFav] Firebase에 저장됨: ${g}`);
   }
 
   renderFavChip();
@@ -3742,9 +3767,18 @@ function scrollToMyTeam() {
 
 function renderFavChip() {
   const area = document.getElementById("favChipArea");
-  if (!area) return;
+  console.log(`[DEBUG renderFavChip] area found:`, !!area, `area=`, area);
+  if (!area) {
+    console.log(`[DEBUG renderFavChip] favChipArea 요소를 찾을 수 없음`);
+    return;
+  }
   const fav = currentUserFav; // Firebase 기반으로 변경
-  if (!fav) { area.innerHTML = ""; return; }
+  console.log(`[DEBUG renderFavChip] currentUserFav=${fav}`);
+  if (!fav) {
+    area.innerHTML = "";
+    console.log(`[DEBUG renderFavChip] fav가 없어서 innerHTML 초기화`);
+    return;
+  }
   const meta = GROUP_META[fav] || { emoji:"🌟" };
 
   // ★ 한글 + 영문 이름 표시
