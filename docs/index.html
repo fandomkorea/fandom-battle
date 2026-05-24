@@ -812,24 +812,69 @@
       min-width: 45px;
       text-align: center;
     }
+    .post-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .post-list-indicators {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .post-comment-badge {
+      font-size: 0.75rem;
+      color: var(--primary);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .post-image-badge {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .post-meta-row-mobile {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .post-list-meta-divider {
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
     @media (max-width: 768px) {
       .post-list-compact {
         flex-direction: column;
         align-items: flex-start;
-        gap: 8px;
-        padding: 10px 12px;
+        gap: 4px;
+        padding: 8px 12px;
+      }
+      .post-number {
+        display: none;
+      }
+      .post-list-left {
+        width: 100%;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .post-title-row {
+        margin-bottom: 4px;
       }
       .post-list-title {
         font-size: 0.9rem;
       }
-      .post-list-meta-row {
+      .post-meta-row-mobile {
         width: 100%;
-        justify-content: flex-start;
-        gap: 8px;
-        flex-wrap: wrap;
+        font-size: 0.7rem;
       }
       .post-list-meta {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
+      }
+      .post-list-meta-divider {
+        font-size: 0.7rem;
       }
     }
     .post-item::before {
@@ -4037,17 +4082,27 @@ function renderPost(fandom, postId, post, index) {
   postEl.setAttribute("data-postid", postId);
   postEl.setAttribute("onclick", `showPostDetail('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()`);
   postEl.style.cursor = "pointer";
+  // 사진 여부 확인
+  const hasImage = post.imageUrl ? '📷' : '';
+
   postEl.innerHTML = `
     <div class="post-list-left">
-      <div class="post-number">No.${postNumber}</div>
-      <div class="post-list-title">${escHtml(post.title)}</div>
-    </div>
-    <div class="post-list-meta-row">
-      <span class="post-list-meta">👤 <span id="author-${postId}">${escHtml(post.authorName)}</span></span>
-      <span class="post-list-meta">👁️ <span id="view-count-${postId}">${post.views || 0}</span></span>
-      <span class="post-list-meta">💬 <span id="comment-count-${postId}">0</span></span>
-      <span class="post-list-meta">❤️ <span id="like-count-${postId}">0</span></span>
-      <span class="post-list-meta">📅 ${timeStr}</span>
+      <div class="post-title-row">
+        <div class="post-list-title">${escHtml(post.title)}</div>
+        <div class="post-list-indicators">
+          <span class="post-comment-badge">💬 <span id="comment-count-${postId}">0</span></span>
+          ${hasImage ? `<span class="post-image-badge">📷</span>` : ''}
+        </div>
+      </div>
+      <div class="post-meta-row-mobile">
+        <span class="post-list-meta">👤 <span id="author-${postId}">${escHtml(post.authorName)}</span></span>
+        <span class="post-list-meta-divider">|</span>
+        <span class="post-list-meta">📅 ${timeStr}</span>
+        <span class="post-list-meta-divider">|</span>
+        <span class="post-list-meta">👁️ <span id="view-count-${postId}">${post.views || 0}</span></span>
+        <span class="post-list-meta-divider">|</span>
+        <span class="post-list-meta">❤️ <span id="like-count-${postId}">0</span></span>
+      </div>
     </div>
   `;
 
