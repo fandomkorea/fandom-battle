@@ -1735,6 +1735,177 @@ function loadAuthUserData(callback) {
   });
 }
 
+// ── 팬덤 변경 확인 모달 (고급 디자인) ──
+function showFandomChangeConfirmModal(fandom, emoji) {
+  return new Promise((resolve) => {
+    const existing = document.getElementById("fandomChangeModal");
+    if (existing) existing.remove();
+
+    const modal = document.createElement("div");
+    modal.id = "fandomChangeModal";
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      backdrop-filter: blur(4px);
+    `;
+
+    const content = document.createElement("div");
+    content.style.cssText = `
+      background: linear-gradient(135deg, rgba(20, 15, 40, 0.98) 0%, rgba(30, 20, 50, 0.98) 100%);
+      border: 1.5px solid rgba(124, 77, 255, 0.3);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 420px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(124, 77, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      animation: modalSlideIn 0.3s ease-out;
+    `;
+
+    content.innerHTML = `
+      <div style="text-align: center">
+        <div style="font-size: 3rem; margin-bottom: 16px; animation: bounce 0.6s ease-in-out">${emoji}</div>
+
+        <h2 style="
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: var(--text);
+          margin-bottom: 8px;
+          background: linear-gradient(135deg, var(--primary), var(--pink));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        ">${fandom}로 변경할까요?</h2>
+
+        <p style="
+          color: var(--muted);
+          font-size: 0.95rem;
+          margin-bottom: 28px;
+          line-height: 1.6;
+        ">팬덤을 변경하면 일시적인 제약이 생깁니다</p>
+
+        <div style="
+          background: linear-gradient(135deg, rgba(124, 77, 255, 0.1), rgba(255, 77, 141, 0.05));
+          border-left: 3px solid var(--primary);
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 28px;
+          text-align: left;
+        ">
+          <div style="display: flex; gap: 8px; align-items: flex-start; margin-bottom: 12px">
+            <span style="font-size: 1.2rem">📝</span>
+            <div>
+              <div style="font-weight: 600; color: var(--text); font-size: 0.95rem">게시글 작성</div>
+              <div style="color: var(--muted); font-size: 0.85rem">24시간 동안 작성 불가</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: flex-start">
+            <span style="font-size: 1.2rem">🗳️</span>
+            <div>
+              <div style="font-weight: 600; color: var(--text); font-size: 0.95rem">투표</div>
+              <div style="color: var(--muted); font-size: 0.85rem">48시간 동안 투표 불가</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: center">
+          <button id="fandomChangeCancel" style="
+            flex: 1;
+            padding: 14px 24px;
+            background: rgba(124, 77, 255, 0.1);
+            border: 1.5px solid rgba(124, 77, 255, 0.3);
+            border-radius: 12px;
+            color: var(--text);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+          " onmouseover="this.style.background='rgba(124, 77, 255, 0.2)';this.style.borderColor='rgba(124, 77, 255, 0.5)'" onmouseout="this.style.background='rgba(124, 77, 255, 0.1)';this.style.borderColor='rgba(124, 77, 255, 0.3)'">
+            취소
+          </button>
+          <button id="fandomChangeConfirm" style="
+            flex: 1;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, rgba(124, 77, 255, 0.85) 100%);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(124, 77, 255, 0.4);
+            transition: all 0.3s ease;
+          " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 28px rgba(124, 77, 255, 0.5)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 20px rgba(124, 77, 255, 0.4)'">
+            변경하기
+          </button>
+        </div>
+      </div>
+    `;
+
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
+    if (!document.getElementById("fandomChangeModalStyles")) {
+      const style = document.createElement("style");
+      style.id = "fandomChangeModalStyles";
+      style.textContent = `
+        @keyframes modalSlideIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95) translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+        @keyframes bounce {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const confirmBtn = document.getElementById("fandomChangeConfirm");
+    const cancelBtn = document.getElementById("fandomChangeCancel");
+
+    confirmBtn.addEventListener("click", () => {
+      modal.remove();
+      resolve(true);
+    });
+
+    cancelBtn.addEventListener("click", () => {
+      modal.remove();
+      resolve(false);
+    });
+
+    const handleEsc = (e) => {
+      if (e.key === "Escape") {
+        document.removeEventListener("keydown", handleEsc);
+        modal.remove();
+        resolve(false);
+      }
+    };
+    document.addEventListener("keydown", handleEsc);
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        document.removeEventListener("keydown", handleEsc);
+        modal.remove();
+        resolve(false);
+      }
+    });
+  });
+}
+
 // ── 팬덤 변경 (24시간 + 48시간 투표 제약) ──
 async function changePrimaryFandom(newFandom) {
   if (!isLoggedIn || !currentUser) {
@@ -1753,11 +1924,9 @@ async function changePrimaryFandom(newFandom) {
     return;
   }
 
-  // 변경 전 확인 메시지
+  // 변경 전 확인 메시지 (커스텀 모달)
   const emoji = GROUP_META[newFandom]?.emoji || "💜";
-  const confirmed = confirm(
-    `${emoji} ${newFandom}로 팬덤을 변경하시겠어요?\n\n⚠️ 변경 후:\n• 24시간 동안 게시글 작성 불가\n• 48시간 동안 투표 불가`
-  );
+  const confirmed = await showFandomChangeConfirmModal(newFandom, emoji);
 
   if (!confirmed) return;
 
