@@ -843,7 +843,7 @@
       flex-wrap: wrap;
     }
     .post-list-meta-divider {
-      color: rgba(124, 77, 255, 0.5);
+      color: rgba(153, 153, 187, 0.8);
       font-size: 1rem;
       font-weight: 400;
       line-height: 0.8;
@@ -4523,6 +4523,9 @@ function showPostCreateForm() {
   }, 100);
 }
 
+// 모달 상태 추적
+let modalHistoryState = null;
+
 function openPostCreateModal() {
   if (!isLoggedIn || !currentUser) {
     showToast("로그인이 필요합니다");
@@ -4550,6 +4553,10 @@ function openPostCreateModal() {
   // 모달 표시
   document.getElementById("postCreateModal").style.display = "flex";
   document.getElementById("postTitle").focus();
+
+  // 뒤로가기 처리: history에 상태 추가
+  modalHistoryState = history.length;
+  history.pushState({modal: 'postCreate'}, '', '');
 }
 
 function closePostCreateModal() {
@@ -5017,6 +5024,14 @@ async function reportPost(fandom, postId) {
     console.error(error);
   }
 }
+
+// ── 모달 뒤로가기 처리 ──
+window.addEventListener('popstate', (e) => {
+  if (e.state && e.state.modal === 'postCreate') {
+    // popstate 이벤트 발생 - 모달이 열려 있으면 닫기
+    closePostCreateModal();
+  }
+});
 
 init();
 </script>
