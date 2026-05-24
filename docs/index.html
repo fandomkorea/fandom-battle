@@ -4281,6 +4281,16 @@ function loadCommunityPosts() {
   db.ref(currentCommunityListener).on("value", snap => {
     const posts = snap.val() || {};
 
+    // ★ 헤더 업데이트는 먼저 실행 (게시물 유무와 상관없이)
+    const fandomHeader = document.getElementById("communityHeaderInfo");
+    const fandomMeta = GROUP_META[selectedFandom];
+    if (fandomMeta) {
+      document.getElementById("communityHeaderEmoji").textContent = fandomMeta.emoji;
+      document.getElementById("communityHeaderFandom").textContent = selectedFandom;
+      document.getElementById("communityHeaderText").textContent = selectedFandom;
+      fandomHeader.style.display = "block";
+    }
+
     if (Object.keys(posts).length === 0) {
       postsList.innerHTML = `
         <div class="community-empty">
@@ -4294,16 +4304,6 @@ function loadCommunityPosts() {
     // 최신순으로 정렬
     const sortedPosts = Object.entries(posts)
       .sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
-
-    // 팬덤 헤더 업데이트
-    const fandomHeader = document.getElementById("communityHeaderInfo");
-    const fandomMeta = GROUP_META[selectedFandom];
-    if (fandomMeta) {
-      document.getElementById("communityHeaderEmoji").textContent = fandomMeta.emoji;
-      document.getElementById("communityHeaderFandom").textContent = selectedFandom;
-      document.getElementById("communityHeaderText").textContent = selectedFandom;
-      fandomHeader.style.display = "block";
-    }
 
     postsList.innerHTML = "";
 
