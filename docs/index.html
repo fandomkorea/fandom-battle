@@ -3385,10 +3385,10 @@ function openFavPicker() {
 
 function closeFavPicker() { document.getElementById("favPicker")?.remove(); }
 
-function pickFav(group) {
-  setMyFav(group);
+async function pickFav(group) {
+  // 최애팬덤 변경도 changePrimaryFandom()과 동일하게 처리
+  await changePrimaryFandom(group);
   closeFavPicker();
-  showToast(`💜 ${group} 팬으로 설정됐어!`);
 }
 
 
