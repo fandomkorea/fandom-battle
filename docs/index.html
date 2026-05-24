@@ -3569,6 +3569,29 @@ function initCommunityPage() {
 // 현재 활성 리스너 추적
 let currentCommunityListener = null;
 
+// ── 게시물 상세 모달 리스너 저장소 ──
+let postDetailListeners = {
+  likes: null,
+  comments: null,
+  views: null
+};
+
+// ── 댓글 모달 리스너 저장소 ──
+let commentsModalListener = null;
+
+// ── 커뮤니티 포스트 리스너 저장소 ──
+let postListListeners = [];
+
+// 포스트 리스너 정리 함수
+function clearPostListListeners() {
+  postListListeners.forEach(listener => {
+    if (listener && listener.ref && listener.callback) {
+      listener.ref.off("value", listener.callback);
+    }
+  });
+  postListListeners = [];
+}
+
 // ── 커뮤니티 게시물 로드 (실시간 리스너) ──
 function loadCommunityPosts() {
   const selectedFandom = document.getElementById("communityFandomSelect").value;
@@ -3582,7 +3605,8 @@ function loadCommunityPosts() {
     return;
   }
 
-  // 기존 리스너 해제
+  // 기존 리스너 해제 (포스트 리스트 + 메인 리스너)
+  clearPostListListeners();
   if (currentCommunityListener) {
     db.ref(currentCommunityListener).off("value");
   }
@@ -3767,14 +3791,14 @@ function renderPost(fandom, postId, post, index) {
     </div>
   `;
 
-  // 좋아요 리스너 설정
-  loadLikes(fandom, postId);
+  // 좋아요 리스너 설정 (포스트 리스트용)
+  loadLikesForPostList(fandom, postId);
 
   // 댓글 개수 업데이트
   updateCommentCount(fandom, postId);
 
-  // 조회수 리스너 설정
-  loadViews(fandom, postId);
+  // 조회수 리스너 설정 (포스트 리스트용)
+  loadViewsForPostList(fandom, postId);
 
   return postEl;
 }
@@ -3842,13 +3866,16 @@ async function showPostDetail(fandom, postId) {
     }
     document.getElementById("postDetailManagement").innerHTML = managementHTML;
 
-    // 좋아요 수 업데이트
-    db.ref(`community/${fandom}/${postId}/likes`).on("value", snap => {
+    // 좋아요 수 업데이트 (리스너 저장)
+    const likesCallback = (snap) => {
       const likes = snap.val() || {};
       const likeCount = Object.keys(likes).length;
       const el = document.getElementById(`detail-like-count-${postId}`);
       if (el) el.textContent = likeCount;
-    });
+    };
+    const likesRef = db.ref(`community/${fandom}/${postId}/likes`);
+    likesRef.on("value", likesCallback);
+    postDetailListeners.likes = { ref: likesRef, callback: likesCallback };
 
     // 댓글 섹션 설정
     const commentsHTML = `
@@ -3881,13 +3908,21 @@ async function showPostDetail(fandom, postId) {
 // ── 게시물 상세 페이지 닫기 ──
 function closePostDetail() {
   document.getElementById("postDetailModal").style.display = "none";
+
+  // 게시물 상세 모달의 모든 Firebase 리스너 정리
+  Object.values(postDetailListeners).forEach(listener => {
+    if (listener && listener.ref && listener.callback) {
+      listener.ref.off("value", listener.callback);
+    }
+  });
+  postDetailListeners = { likes: null, comments: null, views: null };
 }
 
 // ── 상세 페이지에서 댓글 로드 ──
 function loadDetailComments(fandom, postId) {
   const commentsList = document.getElementById("postDetailCommentsList");
 
-  db.ref(`community/${fandom}/${postId}/comments`).on("value", snap => {
+  const commentsCallback = (snap) => {
     const comments = snap.val() || {};
     commentsList.innerHTML = "";
     let commentCount = 0;
@@ -3932,7 +3967,12 @@ function loadDetailComments(fandom, postId) {
     // 댓글 수 업데이트
     const countEl = document.getElementById(`detail-comment-count-${postId}`);
     if (countEl) countEl.textContent = commentCount;
-  });
+  };
+
+  // 리스너 등록 및 저장
+  const commentsRef = db.ref(`community/${fandom}/${postId}/comments`);
+  commentsRef.on("value", commentsCallback);
+  postDetailListeners.comments = { ref: commentsRef, callback: commentsCallback };
 }
 
 // ── 상세 페이지에서 댓글 작성 ──
@@ -3976,8 +4016,13 @@ function showCommentsModal(fandom, postId) {
   const commentsList = document.getElementById("commentsModalList");
   commentsList.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">댓글을 불러오는 중...</div>';
 
+  // 기존 리스너 정리
+  if (commentsModalListener && commentsModalListener.ref && commentsModalListener.callback) {
+    commentsModalListener.ref.off("value", commentsModalListener.callback);
+  }
+
   // 댓글 리스너 설정
-  db.ref(`community/${fandom}/${postId}/comments`).on("value", snap => {
+  const commentsModalCallback = (snap) => {
     const comments = snap.val() || {};
     commentsList.innerHTML = "";
 
@@ -4005,7 +4050,12 @@ function showCommentsModal(fandom, postId) {
         commentsList.appendChild(commentEl);
       });
     }
-  });
+  };
+
+  // 리스너 등록 및 저장
+  const commentsRef = db.ref(`community/${fandom}/${postId}/comments`);
+  commentsRef.on("value", commentsModalCallback);
+  commentsModalListener = { ref: commentsRef, callback: commentsModalCallback };
 
   // 댓글 입력 섹션 업데이트
   const inputSection = document.getElementById("commentsModalInput");
@@ -4026,14 +4076,11 @@ function closeCommentsModal() {
   const modal = document.getElementById("commentsModal");
   modal.style.display = "none";
 
-  // 리스너 해제
-  const postItems = document.querySelectorAll(".post-item");
-  postItems.forEach(item => {
-    const postId = item.getAttribute("data-postid");
-    if (postId) {
-      db.ref(`community/${postId}/comments`).off("value");
-    }
-  });
+  // 리스너 정리
+  if (commentsModalListener && commentsModalListener.ref && commentsModalListener.callback) {
+    commentsModalListener.ref.off("value", commentsModalListener.callback);
+    commentsModalListener = null;
+  }
 }
 
 // ── 모달에서 댓글 작성 ──
@@ -4337,13 +4384,52 @@ function loadLikes(fandom, postId) {
 
 // ── 조회수 로드 ──
 function loadViews(fandom, postId) {
-  db.ref(`community/${fandom}/${postId}/views`).on("value", snap => {
+  const viewsCallback = (snap) => {
     const viewCount = snap.val() || 0;
     const viewCountEl = document.getElementById(`view-count-${postId}`);
     if (viewCountEl) {
       viewCountEl.textContent = viewCount;
     }
-  });
+  };
+
+  const viewsRef = db.ref(`community/${fandom}/${postId}/views`);
+  viewsRef.on("value", viewsCallback);
+  postDetailListeners.views = { ref: viewsRef, callback: viewsCallback };
+}
+
+// ── 포스트 리스트용 좋아요 로드 (리스너 추적) ──
+function loadLikesForPostList(fandom, postId) {
+  const likeCountEl = document.getElementById(`like-count-${postId}`);
+  if (!likeCountEl) return;
+
+  const likesCallback = (snap) => {
+    const likes = snap.val() || {};
+    const likeCount = Object.keys(likes).length;
+    if (likeCountEl) {
+      likeCountEl.textContent = likeCount;
+    }
+  };
+
+  const likesRef = db.ref(`community/${fandom}/${postId}/likes`);
+  likesRef.on("value", likesCallback);
+  postListListeners.push({ ref: likesRef, callback: likesCallback });
+}
+
+// ── 포스트 리스트용 조회수 로드 (리스너 추적) ──
+function loadViewsForPostList(fandom, postId) {
+  const viewCountEl = document.getElementById(`view-count-${postId}`);
+  if (!viewCountEl) return;
+
+  const viewsCallback = (snap) => {
+    const viewCount = snap.val() || 0;
+    if (viewCountEl) {
+      viewCountEl.textContent = viewCount;
+    }
+  };
+
+  const viewsRef = db.ref(`community/${fandom}/${postId}/views`);
+  viewsRef.on("value", viewsCallback);
+  postListListeners.push({ ref: viewsRef, callback: viewsCallback });
 }
 
 // ── 댓글 로드 ──
