@@ -2062,10 +2062,18 @@ function loadAuthUserData(callback) {
       currentUserFav = data.preferences?.primaryFandom || null; // ← Firebase에서 읽은 팬덤을 전역 변수에도 설정
       currentUser.lastFandomChangeTime = data.lastFandomChangeTime || 0; // 마지막 팬덤 변경 시간
 
+      // ★ 투표 스트릭 데이터 로드
+      currentUser.votingStreak = data.votingStreak || 0;
+      currentUser.lastVoteDate = data.lastVoteDate || null;
+      currentUser.activePage = data.activePage || "vote";
+
       console.log(`[DEBUG setupAuthListener] 사용자 데이터 로드:`, {
         primaryFandom: currentUser.primaryFandom,
         currentUserFav,
-        lastFandomChangeTime: currentUser.lastFandomChangeTime
+        lastFandomChangeTime: currentUser.lastFandomChangeTime,
+        votingStreak: currentUser.votingStreak,
+        lastVoteDate: currentUser.lastVoteDate,
+        activePage: currentUser.activePage
       });
     }
     if (callback) callback();
@@ -2716,38 +2724,56 @@ async function loadTodayVotesFromFirebase() {
 }
 
 // ── 투표 스트릭 (연속 투표 일수) ──
-function updateVotingStreak() {
+async function updateVotingStreak() {
+  if (!isLoggedIn || !currentUser || !db) return 0; // 비로그인: 스트릭 계산 안 함
+
   const today = getTodayKey();
-  const lastVoteDate = localStorage.getItem("last_vote_date");
-  const currentStreak = parseInt(localStorage.getItem("voting_streak") || "0", 10);
 
-  if (lastVoteDate === today) {
-    // 오늘 이미 투표함
-    return currentStreak;
+  try {
+    const snap = await db.ref(`users/${currentUser.uid}`).once("value");
+    const data = snap.val() || {};
+    const lastVoteDate = data.lastVoteDate;
+    const currentStreak = data.votingStreak || 0;
+
+    if (lastVoteDate === today) {
+      // 오늘 이미 투표함
+      return currentStreak;
+    }
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = yesterday.toISOString().slice(0, 10);
+
+    let newStreak = 0;
+    if (lastVoteDate === yesterdayKey) {
+      // 어제 투표했음 → 스트릭 계속
+      newStreak = currentStreak + 1;
+    } else {
+      // 어제 투표 안함 → 스트릭 초기화
+      newStreak = 1;
+    }
+
+    // Firebase에 저장
+    await db.ref(`users/${currentUser.uid}`).update({
+      votingStreak: newStreak,
+      lastVoteDate: today
+    });
+
+    console.log(`[DEBUG updateVotingStreak] 스트릭 업데이트: ${newStreak}일`);
+    return newStreak;
+  } catch (e) {
+    console.error("투표 스트릭 업데이트 실패:", e);
+    return 0;
   }
-
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayKey = yesterday.toISOString().slice(0, 10);
-
-  let newStreak = 0;
-  if (lastVoteDate === yesterdayKey) {
-    // 어제 투표했음 → 스트릭 계속
-    newStreak = currentStreak + 1;
-  } else {
-    // 어제 투표 안함 → 스트릭 초기화
-    newStreak = 1;
-  }
-
-  localStorage.setItem("voting_streak", newStreak);
-  localStorage.setItem("last_vote_date", today);
-  return newStreak;
 }
 
 function getVotingStreak() {
+  if (!isLoggedIn || !currentUser) return 0; // 비로그인: 스트릭 없음
+
   const today = getTodayKey();
-  const lastVoteDate = localStorage.getItem("last_vote_date");
-  const streak = parseInt(localStorage.getItem("voting_streak") || "0", 10);
+  const lastVoteDate = currentUser.lastVoteDate; // Firebase에서 로드됨
+  const streak = currentUser.votingStreak || 0; // Firebase에서 로드됨
+
   // 오늘 투표하지 않았고 어제도 투표하지 않았으면 스트릭 0
   if (lastVoteDate !== today && lastVoteDate !== new Date(Date.now() - 86400000).toISOString().slice(0, 10)) {
     return 0;
@@ -3631,27 +3657,62 @@ function buildCommentSelect() {
 // ── 응원 댓글 ──
 const BAD = ["시발","씨발","병신","개새","지랄","fuck","shit","bitch"];
 function filterBad(t) { return BAD.some(w => t.toLowerCase().includes(w)); }
+
 function anonName() {
-  const key = "my_anon_name";
-  let name = localStorage.getItem(key);
-  if (!name) { name = "팬#" + Math.floor(Math.random()*9000+1000); localStorage.setItem(key, name); }
-  return name;
+  // ★ 로그인 여부에 따라 다르게 처리
+  if (isLoggedIn && currentUser) {
+    // Firebase에서 사용자 닉네임 사용
+    return currentUser.customNickname || currentUser.uid.slice(0, 8);
+  } else {
+    // 비로그인: localStorage 사용 (Firebase에 저장할 수 없음)
+    const key = "my_anon_name";
+    let name = localStorage.getItem(key);
+    if (!name) {
+      name = "팬#" + Math.floor(Math.random()*9000+1000);
+      localStorage.setItem(key, name);
+    }
+    return name;
+  }
 }
+
 function renderNickDisplay() {
   const el = document.getElementById("nickDisplay");
   if (!el) return;
   const name = anonName();
   el.innerHTML = `닉네임: <strong>${escHtml(name)}</strong> <button class="nick-change-btn" onclick="changeNick()">바꾸기</button>`;
 }
+
 function changeNick() {
-  const cur = anonName();
-  const next = prompt("새 닉네임을 입력하세요 (최대 10자)", cur);
-  if (!next) return;
-  const trimmed = next.trim().slice(0, 10);
-  if (!trimmed) return;
-  localStorage.setItem("my_anon_name", trimmed);
-  showToast(`닉네임이 "${trimmed}"(으)로 변경됐어! 💜`);
-  renderNickDisplay();
+  if (!isLoggedIn || !currentUser) {
+    // 비로그인 사용자: localStorage에서 변경
+    const cur = anonName();
+    const next = prompt("새 닉네임을 입력하세요 (최대 10자)", cur);
+    if (!next) return;
+    const trimmed = next.trim().slice(0, 10);
+    if (!trimmed) return;
+    localStorage.setItem("my_anon_name", trimmed);
+    showToast(`닉네임이 "${trimmed}"(으)로 변경됐어! 💜`);
+    renderNickDisplay();
+  } else {
+    // 로그인 사용자: Firebase에서 변경
+    const cur = currentUser.customNickname || currentUser.uid.slice(0, 8);
+    const next = prompt("새 닉네임을 입력하세요 (최대 10자)", cur);
+    if (!next) return;
+    const trimmed = next.trim().slice(0, 10);
+    if (!trimmed) return;
+
+    // Firebase에 저장
+    db.ref(`users/${currentUser.uid}`).update({ nickname: trimmed })
+      .then(() => {
+        currentUser.customNickname = trimmed;
+        showToast(`닉네임이 "${trimmed}"(으)로 변경됐어! 💜`);
+        renderNickDisplay();
+        updateAuthUI();
+      })
+      .catch(err => {
+        showToast("닉네임 변경 실패: " + err.message);
+      });
+  }
 }
 // ── 그룹 역대 전적 ──
 let groupRecords = {};
@@ -3722,15 +3783,14 @@ function renderMyVotingHistory() {
 
 // ── 내 최애 그룹 ──
 function getMyFav() {
-  const fav = localStorage.getItem("my_fav_group");
-  currentUserFav = fav; // 전역 변수에도 설정
-  return fav;
+  // ★ Firebase 기반: currentUserFav 사용
+  return currentUserFav;
 }
 function setMyFav(g) {
-  localStorage.setItem("my_fav_group", g);
+  // ★ localStorage 제거 - Firebase 기반으로 완전 마이그레이션
   currentUserFav = g; // 전역 변수에도 설정
 
-  // ★ Firebase에도 저장 (다른 기기에서 로그인 시 복구용) - preferences/primaryFandom으로 통일
+  // Firebase에 저장 (다른 기기에서 로그인 시 복구용) - preferences/primaryFandom으로 통일
   if (isLoggedIn && currentUser && db) {
     db.ref(`users/${currentUser.uid}`).update({
       "preferences/primaryFandom": g
@@ -4055,8 +4115,10 @@ function showVotePage() {
     tab.classList.toggle("active", i === 0);
   });
 
-  // 현재 활성 페이지 저장
-  localStorage.setItem("activePage", "vote");
+  // ★ Firebase에 저장 (비동기, 에러 무시)
+  if (isLoggedIn && currentUser && db) {
+    db.ref(`users/${currentUser.uid}`).update({ activePage: "vote" }).catch(() => {});
+  }
 }
 
 function showCommunityPage() {
@@ -4073,8 +4135,10 @@ function showCommunityPage() {
     tab.classList.toggle("active", i === 1);
   });
 
-  // 현재 활성 페이지 저장
-  localStorage.setItem("activePage", "community");
+  // ★ Firebase에 저장 (비동기, 에러 무시)
+  if (isLoggedIn && currentUser && db) {
+    db.ref(`users/${currentUser.uid}`).update({ activePage: "community" }).catch(() => {});
+  }
 
   // 팬덤 드롭다운 초기화
   const select = document.getElementById("communityFandomSelect");
