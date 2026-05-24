@@ -2281,6 +2281,9 @@ async function changePrimaryFandom(newFandom) {
     currentUser.lastFandomChangeTime = now;
     currentUserFav = newFandom; // Firebase에서 읽어온 것처럼 동기화
 
+    // ★ localStorage도 업데이트 (getMyFav() 호출 시 최신 값 사용)
+    localStorage.setItem("my_fav_group", newFandom);
+
     console.log(`[DEBUG] 팬덤 변경됨: ${newFandom}, currentUserFav=${currentUserFav}`);
 
     // 화면 갱신
@@ -3743,7 +3746,9 @@ function setMyFav(g) {
 // ── 팀 빠른접근 버튼 업데이트 ──
 function updateQuickAccessBtn() {
   const btn = document.getElementById("quickAccessBtn");
-  const fav = getMyFav();
+  // ★ getMyFav() 제거: Firebase 기반의 currentUserFav 사용
+  const fav = currentUserFav;
+  console.log(`[DEBUG updateQuickAccessBtn] fav=${fav}`);
   if (!btn) return;
   if (!fav) {
     btn.style.display = "none";
