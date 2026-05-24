@@ -1305,10 +1305,13 @@
     </div>
   </div>
 
-  <!-- 글쓰기 버튼 -->
-  <div style="margin-bottom:24px">
-    <button onclick="openPostCreateModal()" style="width:100%;padding:14px 20px;background:linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.85) 100%);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:1rem;cursor:pointer;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0 8px 20px rgba(124,77,255,0.3);font-family:inherit" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px rgba(124,77,255,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 20px rgba(124,77,255,0.3)'">
+  <!-- 글쓰기 & 새로고침 버튼 -->
+  <div style="margin-bottom:24px;display:flex;gap:12px">
+    <button onclick="openPostCreateModal()" style="flex:1;padding:14px 20px;background:linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.85) 100%);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:1rem;cursor:pointer;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0 8px 20px rgba(124,77,255,0.3);font-family:inherit" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px rgba(124,77,255,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 20px rgba(124,77,255,0.3)'">
       ✍️ 글 쓰기
+    </button>
+    <button onclick="refreshCommunityPosts()" style="padding:14px 18px;background:rgba(124,77,255,0.2);border:1.5px solid rgba(124,77,255,0.4);border-radius:12px;color:var(--primary);font-weight:700;font-size:1.1rem;cursor:pointer;transition:all 0.3s;font-family:inherit" onmouseover="this.style.backgroundColor='rgba(124,77,255,0.3)';this.style.transform='rotate(180deg)'" onmouseout="this.style.backgroundColor='rgba(124,77,255,0.2)';this.style.transform='rotate(0deg)'">
+      🔄
     </button>
   </div>
 
@@ -2434,6 +2437,14 @@ function init() {
       const pw = prompt("관리자 패스워드:");
       if (pw === ADMIN_PW) setupAdmin();
       else alert("패스워드가 틀렸습니다.");
+    }
+
+    // 마지막 활성 페이지 복원
+    const activePage = localStorage.getItem("activePage") || "vote";
+    if (activePage === "community") {
+      showCommunityPage();
+    } else {
+      showVotePage();
     }
   } catch (e) {
     console.error(e);
@@ -3812,6 +3823,9 @@ function showVotePage() {
   document.querySelectorAll(".nav-tab").forEach((tab, i) => {
     tab.classList.toggle("active", i === 0);
   });
+
+  // 현재 활성 페이지 저장
+  localStorage.setItem("activePage", "vote");
 }
 
 function showCommunityPage() {
@@ -3824,6 +3838,9 @@ function showCommunityPage() {
   document.querySelectorAll(".nav-tab").forEach((tab, i) => {
     tab.classList.toggle("active", i === 1);
   });
+
+  // 현재 활성 페이지 저장
+  localStorage.setItem("activePage", "community");
 
   // 팬덤 드롭다운 초기화
   const select = document.getElementById("communityFandomSelect");
@@ -3871,6 +3888,19 @@ function showCommunityPage() {
   if (select.value) {
     loadCommunityPosts();
   }
+}
+
+// ── 커뮤니티 게시물 새로고침 ──
+function refreshCommunityPosts() {
+  const selectedFandom = document.getElementById("communityFandomSelect").value;
+  if (!selectedFandom) {
+    showToast("팬덤을 선택해주세요");
+    return;
+  }
+
+  // 게시물 목록 초기화 후 다시 로드
+  showToast("🔄 게시물을 새로고침 중입니다...");
+  loadCommunityPosts();
 }
 
 // ── 커뮤니티 초기화 ──
