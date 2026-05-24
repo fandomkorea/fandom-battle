@@ -1771,10 +1771,10 @@ async function changePrimaryFandom(newFandom) {
     currentUser.primaryFandom = newFandom;
     currentUser.lastFandomChangeTime = now;
 
-    // 커뮤니티 페이지로 이동
-    showVotePage();
-    document.querySelectorAll(".nav-tab").forEach(btn => btn.classList.remove("active"));
-    document.querySelectorAll(".nav-tab")[1].classList.add("active");
+    // 커뮤니티 페이지 재로드 (팬덤 변경 반영)
+    document.getElementById("communityFandomSelect").value = newFandom;
+    showCommunityPage();
+    loadCommunityPosts();
 
     showToast(`✅ ${emoji} ${newFandom}으로 변경되었습니다!\n게시글: 24시간 후 | 투표: 48시간 후`);
   } catch (e) {
@@ -3481,6 +3481,14 @@ function closeFandomSetupPopup() {
   if (popup) popup.remove();
 }
 
+// ── 팬덤 변경 핸들러 ──
+function handleFandomChange() {
+  const selectedFandom = document.getElementById("communityFandomSelect").value;
+  if (selectedFandom) {
+    changePrimaryFandom(selectedFandom);
+  }
+}
+
 // ── 페이지 전환 함수 ──
 function showVotePage() {
   const votePage = document.getElementById("votePage");
@@ -3543,9 +3551,13 @@ function showCommunityPage() {
     console.log("[DEBUG] currentUserFav 설정 중:", currentUserFav);
     select.value = currentUserFav;
     console.log("[DEBUG] select.value 설정됨:", select.value);
-    loadCommunityPosts();
   } else {
     console.log("[DEBUG] currentUserFav가 비어있음");
+  }
+
+  // 선택된 팬덤이 있으면 게시물 로드 (최애팬덤 여부와 상관없이)
+  if (select.value) {
+    loadCommunityPosts();
   }
 }
 
