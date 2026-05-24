@@ -1215,7 +1215,9 @@
     }
 
     .post-detail-info {
-      margin-bottom: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid rgba(124,77,255,0.3);
     }
 
     .post-detail-info h1 {
@@ -1237,15 +1239,19 @@
     .post-detail-actions {
       display: flex;
       gap: 8px;
-      margin-bottom: 16px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid rgba(153, 153, 187, 0.3);
+      margin-bottom: 20px;
+      padding: 16px 0;
+      border-bottom: 2px solid rgba(124,77,255,0.3);
       flex-wrap: wrap;
     }
 
     .post-detail-content {
+      min-height: 80px;
+      padding: 14px 12px;
+      background: rgba(124,77,255,0.06);
+      border-left: 3px solid rgba(124,77,255,0.3);
+      border-radius: 8px;
       margin-bottom: 20px;
-      margin-top: 4px;
       line-height: 1.6;
       color: var(--text);
       word-break: break-word;
@@ -1276,7 +1282,9 @@
       }
 
       .post-detail-info {
-        margin-bottom: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid rgba(124,77,255,0.3);
       }
 
       .post-detail-info h1 {
@@ -1289,12 +1297,14 @@
       }
 
       .post-detail-actions {
-        margin-bottom: 12px;
-        padding-bottom: 12px;
+        margin-bottom: 16px;
+        padding: 12px 0;
+        border-bottom: 2px solid rgba(124,77,255,0.3);
       }
 
       .post-detail-content {
-        margin-top: 2px;
+        min-height: 70px;
+        padding: 12px 10px;
       }
 
       .post-detail-header {
@@ -1452,6 +1462,15 @@
     <button onclick="refreshCommunityPosts()" style="padding:14px 18px;background:rgba(124,77,255,0.2);border:1.5px solid rgba(124,77,255,0.4);border-radius:12px;color:var(--primary);font-weight:700;font-size:1.1rem;cursor:pointer;transition:all 0.3s;font-family:inherit" onmouseover="this.style.backgroundColor='rgba(124,77,255,0.3)';this.style.transform='rotate(180deg)'" onmouseout="this.style.backgroundColor='rgba(124,77,255,0.2)';this.style.transform='rotate(0deg)'">
       🔄
     </button>
+  </div>
+
+  <!-- 정렬 필터 드롭다운 -->
+  <div style="margin-bottom:20px">
+    <select id="sortDropdown" onchange="changeSortMode(this.value)" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:10px;color:var(--text);font-family:inherit;font-weight:600;font-size:0.95rem;cursor:pointer;transition:all 0.2s;outline:none;box-shadow:inset 0 1px 2px rgba(0,0,0,0.1)" onmouseover="this.style.borderColor='rgba(124,77,255,0.5)';this.style.boxShadow='inset 0 1px 3px rgba(0,0,0,0.15),0 0 10px rgba(124,77,255,0.15)'" onmouseout="this.style.borderColor='rgba(124,77,255,0.3)';this.style.boxShadow='inset 0 1px 2px rgba(0,0,0,0.1)'">
+      <option value="latest">📅 최신순</option>
+      <option value="popular">⭐ 인기순</option>
+      <option value="best">🏆 베스트</option>
+    </select>
   </div>
 
   <!-- 게시물 리스트 (깔끔함) -->
@@ -3996,6 +4015,9 @@ function showVotePage() {
 }
 
 function showCommunityPage() {
+  // Firebase에서 마지막 정렬 모드 로드
+  loadLastSortMode();
+
   const votePage = document.getElementById("votePage");
   const communityPage = document.getElementById("communityPage");
 
@@ -4168,6 +4190,13 @@ function loadCommunityPosts() {
         visibleIndex++;
       }
     });
+
+    // 드롭다운 값 초기화 및 정렬 적용
+    const sortDropdown = document.getElementById("sortDropdown");
+    if (sortDropdown) {
+      sortDropdown.value = currentSortMode;
+    }
+    sortCommunityPosts(currentSortMode);
   });
 }
 
@@ -4219,11 +4248,32 @@ function filterCommunityPosts() {
 // ── 게시물 정렬 ──
 let currentSortMode = "latest";
 
-function toggleSortMode() {
-  currentSortMode = currentSortMode === "latest" ? "popular" : "latest";
-  const btn = document.getElementById("sortToggleBtn");
-  btn.textContent = currentSortMode === "latest" ? "📅 최신순으로 정렬 중" : "⭐ 인기순으로 정렬 중";
-  sortCommunityPosts(currentSortMode);
+function changeSortMode(mode) {
+  currentSortMode = mode;
+  sortCommunityPosts(mode);
+
+  // Firebase에 저장
+  if (isLoggedIn && currentUser && db) {
+    db.ref(`users/${currentUser.uid}/preferences/lastSortMode`).set(mode).catch(e => {
+      console.error("정렬 모드 저장 실패:", e);
+    });
+  }
+}
+
+// Firebase에서 마지막 정렬 모드 로드
+async function loadLastSortMode() {
+  if (!isLoggedIn || !currentUser || !db) {
+    currentSortMode = "latest";
+    return;
+  }
+
+  try {
+    const snap = await db.ref(`users/${currentUser.uid}/preferences/lastSortMode`).once("value");
+    currentSortMode = snap.val() || "latest";
+  } catch (e) {
+    console.error("정렬 모드 로드 실패:", e);
+    currentSortMode = "latest";
+  }
 }
 
 function sortCommunityPosts(mode) {
@@ -4240,10 +4290,19 @@ function sortCommunityPosts(mode) {
       const timeB = parseInt(b.getAttribute("data-timestamp") || 0);
       return timeB - timeA;
     } else if (mode === "popular") {
-      // 인기순: 좋아요 수 또는 댓글 수 내림차순
+      // 인기순: 좋아요 수 내림차순
       const likesA = parseInt(a.getAttribute("data-likes") || 0);
       const likesB = parseInt(b.getAttribute("data-likes") || 0);
       return likesB - likesA;
+    } else if (mode === "best") {
+      // 베스트: 좋아요(40%) + 조회수(60%)
+      const likesA = parseInt(a.getAttribute("data-likes") || 0);
+      const likesB = parseInt(b.getAttribute("data-likes") || 0);
+      const viewsA = parseInt(a.getAttribute("data-views") || 0);
+      const viewsB = parseInt(b.getAttribute("data-views") || 0);
+      const scoreA = likesA * 0.4 + viewsA * 0.6;
+      const scoreB = likesB * 0.4 + viewsB * 0.6;
+      return scoreB - scoreA;
     }
   });
 
@@ -4281,6 +4340,8 @@ function renderPost(fandom, postId, post, index) {
   postEl.className = "post-item post-list-compact";
   postEl.setAttribute("data-timestamp", post.timestamp || 0);
   postEl.setAttribute("data-postid", postId);
+  postEl.setAttribute("data-likes", post.likes || 0);
+  postEl.setAttribute("data-views", post.views || 0);
   postEl.setAttribute("onclick", `showPostDetail('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()`);
   postEl.style.cursor = "pointer";
   // 사진 여부 확인
@@ -5040,6 +5101,15 @@ async function toggleLike(fandom, postId) {
   } else {
     // 좋아요 추가
     await likeRef.set(true);
+  }
+
+  // 좋아요 수 업데이트 및 data-likes 속성 갱신
+  const likesSnap = await db.ref(`community/${fandom}/${postId}/likes`).once("value");
+  const likeCount = Object.keys(likesSnap.val() || {}).length;
+
+  const postEl = document.querySelector(`[data-postid="${postId}"]`);
+  if (postEl) {
+    postEl.setAttribute("data-likes", likeCount);
   }
 
   loadLikes(fandom, postId);
