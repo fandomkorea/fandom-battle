@@ -3743,7 +3743,7 @@ function scrollToMyTeam() {
 function renderFavChip() {
   const area = document.getElementById("favChipArea");
   if (!area) return;
-  const fav = getMyFav();
+  const fav = currentUserFav; // Firebase 기반으로 변경
   if (!fav) { area.innerHTML = ""; return; }
   const meta = GROUP_META[fav] || { emoji:"🌟" };
 
@@ -3759,7 +3759,7 @@ function renderFavChip() {
 // ── 하단 팬덤 선택 바 업데이트 ──
 function updateFavBar() {
   let bar = document.getElementById("favBar");
-  const fav = getMyFav();
+  const fav = currentUserFav; // Firebase 기반으로 변경
 
   // 바가 없으면 생성
   if (!bar) {
