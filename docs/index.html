@@ -1229,57 +1229,74 @@
 </main>
 
 <!-- 게시물 작성 모달 -->
-<div id="postCreateModal" style="display:none !important;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;padding:16px;padding-bottom:80px;overflow-y:auto">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <h2 style="font-size:1.2rem;font-weight:700">새 글 쓰기</h2>
-      <button onclick="closePostCreateModal()" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer">✕</button>
-    </div>
-
-    <div style="margin-bottom:16px">
-      <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px">팬덤</label>
-      <div style="padding:10px 12px;background:rgba(124,77,255,0.1);border:1px solid var(--primary);border-radius:8px;color:var(--text);font-weight:600;font-size:0.9rem" id="postCreateFandom">선택됨</div>
-    </div>
-
-    <!-- 게시글 템플릿 선택 -->
-    <div style="margin-bottom:16px">
-      <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px">게시글 유형</label>
-      <select id="postTemplate" style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.95rem;cursor:pointer" onchange="updatePostTemplate()">
-        <option value="free">💬 자유게시글</option>
-        <option value="schedule">📅 일정 정보 (콘서트, 공연 등)</option>
-        <option value="fanart">🎨 팬아트</option>
-        <option value="news">📰 뉴스</option>
-        <option value="qna">❓ Q&A</option>
-      </select>
-    </div>
-
-    <!-- 일정 정보 템플릿 (숨김) -->
-    <div id="scheduleTemplate" style="display:none;margin-bottom:16px;background:linear-gradient(135deg,rgba(124,77,255,0.1),rgba(255,77,141,0.05));padding:16px;border-radius:12px;border:1px solid rgba(124,77,255,0.2)">
-      <div style="font-size:0.85rem;font-weight:600;color:var(--primary);margin-bottom:12px">📅 일정 정보 입력</div>
-      <div style="display:grid;gap:10px">
-        <input type="text" id="scheduleTitle" placeholder="공연명 (예: 'BTS Permission to Dance' 콘서트)" style="width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:0.9rem" maxlength="100">
-        <input type="date" id="scheduleDate" style="width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:0.9rem">
-        <input type="text" id="scheduleLocation" placeholder="장소 (예: '서울올림픽체조경기장')" style="width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:0.9rem" maxlength="100">
-        <input type="text" id="schedulePrice" placeholder="가격 (예: '88,000원~')" style="width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:0.9rem" maxlength="100">
-        <input type="url" id="scheduleLink" placeholder="예매 링크 (선택사항)" style="width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:0.9rem">
+<div id="postCreateModal" style="display:none !important;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;padding:16px;padding-bottom:80px;overflow-y:auto;backdrop-filter:blur(2px)">
+  <div style="background:linear-gradient(180deg,var(--card) 0%,rgba(20,20,30,0.5) 100%);border:1px solid rgba(124,77,255,0.2);border-radius:var(--radius);padding:0;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.4),0 0 60px rgba(124,77,255,0.1)">
+    <!-- 헤더 영역 -->
+    <div style="background:linear-gradient(135deg,rgba(124,77,255,0.2) 0%,rgba(100,200,255,0.12) 100%);padding:28px 28px;border-bottom:2px solid rgba(124,77,255,0.2);position:relative;background-clip:padding-box;display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:12px;flex:1">
+        <span style="font-size:1.8rem">✍️</span>
+        <h2 style="font-size:1.4rem;font-weight:900;background:linear-gradient(135deg,var(--text) 0%,rgba(200,200,255,0.9) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0">새 글 쓰기</h2>
       </div>
+      <button onclick="closePostCreateModal()" style="background:none;border:none;color:var(--muted);font-size:1.8rem;cursor:pointer;padding:4px 8px;border-radius:6px;transition:all 0.2s;opacity:0.7" onmouseover="this.style.opacity='1';this.style.backgroundColor='rgba(124,77,255,0.15)'" onmouseout="this.style.opacity='0.7';this.style.backgroundColor='transparent'">✕</button>
     </div>
 
-    <div style="margin-bottom:16px">
-      <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px">제목</label>
-      <input type="text" id="postTitle" placeholder="게시물 제목을 입력해주세요" style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.95rem" maxlength="100">
-      <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;text-align:right"><span id="postTitleCount">0</span>/100</div>
-    </div>
+    <!-- 콘텐츠 영역 -->
+    <div style="flex:1;overflow-y:auto;padding:28px;background:linear-gradient(180deg,rgba(124,77,255,0.02) 0%,rgba(100,150,255,0.01) 100%)">
 
-    <div style="margin-bottom:16px">
-      <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px">내용</label>
-      <textarea id="postContent" placeholder="게시물 내용을 입력해주세요" style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.95rem;resize:vertical;min-height:150px;max-length:2000" maxlength="2000"></textarea>
-      <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;text-align:right"><span id="postContentCount">0</span>/2000</div>
-    </div>
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(124,77,255,0.9);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">📌 팬덤</label>
+        <div style="padding:12px 14px;background:linear-gradient(135deg,rgba(124,77,255,0.12) 0%,rgba(100,200,255,0.08) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:10px;color:var(--text);font-weight:600;font-size:0.95rem;box-shadow:inset 0 1px 2px rgba(0,0,0,0.2)" id="postCreateFandom">선택됨</div>
+      </div>
 
-    <div style="display:flex;gap:8px">
-      <button onclick="closePostCreateModal()" style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:600;font-family:inherit;cursor:pointer">취소</button>
-      <button onclick="submitPost()" style="flex:1;padding:12px;background:var(--primary);border:none;border-radius:8px;color:#fff;font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.15s">작성하기</button>
+      <!-- 게시글 템플릿 선택 -->
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(124,77,255,0.9);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">📝 게시글 유형</label>
+        <select id="postTemplate" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(124,77,255,0.08) 0%,rgba(100,200,255,0.04) 100%);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.95rem;cursor:pointer;transition:all 0.2s;outline:none;box-shadow:inset 0 1px 2px rgba(0,0,0,0.1)" onchange="updatePostTemplate()" onmouseover="this.style.borderColor='rgba(124,77,255,0.4)';this.style.boxShadow='inset 0 1px 3px rgba(0,0,0,0.15),0 0 10px rgba(124,77,255,0.1)'" onmouseout="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='inset 0 1px 2px rgba(0,0,0,0.1)'">
+          <option value="free">💬 자유게시글</option>
+          <option value="schedule">📅 일정 정보 (콘서트, 공연 등)</option>
+          <option value="fanart">🎨 팬아트</option>
+          <option value="news">📰 뉴스</option>
+          <option value="qna">❓ Q&A</option>
+        </select>
+      </div>
+
+      <!-- 일정 정보 템플릿 (숨김) -->
+      <div id="scheduleTemplate" style="display:none;margin-bottom:20px;background:linear-gradient(135deg,rgba(124,77,255,0.12) 0%,rgba(255,77,141,0.08) 100%);padding:20px;border-radius:14px;border:1.5px solid rgba(124,77,255,0.25);box-shadow:inset 0 1px 2px rgba(0,0,0,0.1)">
+        <div style="font-size:0.85rem;font-weight:700;color:var(--primary);margin-bottom:16px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:0.5px">📅 일정 정보</div>
+        <div style="display:grid;gap:12px">
+          <!-- 공연명 + 날짜 (2열) -->
+          <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:12px">
+            <input type="text" id="scheduleTitle" placeholder="공연명 (예: 'BTS Permission to Dance')" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(20,20,30,0.6) 0%,rgba(30,20,50,0.6) 100%);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.9rem;transition:all 0.2s;outline:none" maxlength="100" onmouseover="this.style.borderColor='rgba(124,77,255,0.4)';this.style.boxShadow='0 0 12px rgba(124,77,255,0.15)'" onmouseout="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'">
+            <input type="date" id="scheduleDate" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(20,20,30,0.6) 0%,rgba(30,20,50,0.6) 100%);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.9rem;transition:all 0.2s;outline:none" onmouseover="this.style.borderColor='rgba(124,77,255,0.4)';this.style.boxShadow='0 0 12px rgba(124,77,255,0.15)'" onmouseout="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'">
+          </div>
+
+          <!-- 장소 + 가격 (2열) -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <input type="text" id="scheduleLocation" placeholder="장소 (예: '올림픽 체조경기장')" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(20,20,30,0.6) 0%,rgba(30,20,50,0.6) 100%);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.9rem;transition:all 0.2s;outline:none" maxlength="100" onmouseover="this.style.borderColor='rgba(124,77,255,0.4)';this.style.boxShadow='0 0 12px rgba(124,77,255,0.15)'" onmouseout="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'">
+            <input type="text" id="schedulePrice" placeholder="가격 (예: '88,000원~')" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(20,20,30,0.6) 0%,rgba(30,20,50,0.6) 100%);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.9rem;transition:all 0.2s;outline:none" maxlength="100" onmouseover="this.style.borderColor='rgba(124,77,255,0.4)';this.style.boxShadow='0 0 12px rgba(124,77,255,0.15)'" onmouseout="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'">
+          </div>
+
+          <!-- 예매 링크 (전체) -->
+          <input type="url" id="scheduleLink" placeholder="예매 링크 (선택사항)" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(20,20,30,0.6) 0%,rgba(30,20,50,0.6) 100%);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.9rem;transition:all 0.2s;outline:none" onmouseover="this.style.borderColor='rgba(124,77,255,0.4)';this.style.boxShadow='0 0 12px rgba(124,77,255,0.15)'" onmouseout="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'">
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(124,77,255,0.9);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">📌 제목</label>
+        <input type="text" id="postTitle" placeholder="게시물 제목을 입력해주세요" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(20,20,30,0.6) 0%,rgba(30,20,50,0.6) 100%);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.95rem;transition:all 0.2s;outline:none" maxlength="100" onmouseover="this.style.borderColor='rgba(124,77,255,0.4)';this.style.boxShadow='0 0 12px rgba(124,77,255,0.15)'" onmouseout="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'">
+        <div style="font-size:0.7rem;color:rgba(124,77,255,0.7);margin-top:6px;text-align:right"><span id="postTitleCount">0</span>/100</div>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(124,77,255,0.9);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">📝 내용</label>
+        <textarea id="postContent" placeholder="게시물 내용을 입력해주세요" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(20,20,30,0.6) 0%,rgba(30,20,50,0.6) 100%);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.95rem;resize:vertical;min-height:160px;transition:all 0.2s;outline:none" maxlength="2000" onmouseover="this.style.borderColor='rgba(124,77,255,0.4)';this.style.boxShadow='0 0 12px rgba(124,77,255,0.15)'" onmouseout="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'"></textarea>
+        <div style="font-size:0.7rem;color:rgba(124,77,255,0.7);margin-top:6px;text-align:right"><span id="postContentCount">0</span>/2000</div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:24px">
+        <button onclick="closePostCreateModal()" style="flex:1;padding:14px 20px;background:transparent;border:1.5px solid rgba(124,77,255,0.3);border-radius:10px;color:var(--text);font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.3s;font-size:0.95rem" onmouseover="this.style.backgroundColor='rgba(124,77,255,0.1)';this.style.borderColor='rgba(124,77,255,0.5)'" onmouseout="this.style.backgroundColor='transparent';this.style.borderColor='rgba(124,77,255,0.3)'">취소</button>
+        <button onclick="submitPost()" style="flex:1;padding:14px 20px;background:linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.85) 100%);border:none;border-radius:10px;color:#fff;font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0 8px 20px rgba(124,77,255,0.3);font-size:0.95rem" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px rgba(124,77,255,0.4)';this.style.background='linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.9) 100%)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 20px rgba(124,77,255,0.3)';this.style.background='linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.85) 100%)'">✨ 작성하기</button>
+      </div>
     </div>
   </div>
 </div>
