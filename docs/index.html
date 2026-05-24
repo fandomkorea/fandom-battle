@@ -4140,22 +4140,7 @@ function renderPost(fandom, postId, post, index) {
     </div>
   `;
 
-  // 배지 로드 (비동기)
-  if (post.authorUid) {
-    getUserBadges(post.authorUid).then(badges => {
-      const authorEl = document.getElementById(`author-${postId}`);
-      if (authorEl && badges.length > 0) {
-        let badgeHTML = escHtml(post.authorName);
-        badges.forEach(badge => {
-          const badgeInfo = getBadgeDisplay(badge);
-          if (badgeInfo) {
-            badgeHTML += ` <span style="display:inline-block;background:${badgeInfo.color};color:var(--primary);font-size:0.65rem;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:600">${badgeInfo.emoji}</span>`;
-          }
-        });
-        authorEl.innerHTML = badgeHTML;
-      }
-    });
-  }
+  // 배지는 게시물 목록에서 표시하지 않음 (간결성)
 
   // 좋아요 리스너 설정 (포스트 리스트용)
   loadLikesForPostList(fandom, postId);
