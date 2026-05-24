@@ -4117,12 +4117,18 @@ async function submitCommentFromModal(fandom, postId) {
 
 // ── 댓글 개수 업데이트 ──
 function updateCommentCount(fandom, postId) {
-  db.ref(`community/${fandom}/${postId}/comments`).on("value", snap => {
+  const commentCountEl = document.getElementById(`comment-count-${postId}`);
+  if (!commentCountEl) return;
+
+  const commentCountCallback = (snap) => {
     const comments = snap.val() || {};
     const count = Object.keys(comments).filter(id => !comments[id].isHidden).length;
-    const btn = document.getElementById(`comment-count-${postId}`);
-    if (btn) btn.textContent = count;
-  });
+    if (commentCountEl) commentCountEl.textContent = count;
+  };
+
+  const commentsRef = db.ref(`community/${fandom}/${postId}/comments`);
+  commentsRef.on("value", commentCountCallback);
+  postListListeners.push({ ref: commentsRef, callback: commentCountCallback });
 }
 
 // ── 게시물 삭제 확인 ──
