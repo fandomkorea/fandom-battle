@@ -1162,6 +1162,126 @@
       #postCreateModal > div { max-width: 95%; }
       #postCreateModal { padding: 8px !important; }
     }
+
+    /* 게시물 상세 페이지 */
+    .post-detail-page {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg);
+      z-index: 100;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .post-detail-header {
+      position: sticky;
+      top: 0;
+      background: var(--card);
+      border-bottom: 1px solid rgba(153, 153, 187, 0.3);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 101;
+    }
+
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 8px;
+      transition: all 0.2s;
+    }
+
+    .back-btn:hover {
+      transform: scale(1.1);
+      background: rgba(124,77,255,0.1);
+      border-radius: 8px;
+    }
+
+    .post-detail-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      max-width: 800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .post-detail-info {
+      margin-bottom: 20px;
+    }
+
+    .post-detail-info h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+      word-break: break-word;
+    }
+
+    .post-detail-meta {
+      display: flex;
+      gap: 12px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+
+    .post-detail-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(153, 153, 187, 0.3);
+      flex-wrap: wrap;
+    }
+
+    .post-detail-content {
+      margin-bottom: 20px;
+      line-height: 1.6;
+      color: var(--text);
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .post-detail-content img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .post-detail-comments {
+      margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .post-detail-page {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+
+      .post-detail-container {
+        padding: 12px;
+      }
+
+      .post-detail-info h1 {
+        font-size: 1.25rem;
+      }
+
+      .post-detail-header {
+        padding: 10px 12px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1323,6 +1443,34 @@
     </div>
   </div>
 </div><!-- communityPage 닫기 -->
+
+<!-- 게시물 상세 페이지 -->
+<div id="postDetailPage" class="post-detail-page" style="display:none">
+  <!-- 헤더 -->
+  <div class="post-detail-header">
+    <button class="back-btn" onclick="closePostDetail()">←</button>
+    <h2 style="margin:0;font-size:1.1rem;font-weight:700">게시물</h2>
+    <div style="width:40px"></div>
+  </div>
+
+  <!-- 게시물 정보 -->
+  <div class="post-detail-container">
+    <!-- 제목 & 메타정보 -->
+    <div class="post-detail-info">
+      <h1 id="postDetailTitle"></h1>
+      <div id="postDetailMeta" class="post-detail-meta"></div>
+    </div>
+
+    <!-- 액션 버튼 (좋아요, 신고 등) -->
+    <div id="postDetailActions" class="post-detail-actions"></div>
+
+    <!-- 게시물 이미지 & 본문 -->
+    <div id="postDetailContent" class="post-detail-content"></div>
+
+    <!-- 댓글 섹션 -->
+    <div id="postDetailComments" class="post-detail-comments"></div>
+  </div>
+</div>
 
 </main>
 
@@ -4156,8 +4304,19 @@ function renderPost(fandom, postId, post, index) {
 
 // ── 게시물 상세 페이지 열기 ──
 async function showPostDetail(fandom, postId) {
-  const modal = document.getElementById("postDetailModal");
-  modal.style.display = "flex";
+  // History API로 URL 상태 저장
+  window.history.pushState({
+    page: "postDetail",
+    fandom: fandom,
+    postId: postId
+  }, null, `#postDetail/${fandom}/${postId}`);
+
+  // 페이지 표시
+  document.getElementById("communityPage").classList.add("hidden");
+  document.getElementById("votePage").classList.add("hidden");
+  const detailPage = document.getElementById("postDetailPage");
+  detailPage.style.display = "flex";
+  detailPage.scrollTop = 0;
 
   try {
     // 게시물 데이터 로드
@@ -4258,15 +4417,23 @@ async function showPostDetail(fandom, postId) {
 
 // ── 게시물 상세 페이지 닫기 ──
 function closePostDetail() {
-  document.getElementById("postDetailModal").style.display = "none";
+  // 페이지 숨김
+  document.getElementById("postDetailPage").style.display = "none";
 
-  // 게시물 상세 모달의 모든 Firebase 리스너 정리
+  // 커뮤니티 페이지 표시
+  document.getElementById("communityPage").classList.remove("hidden");
+  document.getElementById("communityPage").classList.add("show");
+
+  // 게시물 상세 페이지의 모든 Firebase 리스너 정리
   Object.values(postDetailListeners).forEach(listener => {
     if (listener && listener.ref && listener.callback) {
       listener.ref.off("value", listener.callback);
     }
   });
   postDetailListeners = { likes: null, comments: null, views: null };
+
+  // 뒤로가기 시뮬레이션
+  window.history.back();
 }
 
 // ── 상세 페이지에서 댓글 로드 ──
@@ -5047,7 +5214,9 @@ async function reportPost(fandom, postId) {
 
 // ── 모달 뒤로가기 처리 ──
 window.addEventListener('popstate', (e) => {
-  if (e.state && e.state.modal === 'postCreate') {
+  if (e.state && e.state.page === 'postDetail') {
+    closePostDetail();
+  } else if (e.state && e.state.modal === 'postCreate') {
     // popstate 이벤트 발생 - 모달이 열려 있으면 닫기
     closePostCreateModal();
   }
