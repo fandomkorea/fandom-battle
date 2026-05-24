@@ -1234,6 +1234,30 @@
       <div style="padding:10px 12px;background:rgba(124,77,255,0.1);border:1px solid var(--primary);border-radius:8px;color:var(--text);font-weight:600;font-size:0.9rem" id="postCreateFandom">선택됨</div>
     </div>
 
+    <!-- 게시글 템플릿 선택 -->
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px">게시글 유형</label>
+      <select id="postTemplate" style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.95rem;cursor:pointer" onchange="updatePostTemplate()">
+        <option value="free">💬 자유게시글</option>
+        <option value="schedule">📅 일정 정보 (콘서트, 공연 등)</option>
+        <option value="fanart">🎨 팬아트</option>
+        <option value="news">📰 뉴스</option>
+        <option value="qna">❓ Q&A</option>
+      </select>
+    </div>
+
+    <!-- 일정 정보 템플릿 (숨김) -->
+    <div id="scheduleTemplate" style="display:none;margin-bottom:16px;background:linear-gradient(135deg,rgba(124,77,255,0.1),rgba(255,77,141,0.05));padding:16px;border-radius:12px;border:1px solid rgba(124,77,255,0.2)">
+      <div style="font-size:0.85rem;font-weight:600;color:var(--primary);margin-bottom:12px">📅 일정 정보 입력</div>
+      <div style="display:grid;gap:10px">
+        <input type="text" id="scheduleTitle" placeholder="공연명 (예: 'BTS Permission to Dance' 콘서트)" style="width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:0.9rem" maxlength="100">
+        <input type="date" id="scheduleDate" style="width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:0.9rem">
+        <input type="text" id="scheduleLocation" placeholder="장소 (예: '서울올림픽체조경기장')" style="width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:0.9rem" maxlength="100">
+        <input type="text" id="schedulePrice" placeholder="가격 (예: '88,000원~')" style="width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:0.9rem" maxlength="100">
+        <input type="url" id="scheduleLink" placeholder="예매 링크 (선택사항)" style="width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:0.9rem">
+      </div>
+    </div>
+
     <div style="margin-bottom:16px">
       <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px">제목</label>
       <input type="text" id="postTitle" placeholder="게시물 제목을 입력해주세요" style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.95rem" maxlength="100">
@@ -3952,13 +3976,30 @@ function renderPost(fandom, postId, post, index) {
       <div class="post-list-title">${escHtml(post.title)}</div>
     </div>
     <div class="post-list-meta-row">
-      <span class="post-list-meta">👤 ${escHtml(post.authorName)}</span>
+      <span class="post-list-meta">👤 <span id="author-${postId}">${escHtml(post.authorName)}</span></span>
       <span class="post-list-meta">👁️ <span id="view-count-${postId}">${post.views || 0}</span></span>
       <span class="post-list-meta">💬 <span id="comment-count-${postId}">0</span></span>
       <span class="post-list-meta">❤️ <span id="like-count-${postId}">0</span></span>
       <span class="post-list-meta">📅 ${timeStr}</span>
     </div>
   `;
+
+  // 배지 로드 (비동기)
+  if (post.authorUid) {
+    getUserBadges(post.authorUid).then(badges => {
+      const authorEl = document.getElementById(`author-${postId}`);
+      if (authorEl && badges.length > 0) {
+        let badgeHTML = escHtml(post.authorName);
+        badges.forEach(badge => {
+          const badgeInfo = getBadgeDisplay(badge);
+          if (badgeInfo) {
+            badgeHTML += ` <span style="display:inline-block;background:${badgeInfo.color};color:var(--primary);font-size:0.65rem;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:600">${badgeInfo.emoji}</span>`;
+          }
+        });
+        authorEl.innerHTML = badgeHTML;
+      }
+    });
+  }
 
   // 좋아요 리스너 설정 (포스트 리스트용)
   loadLikesForPostList(fandom, postId);
@@ -4410,6 +4451,61 @@ function removeImage() {
   document.getElementById("imagePreviewContainer").innerHTML = "";
 }
 
+// ── 배지 시스템 ──
+async function addUserBadge(uid, badgeType) {
+  if (!db) return;
+  try {
+    const badges = await db.ref(`users/${uid}/badges`).once("value");
+    const currentBadges = badges.val() || [];
+
+    if (!currentBadges.includes(badgeType)) {
+      currentBadges.push(badgeType);
+      await db.ref(`users/${uid}/badges`).set(currentBadges);
+    }
+  } catch (e) {
+    console.error("배지 추가 실패:", e);
+  }
+}
+
+async function getUserBadges(uid) {
+  if (!db) return [];
+  try {
+    const badges = await db.ref(`users/${uid}/badges`).once("value");
+    return badges.val() || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function getBadgeDisplay(badgeType) {
+  const badges = {
+    "info-provider": { emoji: "📅", label: "정보 제공자", color: "rgba(124, 77, 255, 0.3)" }
+  };
+  return badges[badgeType] || null;
+}
+
+// ── 게시글 템플릿 업데이트 ──
+function updatePostTemplate() {
+  const template = document.getElementById("postTemplate").value;
+  const scheduleTemplate = document.getElementById("scheduleTemplate");
+  const titleInput = document.getElementById("postTitle");
+
+  if (template === "schedule") {
+    scheduleTemplate.style.display = "block";
+  } else {
+    scheduleTemplate.style.display = "none";
+  }
+
+  const placeholders = {
+    free: "게시물 제목을 입력해주세요",
+    schedule: "[일정] 공연명을 입력해주세요",
+    fanart: "[팬아트] 작품 제목을 입력해주세요",
+    news: "[뉴스] 제목을 입력해주세요",
+    qna: "[Q&A] 질문을 입력해주세요"
+  };
+  titleInput.placeholder = placeholders[template] || "게시물 제목을 입력해주세요";
+}
+
 // ── 게시물 저장 ──
 async function submitPost() {
   if (!isLoggedIn || !currentUser) {
@@ -4417,15 +4513,41 @@ async function submitPost() {
     return;
   }
 
-  const title = document.getElementById("postTitle").value.trim();
-  const content = document.getElementById("postContent").value.trim();
+  const template = document.getElementById("postTemplate").value;
+  let title = document.getElementById("postTitle").value.trim();
+  let content = document.getElementById("postContent").value.trim();
   const selectedFandom = document.getElementById("communityFandomSelect").value;
+  let isSchedule = false;
+
+  // 일정 템플릿 처리
+  if (template === "schedule") {
+    const scheduleTitle = document.getElementById("scheduleTitle").value.trim();
+    const scheduleDate = document.getElementById("scheduleDate").value;
+    const scheduleLocation = document.getElementById("scheduleLocation").value.trim();
+    const schedulePrice = document.getElementById("schedulePrice").value.trim();
+    const scheduleLink = document.getElementById("scheduleLink").value.trim();
+
+    if (!scheduleTitle || !scheduleDate) {
+      showToast("공연명과 날짜를 입력해주세요");
+      return;
+    }
+
+    isSchedule = true;
+    if (!title) title = `[일정] ${scheduleTitle}`;
+
+    // 일정 정보를 content에 자동 생성
+    const dateObj = new Date(scheduleDate);
+    const formattedDate = dateObj.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const scheduleInfo = `📅 **${scheduleTitle}**\n\n🗓️ 날짜: ${formattedDate}\n${scheduleLocation ? `📍 장소: ${scheduleLocation}\n` : ""}${schedulePrice ? `💰 가격: ${schedulePrice}\n` : ""}${scheduleLink ? `🎫 [예매하기](${scheduleLink})\n` : ""}---\n\n${content}`;
+    content = scheduleInfo;
+  }
 
   if (!title) {
     showToast("제목을 입력해주세요");
     return;
   }
-  if (!content) {
+  if (!content || content === "---\n\n") {
     showToast("내용을 입력해주세요");
     return;
   }
@@ -4438,7 +4560,7 @@ async function submitPost() {
     const postId = db.ref().push().key;
 
     // 게시물 저장
-    await db.ref(`community/${selectedFandom}/${postId}`).set({
+    const postData = {
       title,
       content,
       authorUid: currentUser.uid,
@@ -4446,8 +4568,21 @@ async function submitPost() {
       timestamp: Date.now(),
       isHidden: false,
       reportCount: 0,
-      views: 0
-    });
+      views: 0,
+      type: template, // 게시글 유형 저장
+      isSchedule: isSchedule // 일정 여부
+    };
+
+    await db.ref(`community/${selectedFandom}/${postId}`).set(postData);
+
+    // 일정 게시글이면 "정보 제공자" 배지 부여
+    if (isSchedule) {
+      await addUserBadge(currentUser.uid, "info-provider");
+      showToast("✅ 게시물이 작성되었어요! 📅 정보 제공자 배지를 획득했습니다!");
+    } else {
+      showToast("✅ 게시물이 작성되었어요!");
+    }
+    closePostCreateModal();
 
     showToast("✅ 게시물이 작성되었어요!");
     closePostCreateModal();
