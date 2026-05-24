@@ -2266,7 +2266,7 @@ async function changePrimaryFandom(newFandom) {
   try {
     const now = Date.now();
     await db.ref(`users/${currentUser.uid}`).update({
-      primaryFandom: newFandom,
+      "preferences/primaryFandom": newFandom,
       lastFandomChangeTime: now
     });
 
