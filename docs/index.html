@@ -2302,9 +2302,26 @@ async function changePrimaryFandom(newFandom) {
     updateFavBar(); // 하단 바 업데이트
     console.log(`[DEBUG] updateFavBar() 호출 후, favBar:`, document.getElementById("favBar")?.innerHTML.substring(0, 100));
 
-    // 커뮤니티 페이지 재로드 (팬덤 변경 반영)
+    // ★ 커뮤니티 페이지 재로드 (팬덤 변경 반영)
+    // showCommunityPage() 내에서 loadCommunityPosts()가 호출되므로, 여기서는 호출하지 않음
     document.getElementById("communityFandomSelect").value = newFandom;
-    showCommunityPage();
+
+    // 커뮤니티 페이지로 이동
+    const votePage = document.getElementById("votePage");
+    const communityPage = document.getElementById("communityPage");
+    if (votePage) votePage.classList.add("hidden");
+    if (communityPage) communityPage.classList.add("show");
+
+    document.querySelectorAll(".nav-tab").forEach((tab, i) => {
+      tab.classList.toggle("active", i === 1);
+    });
+
+    // Firebase에 활성 페이지 저장
+    if (isLoggedIn && currentUser && db) {
+      db.ref(`users/${currentUser.uid}`).update({ activePage: "community" }).catch(() => {});
+    }
+
+    // ★ loadCommunityPosts() 호출 (showCommunityPage() 대신)
     loadCommunityPosts();
     console.log(`[DEBUG] 커뮤니티 페이지 로드 완료`);
 
