@@ -1215,21 +1215,21 @@
     }
 
     .post-detail-info {
-      margin-bottom: 20px;
+      margin-bottom: 12px;
     }
 
     .post-detail-info h1 {
       font-size: 1.5rem;
       font-weight: 700;
       color: var(--text);
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       word-break: break-word;
     }
 
     .post-detail-meta {
       display: flex;
       gap: 12px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: var(--muted);
       flex-wrap: wrap;
     }
@@ -1237,14 +1237,15 @@
     .post-detail-actions {
       display: flex;
       gap: 8px;
-      margin-bottom: 20px;
-      padding-bottom: 20px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
       border-bottom: 1px solid rgba(153, 153, 187, 0.3);
       flex-wrap: wrap;
     }
 
     .post-detail-content {
       margin-bottom: 20px;
+      margin-top: 4px;
       line-height: 1.6;
       color: var(--text);
       word-break: break-word;
@@ -1274,8 +1275,26 @@
         padding: 12px;
       }
 
+      .post-detail-info {
+        margin-bottom: 8px;
+      }
+
       .post-detail-info h1 {
         font-size: 1.25rem;
+        margin-bottom: 6px;
+      }
+
+      .post-detail-meta {
+        font-size: 0.8rem;
+      }
+
+      .post-detail-actions {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+      }
+
+      .post-detail-content {
+        margin-top: 2px;
       }
 
       .post-detail-header {
@@ -4432,8 +4451,10 @@ function closePostDetail() {
   });
   postDetailListeners = { likes: null, comments: null, views: null };
 
-  // 뒤로가기 시뮬레이션
-  window.history.back();
+  // 뒤로가기 시뮬레이션 (popstate 이벤트에서 호출된 경우 제외)
+  if (!window.popstateActive) {
+    window.history.back();
+  }
 }
 
 // ── 상세 페이지에서 댓글 로드 ──
@@ -5215,7 +5236,9 @@ async function reportPost(fandom, postId) {
 // ── 모달 뒤로가기 처리 ──
 window.addEventListener('popstate', (e) => {
   if (e.state && e.state.page === 'postDetail') {
+    window.popstateActive = true;
     closePostDetail();
+    window.popstateActive = false;
   } else if (e.state && e.state.modal === 'postCreate') {
     // popstate 이벤트 발생 - 모달이 열려 있으면 닫기
     closePostCreateModal();
