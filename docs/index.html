@@ -2271,6 +2271,7 @@ async function changePrimaryFandom(newFandom) {
 
     currentUser.primaryFandom = newFandom;
     currentUser.lastFandomChangeTime = now;
+    currentUserFav = newFandom; // ← 이 줄 추가!
 
     // 커뮤니티 페이지 재로드 (팬덤 변경 반영)
     document.getElementById("communityFandomSelect").value = newFandom;
