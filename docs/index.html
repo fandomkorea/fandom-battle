@@ -2274,6 +2274,10 @@ async function changePrimaryFandom(newFandom) {
     currentUser.lastFandomChangeTime = now;
     currentUserFav = newFandom; // Firebase에서 읽어온 것처럼 동기화
 
+    // 화면 갱신
+    renderFavChip(); // 하단 팬덤 표시 업데이트
+    updateFavBar(); // 하단 바 업데이트
+
     // 커뮤니티 페이지 재로드 (팬덤 변경 반영)
     document.getElementById("communityFandomSelect").value = newFandom;
     showCommunityPage();
