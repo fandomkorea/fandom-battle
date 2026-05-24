@@ -2058,6 +2058,7 @@ function loadAuthUserData(callback) {
       currentUser.customNickname = data.nickname || null;
       currentUser.customFandom = data.fandom || null;
       currentUser.primaryFandom = data.primaryFandom || null; // 기본 팬덤
+      currentUserFav = data.primaryFandom || null; // ← Firebase에서 읽은 팬덤을 전역 변수에도 설정
       currentUser.lastFandomChangeTime = data.lastFandomChangeTime || 0; // 마지막 팬덤 변경 시간
     }
     if (callback) callback();
@@ -2271,7 +2272,7 @@ async function changePrimaryFandom(newFandom) {
 
     currentUser.primaryFandom = newFandom;
     currentUser.lastFandomChangeTime = now;
-    currentUserFav = newFandom; // ← 이 줄 추가!
+    currentUserFav = newFandom; // Firebase에서 읽어온 것처럼 동기화
 
     // 커뮤니티 페이지 재로드 (팬덤 변경 반영)
     document.getElementById("communityFandomSelect").value = newFandom;
