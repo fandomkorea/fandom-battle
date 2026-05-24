@@ -1210,6 +1210,13 @@
     </div>
   </div>
 
+  <!-- 글쓰기 버튼 -->
+  <div style="margin-bottom:24px">
+    <button onclick="openPostCreateModal()" style="width:100%;padding:14px 20px;background:linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.85) 100%);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:1rem;cursor:pointer;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0 8px 20px rgba(124,77,255,0.3);font-family:inherit" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px rgba(124,77,255,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 20px rgba(124,77,255,0.3)'">
+      ✍️ 글 쓰기
+    </button>
+  </div>
+
   <!-- 게시물 리스트 (깔끔함) -->
   <div class="community-posts-section" id="communityPostsList">
     <div class="community-empty">
@@ -3842,10 +3849,7 @@ function loadCommunityPosts() {
       fandomHeader.style.display = "block";
     }
 
-    postsList.innerHTML = `<div style="padding:16px;background:linear-gradient(135deg, rgba(124,77,255,0.1), rgba(255,77,141,0.05));border:1px solid var(--border);border-radius:10px;margin-bottom:16px">
-      <div style="font-size:1.3rem;font-weight:700;color:var(--text)">📖 커뮤니티 게시물</div>
-      <div style="font-size:1.8rem;font-weight:900;background:linear-gradient(135deg, var(--primary), var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-top:6px">${Object.keys(posts).filter(id => !posts[id].isHidden).length}개</div>
-    </div>`;
+    postsList.innerHTML = "";
 
     let visibleIndex = 0;
     sortedPosts.forEach(([postId, post]) => {
@@ -4395,6 +4399,35 @@ function showPostCreateForm() {
   setTimeout(() => {
     document.getElementById("postTitle").focus();
   }, 100);
+}
+
+function openPostCreateModal() {
+  if (!isLoggedIn || !currentUser) {
+    showToast("로그인이 필요합니다");
+    return;
+  }
+
+  // 팬덤 확인
+  const selectedFandom = document.getElementById("communityFandomSelect").value || currentUser.primaryFandom;
+  if (!selectedFandom) {
+    showToast("팬덤을 먼저 선택해주세요");
+    return;
+  }
+
+  // 모달 초기화
+  document.getElementById("postTemplate").value = "free";
+  document.getElementById("postTitle").value = "";
+  document.getElementById("postContent").value = "";
+  document.getElementById("postTitleCount").textContent = "0";
+  document.getElementById("postContentCount").textContent = "0";
+  document.getElementById("scheduleTemplate").style.display = "none";
+
+  // 팬덤 표시
+  document.getElementById("postCreateFandom").textContent = selectedFandom;
+
+  // 모달 표시
+  document.getElementById("postCreateModal").style.display = "flex";
+  document.getElementById("postTitle").focus();
 }
 
 function closePostCreateModal() {
