@@ -758,7 +758,7 @@
       justify-content: space-between;
       cursor: pointer;
       border: none;
-      border-bottom: 1px solid rgba(124, 77, 255, 0.1);
+      border-bottom: 1px solid rgba(153, 153, 187, 0.3);
       background: transparent;
       border-radius: 0;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -4991,6 +4991,11 @@ async function submitComment(fandom, postId) {
     });
     input.value = "";
     showToast("💬 댓글이 등록되었어요!");
+
+    // 게시물 목록의 댓글 수 업데이트
+    setTimeout(() => {
+      updateCommentCount(fandom, postId);
+    }, 300);
   } catch (error) {
     showToast("댓글 작성 실패: " + error.message);
     console.error(error);
