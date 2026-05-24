@@ -1834,14 +1834,17 @@ function signOut() {
     currentUser = null;
     isLoggedIn = false;
 
+    // ★ Firebase 기반으로 변경 - currentUserFav 초기화
+    currentUserFav = null;
+
     // 캐시 초기화
     pendingAdVotes = 0;
     adWatchCount = 0; // ★ 광고 시청 횟수도 초기화
     cachedTodayFreeVote = null;
     cachedTodayAdVotes = 0;
 
-    // 최애팬덤 제거
-    localStorage.removeItem("my_fav_group");
+    // ★ localStorage 제거 (Firebase로 마이그레이션 완료)
+    // localStorage.removeItem("my_fav_group"); ← 더 이상 필요 없음
 
     updateAuthUI();
     updateFavBar();
@@ -1916,11 +1919,7 @@ async function loadUserAdVotes() {
     const adWatchSnap = await db.ref(`users/${currentUser.uid}/ad_watch_count_${today}`).once("value");
     adWatchCount = adWatchSnap.val() || 0;
 
-    // ★ 최애팬덤 로드 (다른 기기에서 복구)
-    const favSnap = await db.ref(`users/${currentUser.uid}/myFav`).once("value");
-    if (favSnap.exists()) {
-      localStorage.setItem("my_fav_group", favSnap.val());
-    }
+    // ★ 최애팬덤은 loadAuthUserData()에서 처리됨 (preferences/primaryFandom)
 
     // 오늘의 투표 정보도 함께 로드
     await loadTodayVotesFromFirebase();
@@ -2664,8 +2663,8 @@ function init() {
       else alert("패스워드가 틀렸습니다.");
     }
 
-    // 마지막 활성 페이지 복원
-    const activePage = localStorage.getItem("activePage") || "vote";
+    // ★ 마지막 활성 페이지 복원 (Firebase 데이터 사용)
+    const activePage = (isLoggedIn && currentUser?.activePage) ? currentUser.activePage : "vote";
     if (activePage === "community") {
       showCommunityPage();
     } else {
