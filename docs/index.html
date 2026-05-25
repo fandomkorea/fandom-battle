@@ -3649,32 +3649,62 @@ function filterRankings(query) {
   if (allRankingsData) renderRankings(allRankingsData);
 }
 
-// ── 배너 로드 및 렌더링 ──
+// ── 2주 주기 배너 시스템 (기준: 2026-05-01) ──
+const BANNER_CONFIG = {
+  baseDate: new Date("2026-05-01T00:00:00Z").getTime(), // 기준 날짜
+  cycleLength: 14 * 24 * 60 * 60 * 1000, // 2주 (밀리초)
+  bannerDuration: 14 * 24 * 60 * 60 * 1000 // 배너 표시 기간 2주
+};
+
+// 각 주기의 1등 팬덤 데이터 (수동 관리)
+const bannerWinners = {
+  0: { fandom: "NCT 127", emoji: "🎺" }, // 주기 0: 5월 1-15일 투표 → 5월 15-29일 배너
+  1: { fandom: "NewJeans", emoji: "✨" }, // 주기 1: 5월 15-29일 투표 → 5월 29-6월12일 배너
+  // 추가 주기 데이터...
+};
+
 function listenBannerConfig() {
-  db.ref("bannerConfig").on("value", snap => {
-    const config = snap.val();
-    if (config && config.active) {
-      // 배너 만료 확인
-      const now = Date.now();
-      if (now < config.endTime) {
-        renderBanner(config);
-      } else {
-        hideBanner();
-      }
+  // 2초마다 배너 상태 확인 (실시간 업데이트)
+  setInterval(updateBannerDisplay, 2000);
+  updateBannerDisplay(); // 초기 로드
+}
+
+function updateBannerDisplay() {
+  const now = Date.now();
+  const { bannerStartTime, bannerEndTime, cycleNumber } = getCurrentBannerPeriod(now);
+
+  // 배너 표시 기간 확인
+  if (now >= bannerStartTime && now < bannerEndTime) {
+    const winner = bannerWinners[cycleNumber];
+    if (winner) {
+      renderBanner(winner);
     } else {
       hideBanner();
     }
-  });
+  } else {
+    hideBanner();
+  }
 }
 
-function renderBanner(config) {
+function getCurrentBannerPeriod(timestamp) {
+  const elapsed = timestamp - BANNER_CONFIG.baseDate;
+  const cycleNumber = Math.floor(elapsed / BANNER_CONFIG.cycleLength);
+
+  // 현재 주기의 배너 표시 기간 (투표 마감 후 시작)
+  const bannerStartTime = BANNER_CONFIG.baseDate + (cycleNumber * BANNER_CONFIG.cycleLength) + BANNER_CONFIG.cycleLength;
+  const bannerEndTime = bannerStartTime + BANNER_CONFIG.bannerDuration;
+
+  return { bannerStartTime, bannerEndTime, cycleNumber };
+}
+
+function renderBanner(winner) {
   const bannerEl = document.getElementById("communityBanner");
   const winnerNameEl = document.getElementById("bannerWinnerName");
 
   if (!bannerEl) return;
 
   bannerEl.style.display = "block";
-  winnerNameEl.textContent = `${config.winnerEmoji} ${config.currentWinner}`;
+  winnerNameEl.textContent = `${winner.emoji} ${winner.fandom}`;
 }
 
 function hideBanner() {
