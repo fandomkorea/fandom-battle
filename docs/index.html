@@ -5348,6 +5348,11 @@ async function submitPost() {
     return;
   }
 
+  // 팬덤 변경 후 24시간 제약 확인
+  if (!canWritePost(selectedFandom)) {
+    return;
+  }
+
   const submitBtn = event.target;
   submitBtn.disabled = true;
   submitBtn.textContent = "작성 중...";
