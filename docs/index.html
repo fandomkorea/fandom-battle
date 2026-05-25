@@ -1659,8 +1659,8 @@
     <!-- 댓글 리스트 -->
     <div id="commentsModalList" style="margin-bottom:16px;max-height:350px;overflow-y:auto;border-bottom:1px solid var(--border);padding-bottom:16px"></div>
 
-    <!-- 댓글 입력 -->
-    <div id="commentsModalInput">
+    <!-- 댓글 입력 (하단바 공간 확보) -->
+    <div id="commentsModalInput" style="padding-bottom:20px">
       <!-- 동적으로 로드됨 -->
     </div>
   </div>
@@ -4611,6 +4611,8 @@ async function showPostDetail(fandom, postId) {
 
     const post = snap.val();
     const isAuthor = isLoggedIn && currentUser && post.authorUid === currentUser.uid;
+    // 디버깅
+    console.log(`[DEBUG] isAuthor: ${isAuthor}, isLoggedIn: ${isLoggedIn}, authorUid: ${post.authorUid}, currentUid: ${currentUser?.uid}`);
     const timeStr = getRelativeTime(post.timestamp);
 
     // 조회수 증가
