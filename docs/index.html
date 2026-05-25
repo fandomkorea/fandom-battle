@@ -5597,6 +5597,8 @@ function openPostImageUpload() {
       formData.append('file', file);
       formData.append('upload_preset', 'fandom_battle_images'); // Unsigned upload
       formData.append('cloud_name', 'dhkgabcme');
+      // 자동 최적화: 포맷 자동변환 + 품질조절 + 너비제한 (25GB 용량 효율화)
+      formData.append('eager', 'w_1200,q_auto,f_auto');
 
       // Cloudinary API로 업로드
       const response = await fetch(
@@ -5612,7 +5614,8 @@ function openPostImageUpload() {
       }
 
       const data = await response.json();
-      postImageUrl = data.secure_url;
+      // eager 변환 결과 사용 (최적화된 이미지)
+      postImageUrl = data.eager ? data.eager[0].secure_url : data.secure_url;
 
       // 이미지 미리보기 표시
       const preview = document.getElementById('postImagePreview');
