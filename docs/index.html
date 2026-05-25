@@ -4663,9 +4663,6 @@ function closePostDetail() {
   });
   postDetailListeners = { likes: null, comments: null, views: null };
 
-  // 뒤로가기 히스토리 처리
-  window.history.back();
-
   // 뒤로가기 시뮬레이션 (popstate 이벤트에서 호출된 경우 제외)
   if (!window.popstateActive) {
     window.history.back();
