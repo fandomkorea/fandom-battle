@@ -1635,8 +1635,15 @@
       <button onclick="closeCommentsModal()" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer">✕</button>
     </div>
 
+    <!-- 댓글 정렬 버튼 -->
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="comment-sort-btn" data-sort="latest" onclick="changeCommentSortMode('latest')" style="flex:1;min-width:80px;padding:10px 12px;background:linear-gradient(135deg,rgba(124,77,255,0.2) 0%,rgba(100,200,255,0.1) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:8px;color:var(--text);font-family:inherit;font-weight:600;font-size:0.85rem;cursor:pointer;transition:all 0.2s;outline:none;box-shadow:inset 0 1px 2px rgba(0,0,0,0.1)" onmouseover="this.style.borderColor='rgba(124,77,255,0.6)';this.style.background='linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,200,255,0.15) 100%)';this.style.boxShadow='inset 0 1px 3px rgba(0,0,0,0.15),0 0 10px rgba(124,77,255,0.2)'" onmouseout="if(!this.classList.contains('active')){this.style.background='linear-gradient(135deg,rgba(124,77,255,0.2) 0%,rgba(100,200,255,0.1) 100%)';this.style.borderColor='rgba(124,77,255,0.3)';this.style.boxShadow='inset 0 1px 2px rgba(0,0,0,0.1)'}" class="active">📅 최신순</button>
+      <button class="comment-sort-btn" data-sort="popular" onclick="changeCommentSortMode('popular')" style="flex:1;min-width:80px;padding:10px 12px;background:linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:8px;color:var(--text);font-family:inherit;font-weight:600;font-size:0.85rem;cursor:pointer;transition:all 0.2s;outline:none;box-shadow:inset 0 1px 2px rgba(0,0,0,0.1)" onmouseover="this.style.borderColor='rgba(124,77,255,0.6)';this.style.background='linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,200,255,0.15) 100%)';this.style.boxShadow='inset 0 1px 3px rgba(0,0,0,0.15),0 0 10px rgba(124,77,255,0.2)'" onmouseout="if(!this.classList.contains('active')){this.style.background='linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%)';this.style.borderColor='rgba(124,77,255,0.3)';this.style.boxShadow='inset 0 1px 2px rgba(0,0,0,0.1)'}">⭐ 인기순</button>
+      <button class="comment-sort-btn" data-sort="best" onclick="changeCommentSortMode('best')" style="flex:1;min-width:80px;padding:10px 12px;background:linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:8px;color:var(--text);font-family:inherit;font-weight:600;font-size:0.85rem;cursor:pointer;transition:all 0.2s;outline:none;box-shadow:inset 0 1px 2px rgba(0,0,0,0.1)" onmouseover="this.style.borderColor='rgba(124,77,255,0.6)';this.style.background='linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,200,255,0.15) 100%)';this.style.boxShadow='inset 0 1px 3px rgba(0,0,0,0.15),0 0 10px rgba(124,77,255,0.2)'" onmouseout="if(!this.classList.contains('active')){this.style.background='linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%)';this.style.borderColor='rgba(124,77,255,0.3)';this.style.boxShadow='inset 0 1px 2px rgba(0,0,0,0.1)'}">🏆 베스트</button>
+    </div>
+
     <!-- 댓글 리스트 -->
-    <div id="commentsModalList" style="margin-bottom:16px;max-height:400px;overflow-y:auto;border-bottom:1px solid var(--border);padding-bottom:16px"></div>
+    <div id="commentsModalList" style="margin-bottom:16px;max-height:350px;overflow-y:auto;border-bottom:1px solid var(--border);padding-bottom:16px"></div>
 
     <!-- 댓글 입력 -->
     <div id="commentsModalInput">
@@ -4257,6 +4264,9 @@ let editCommentState = {
   commentId: null
 };
 
+// ── 댓글 정렬 모드 ──
+let commentSortMode = "latest"; // latest, popular, best
+
 // ── 커뮤니티 포스트 리스너 저장소 ──
 let postListListeners = [];
 
@@ -4807,9 +4817,21 @@ function showCommentsModal(fandom, postId) {
     if (Object.keys(comments).length === 0) {
       commentsList.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">댓글이 없어요. 첫 댓글을 남겨보세요!</div>';
     } else {
-      Object.entries(comments).forEach(([commentId, comment]) => {
-        if (comment.isHidden) return;
+      // 댓글 정렬
+      let commentEntries = Object.entries(comments).filter(([_, comment]) => !comment.isHidden);
 
+      if (commentSortMode === "latest") {
+        // 최신순: timestamp 내림차순
+        commentEntries.sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
+      } else if (commentSortMode === "popular") {
+        // 인기순: 좋아요 많은 순 (현재는 timestamp로 정렬, 좋아요 기능 추가 시 업데이트)
+        commentEntries.sort((a, b) => (b[1].likes || 0) - (a[1].likes || 0) || (b[1].timestamp || 0) - (a[1].timestamp || 0));
+      } else if (commentSortMode === "best") {
+        // 베스트: 평점 기준 (현재는 timestamp로 정렬, 평점 기능 추가 시 업데이트)
+        commentEntries.sort((a, b) => (b[1].score || 0) - (a[1].score || 0) || (b[1].timestamp || 0) - (a[1].timestamp || 0));
+      }
+
+      commentEntries.forEach(([commentId, comment]) => {
         const isCommentAuthor = isLoggedIn && currentUser && comment.authorUid === currentUser.uid;
         const timeStr = getRelativeTime(comment.timestamp);
 
@@ -5492,6 +5514,38 @@ async function saveEditComment() {
   } catch (error) {
     showToast("댓글 수정 실패: " + error.message);
     console.error(error);
+  }
+}
+
+// ── 댓글 정렬 모드 변경 ──
+function changeCommentSortMode(mode) {
+  commentSortMode = mode;
+
+  // 버튼 active 상태 업데이트
+  const buttons = document.querySelectorAll('.comment-sort-btn');
+  buttons.forEach(btn => {
+    if (btn.dataset.sort === mode) {
+      btn.classList.add('active');
+      btn.style.background = 'linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,200,255,0.15) 100%)';
+      btn.style.borderColor = 'rgba(124,77,255,0.6)';
+      btn.style.boxShadow = '0 0 15px rgba(124,77,255,0.25)';
+    } else {
+      btn.classList.remove('active');
+      btn.style.background = 'linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%)';
+      btn.style.borderColor = 'rgba(124,77,255,0.3)';
+      btn.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.1)';
+    }
+  });
+
+  // 댓글 목록을 다시 렌더링 (Firebase 리스너가 자동으로 처리)
+  // commentSortMode가 변경되면 다음 리스너 콜백에서 정렬된 순서로 렌더링됨
+  const commentsList = document.getElementById('commentsModalList');
+  if (commentsList) {
+    // 리스너를 재설정하여 정렬된 댓글을 다시 로드
+    if (commentsModalListener && commentsModalListener.ref) {
+      commentsModalListener.ref.off('value', commentsModalListener.callback);
+      commentsModalListener.ref.on('value', commentsModalListener.callback);
+    }
   }
 }
 
