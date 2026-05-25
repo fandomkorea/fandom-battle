@@ -34,6 +34,9 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3646356464963069"
      crossorigin="anonymous"></script>
 
+  <!-- Cloudinary Upload Widget -->
+  <script src="https://upload-widget.cloudinary.com/latest/sources/index.js"></script>
+
   <style>
     :root {
       --bg: #0f1019;
@@ -1573,6 +1576,18 @@
         <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(124,77,255,0.9);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">📝 내용</label>
         <textarea id="postContent" placeholder="게시물 내용을 입력해주세요" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(20,20,30,0.6) 0%,rgba(30,20,50,0.6) 100%);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.95rem;resize:vertical;min-height:160px;transition:all 0.2s;outline:none" maxlength="2000" onmouseover="this.style.borderColor='rgba(124,77,255,0.4)';this.style.boxShadow='0 0 12px rgba(124,77,255,0.15)'" onmouseout="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'"></textarea>
         <div style="font-size:0.7rem;color:rgba(124,77,255,0.7);margin-top:6px;text-align:right"><span id="postContentCount">0</span>/2000</div>
+      </div>
+
+      <!-- 이미지 업로드 -->
+      <div style="margin-bottom:20px;background:linear-gradient(135deg,rgba(124,77,255,0.08) 0%,rgba(100,200,255,0.04) 100%);padding:16px;border:1.5px dashed rgba(124,77,255,0.3);border-radius:10px">
+        <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(124,77,255,0.9);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">🖼️ 이미지 (선택사항)</label>
+        <button type="button" onclick="openPostImageUpload()" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(124,77,255,0.15) 0%,rgba(100,200,255,0.1) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:10px;color:var(--primary);font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.2s;font-size:0.9rem" onmouseover="this.style.borderColor='rgba(124,77,255,0.6)';this.style.background='linear-gradient(135deg,rgba(124,77,255,0.25) 0%,rgba(100,200,255,0.15) 100%)';this.style.boxShadow='0 0 12px rgba(124,77,255,0.2)'" onmouseout="this.style.borderColor='rgba(124,77,255,0.3)';this.style.background='linear-gradient(135deg,rgba(124,77,255,0.15) 0%,rgba(100,200,255,0.1) 100%)';this.style.boxShadow='none'">📸 이미지 추가</button>
+
+        <!-- 이미지 미리보기 -->
+        <div id="postImagePreview" style="margin-top:12px;display:none">
+          <img id="postImagePreviewImg" src="" style="width:100%;height:auto;max-height:200px;object-fit:cover;border-radius:8px;margin-bottom:8px">
+          <button type="button" onclick="removePostImage()" style="width:100%;padding:8px;background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.3);border-radius:8px;color:var(--pink);font-weight:600;font-family:inherit;cursor:pointer;font-size:0.85rem;transition:all 0.2s" onmouseover="this.style.background='rgba(255,77,77,0.2)';this.style.borderColor='rgba(255,77,77,0.5)'" onmouseout="this.style.background='rgba(255,77,77,0.1)';this.style.borderColor='rgba(255,77,77,0.3)'">❌ 이미지 제거</button>
+        </div>
       </div>
 
       <div style="display:flex;gap:10px;margin-top:24px">
@@ -4247,6 +4262,9 @@ function initCommunityPage() {
 // 현재 활성 리스너 추적
 let currentCommunityListener = null;
 
+// ── 게시글 이미지 URL 저장소 ──
+let postImageUrl = null;
+
 // ── 게시물 상세 모달 리스너 저장소 ──
 let postDetailListeners = {
   likes: null,
@@ -4610,7 +4628,16 @@ async function showPostDetail(fandom, postId) {
     document.getElementById("postDetailMeta").innerHTML = metaHTML;
 
     // 내용 설정
-    document.getElementById("postDetailContent").textContent = post.content;
+    const contentEl = document.getElementById("postDetailContent");
+    contentEl.textContent = post.content;
+
+    // 이미지 표시 (있으면)
+    if (post.imageUrl) {
+      const imageEl = document.createElement("div");
+      imageEl.style.cssText = "margin:16px 0;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(124,77,255,0.2)";
+      imageEl.innerHTML = `<img src="${escHtml(post.imageUrl)}" style="width:100%;height:auto;object-fit:cover;display:block" alt="게시물 이미지">`;
+      contentEl.parentNode.insertBefore(imageEl, contentEl.nextSibling);
+    }
 
     // 참여 버튼 설정 (좋아요, 댓글)
     const engagementHTML = `
@@ -5028,6 +5055,25 @@ function openPostCreateModal() {
 
 function closePostCreateModal() {
   document.getElementById("postCreateModal").style.display = "none";
+
+  // 폼 초기화
+  document.getElementById("postTitle").value = "";
+  document.getElementById("postContent").value = "";
+  document.getElementById("postTitleCount").textContent = "0";
+  document.getElementById("postContentCount").textContent = "0";
+
+  // 일정 템플릿 필드 초기화
+  document.getElementById("scheduleTitle").value = "";
+  document.getElementById("scheduleDate").value = "";
+  document.getElementById("scheduleLocation").value = "";
+  document.getElementById("schedulePrice").value = "";
+  document.getElementById("scheduleLink").value = "";
+  document.getElementById("postTemplate").value = "free";
+
+  // 이미지 초기화
+  postImageUrl = null;
+  document.getElementById("postImagePreview").style.display = "none";
+  document.getElementById("postImagePreviewImg").src = "";
 }
 
 // 모달 외부 클릭 시 닫기
@@ -5199,10 +5245,14 @@ async function submitPost() {
       reportCount: 0,
       views: 0,
       type: template, // 게시글 유형 저장
-      isSchedule: isSchedule // 일정 여부
+      isSchedule: isSchedule, // 일정 여부
+      imageUrl: postImageUrl || null // 이미지 URL (있으면 저장)
     };
 
     await db.ref(`community/${selectedFandom}/${postId}`).set(postData);
+
+    // 게시글 작성 후 이미지 URL 초기화
+    postImageUrl = null;
 
     // 일정 게시글이면 "정보 제공자" 배지 부여
     if (isSchedule) {
@@ -5515,6 +5565,74 @@ async function saveEditComment() {
     showToast("댓글 수정 실패: " + error.message);
     console.error(error);
   }
+}
+
+// ── 게시글 이미지 업로드 (Cloudinary) ──
+function openPostImageUpload() {
+  // Cloudinary가 로드되지 않았으면 경고
+  if (typeof cloudinary === 'undefined') {
+    showToast("⚠️ 이미지 업로드를 사용할 수 없습니다. 나중에 다시 시도해주세요.");
+    return;
+  }
+
+  const myWidget = cloudinary.createUploadWidget(
+    {
+      cloudName: "YOUR_CLOUD_NAME", // Cloudinary 계정의 Cloud Name으로 교체
+      uploadPreset: "fandom_battle_images", // 업로드 프리셋
+      sources: ['local', 'url', 'camera'],
+      clientAllowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+      maxFileSize: 5000000, // 5MB
+      styles: {
+        palette: {
+          window: "#1a1b2e",
+          windowBorder: "#7c4dff",
+          tabIcon: "#7c4dff",
+          menuIcons: "#7c4dff",
+          textDark: "#f5f1ff",
+          textLight: "#f5f1ff",
+          link: "#7c4dff",
+          action: "#7c4dff",
+          inProgress: "#7c4dff",
+          complete: "#7c4dff",
+          error: "#ff4d8d",
+          inProgressBorder: "#7c4dff"
+        },
+        fonts: {
+          default: null,
+          "'Noto Sans KR', sans-serif": {
+            url: "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap",
+            active: true
+          }
+        }
+      }
+    },
+    (error, result) => {
+      if (!error && result && result.event === "success") {
+        postImageUrl = result.info.secure_url;
+
+        // 이미지 미리보기 표시
+        const preview = document.getElementById('postImagePreview');
+        const previewImg = document.getElementById('postImagePreviewImg');
+        previewImg.src = postImageUrl;
+        preview.style.display = 'block';
+
+        showToast("✅ 이미지가 추가되었습니다!");
+      } else if (error) {
+        console.error("이미지 업로드 실패:", error);
+        showToast("❌ 이미지 업로드에 실패했습니다.");
+      }
+    }
+  );
+
+  myWidget.open();
+}
+
+// ── 게시글 이미지 제거 ──
+function removePostImage() {
+  postImageUrl = null;
+  document.getElementById('postImagePreview').style.display = 'none';
+  document.getElementById('postImagePreviewImg').src = '';
+  showToast("이미지가 제거되었습니다");
 }
 
 // ── 댓글 정렬 모드 변경 ──
