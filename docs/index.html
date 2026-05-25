@@ -1645,6 +1645,23 @@
   </div>
 </div>
 
+<!-- 댓글 수정 모달 -->
+<div id="editCommentModal" style="display:none !important;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;padding:16px;overflow-y:auto">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;width:100%;max-width:500px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 style="font-size:1.1rem;font-weight:700">✏️ 댓글 수정</h2>
+      <button onclick="closeEditCommentModal()" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer">✕</button>
+    </div>
+
+    <textarea id="editCommentTextarea" placeholder="댓글을 수정해주세요..." style="width:100%;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.95rem;resize:none;min-height:100px;max-length:500" maxlength="500"></textarea>
+
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button onclick="saveEditComment()" style="flex:1;padding:12px;background:var(--primary);border:none;border-radius:8px;color:#fff;font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.2s" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">저장</button>
+      <button onclick="closeEditCommentModal()" style="flex:1;padding:12px;background:rgba(124,77,255,0.1);border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(124,77,255,0.15)'" onmouseout="this.style.background='rgba(124,77,255,0.1)'">취소</button>
+    </div>
+  </div>
+</div>
+
 <footer style="text-align:center;padding:28px 16px 40px;color:var(--muted);font-size:.75rem;border-top:1px solid var(--border);margin-top:40px">
   Made with 💜 for K-pop fans | <a href="https://github.com/fandomkorea/fandom-battle" target="_blank" style="color:var(--primary);text-decoration:none">GitHub</a>
 </footer>
@@ -4233,6 +4250,13 @@ let postDetailListeners = {
 // ── 댓글 모달 리스너 저장소 ──
 let commentsModalListener = null;
 
+// ── 댓글 수정 상태 저장소 ──
+let editCommentState = {
+  fandom: null,
+  postId: null,
+  commentId: null
+};
+
 // ── 커뮤니티 포스트 리스너 저장소 ──
 let postListListeners = [];
 
@@ -4707,7 +4731,10 @@ function loadDetailComments(fandom, postId) {
               </div>
               <div style="font-size:0.75rem;color:var(--muted)">${timeStr}</div>
             </div>
-            ${isCommentAuthor ? `<button onclick="deleteComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="font-size:0.75rem;background:rgba(255,100,100,0.1);border:1px solid rgba(255,100,100,0.3);color:rgb(255,100,100);cursor:pointer;padding:5px 10px;border-radius:6px;font-weight:600;transition:all 0.2s;white-space:nowrap" onmouseover="this.style.background='rgba(255,100,100,0.2)';this.style.borderColor='rgba(255,100,100,0.5)'" onmouseout="this.style.background='rgba(255,100,100,0.1)';this.style.borderColor='rgba(255,100,100,0.3)'">삭제</button>` : ''}
+            ${isCommentAuthor ? `<div style="display:flex;gap:6px">
+              <button onclick="editComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}', '${escAttr(comment.content)}'); event.stopPropagation()" style="font-size:0.75rem;background:rgba(100,150,255,0.1);border:1px solid rgba(100,150,255,0.3);color:rgb(100,150,255);cursor:pointer;padding:5px 10px;border-radius:6px;font-weight:600;transition:all 0.2s;white-space:nowrap" onmouseover="this.style.background='rgba(100,150,255,0.2)';this.style.borderColor='rgba(100,150,255,0.5)'" onmouseout="this.style.background='rgba(100,150,255,0.1)';this.style.borderColor='rgba(100,150,255,0.3)'">수정</button>
+              <button onclick="deleteComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="font-size:0.75rem;background:rgba(255,100,100,0.1);border:1px solid rgba(255,100,100,0.3);color:rgb(255,100,100);cursor:pointer;padding:5px 10px;border-radius:6px;font-weight:600;transition:all 0.2s;white-space:nowrap" onmouseover="this.style.background='rgba(255,100,100,0.2)';this.style.borderColor='rgba(255,100,100,0.5)'" onmouseout="this.style.background='rgba(255,100,100,0.1)';this.style.borderColor='rgba(255,100,100,0.3)'">삭제</button>
+            </div>` : ''}
           </div>
           <div style="color:var(--text);line-height:1.6;word-break:break-word">${escHtml(comment.content)}</div>
         `;
@@ -4794,7 +4821,10 @@ function showCommentsModal(fandom, postId) {
               <span style="font-weight:700;color:var(--text);font-size:0.9rem">${escHtml(comment.authorName)}</span>
               <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${timeStr}</div>
             </div>
-            ${isCommentAuthor ? `<button onclick="deleteComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="font-size:0.7rem;background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.3);color:var(--pink);cursor:pointer;padding:4px 8px;border-radius:4px">삭제</button>` : ''}
+            ${isCommentAuthor ? `<div style="display:flex;gap:4px">
+              <button onclick="editComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}', '${escAttr(comment.content)}'); event.stopPropagation()" style="font-size:0.7rem;background:rgba(100,150,255,0.1);border:1px solid rgba(100,150,255,0.3);color:var(--blue);cursor:pointer;padding:4px 8px;border-radius:4px">수정</button>
+              <button onclick="deleteComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="font-size:0.7rem;background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.3);color:var(--pink);cursor:pointer;padding:4px 8px;border-radius:4px">삭제</button>
+            </div>` : ''}
           </div>
           <div style="color:var(--text);font-size:0.9rem;line-height:1.5">${escHtml(comment.content)}</div>
         `;
@@ -5352,7 +5382,10 @@ function loadComments(fandom, postId) {
           <span style="font-size:0.75rem;color:var(--muted)">${timeStr}</span>
         </div>
         <div style="color:var(--text);margin-bottom:6px">${escHtml(comment.content)}</div>
-        ${isCommentAuthor ? `<button onclick="deleteComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="font-size:0.75rem;background:none;border:none;color:var(--pink);cursor:pointer;padding:0">삭제</button>` : ''}
+        ${isCommentAuthor ? `<div style="display:flex;gap:12px">
+          <button onclick="editComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}', '${escAttr(comment.content)}'); event.stopPropagation()" style="font-size:0.75rem;background:none;border:none;color:var(--blue);cursor:pointer;padding:0;text-decoration:underline">수정</button>
+          <button onclick="deleteComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="font-size:0.75rem;background:none;border:none;color:var(--pink);cursor:pointer;padding:0;text-decoration:underline">삭제</button>
+        </div>` : ''}
       `;
       commentsList.appendChild(commentEl);
     });
@@ -5405,6 +5438,59 @@ async function deleteComment(fandom, postId, commentId) {
     showToast("댓글이 삭제되었어요");
   } catch (error) {
     showToast("삭제 실패: " + error.message);
+    console.error(error);
+  }
+}
+
+// ── 댓글 수정 모달 열기 ──
+function editComment(fandom, postId, commentId, currentContent) {
+  editCommentState = { fandom, postId, commentId };
+
+  const modal = document.getElementById("editCommentModal");
+  const textarea = document.getElementById("editCommentTextarea");
+
+  textarea.value = currentContent;
+  textarea.focus();
+  textarea.select();
+
+  modal.style.display = "flex";
+}
+
+// ── 댓글 수정 모달 닫기 ──
+function closeEditCommentModal() {
+  const modal = document.getElementById("editCommentModal");
+  modal.style.display = "none";
+
+  // 상태 초기화
+  editCommentState = { fandom: null, postId: null, commentId: null };
+}
+
+// ── 댓글 수정 저장 ──
+async function saveEditComment() {
+  const textarea = document.getElementById("editCommentTextarea");
+  const newContent = textarea.value.trim();
+
+  if (!newContent) {
+    showToast("댓글 내용을 입력해주세요");
+    return;
+  }
+
+  const { fandom, postId, commentId } = editCommentState;
+
+  if (!fandom || !postId || !commentId) {
+    showToast("오류가 발생했어요");
+    return;
+  }
+
+  try {
+    await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).update({
+      content: newContent
+    });
+
+    showToast("댓글이 수정되었어요!");
+    closeEditCommentModal();
+  } catch (error) {
+    showToast("댓글 수정 실패: " + error.message);
     console.error(error);
   }
 }
