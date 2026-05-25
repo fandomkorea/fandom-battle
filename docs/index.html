@@ -4523,6 +4523,18 @@ function renderPost(fandom, postId, post, index) {
 
 // ── 게시물 상세 페이지 열기 ──
 async function showPostDetail(fandom, postId) {
+  // popstate 이벤트 리스너 (한 번만 등록)
+  if (!window.postDetailPopstateSetup) {
+    window.addEventListener('popstate', function(event) {
+      if (document.getElementById("postDetailPage").style.display !== "none") {
+        if (!event.state || event.state.page !== "postDetail") {
+          closePostDetail();
+        }
+      }
+    });
+    window.postDetailPopstateSetup = true;
+  }
+
   // History API로 URL 상태 저장
   window.history.pushState({
     page: "postDetail",
@@ -4650,6 +4662,9 @@ function closePostDetail() {
     }
   });
   postDetailListeners = { likes: null, comments: null, views: null };
+
+  // 뒤로가기 히스토리 처리
+  window.history.back();
 
   // 뒤로가기 시뮬레이션 (popstate 이벤트에서 호출된 경우 제외)
   if (!window.popstateActive) {
