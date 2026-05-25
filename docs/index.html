@@ -1464,13 +1464,11 @@
     </button>
   </div>
 
-  <!-- 정렬 필터 드롭다운 -->
-  <div style="margin-bottom:20px">
-    <select id="sortDropdown" onchange="changeSortMode(this.value)" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:10px;color:var(--text);font-family:inherit;font-weight:600;font-size:0.95rem;cursor:pointer;transition:all 0.2s;outline:none;box-shadow:inset 0 1px 2px rgba(0,0,0,0.1)" onmouseover="this.style.borderColor='rgba(124,77,255,0.5)';this.style.boxShadow='inset 0 1px 3px rgba(0,0,0,0.15),0 0 10px rgba(124,77,255,0.15)'" onmouseout="this.style.borderColor='rgba(124,77,255,0.3)';this.style.boxShadow='inset 0 1px 2px rgba(0,0,0,0.1)'">
-      <option value="latest">📅 최신순</option>
-      <option value="popular">⭐ 인기순</option>
-      <option value="best">🏆 베스트</option>
-    </select>
+  <!-- 정렬 필터 버튼 그룹 -->
+  <div id="sortButtonGroup" style="margin-bottom:20px;display:flex;gap:10px;flex-wrap:wrap">
+    <button class="sort-btn" data-sort="latest" onclick="changeSortMode('latest')" style="flex:1;min-width:100px;padding:12px 14px;background:linear-gradient(135deg,rgba(124,77,255,0.2) 0%,rgba(100,200,255,0.1) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:10px;color:var(--text);font-family:inherit;font-weight:600;font-size:0.9rem;cursor:pointer;transition:all 0.2s;outline:none;box-shadow:inset 0 1px 2px rgba(0,0,0,0.1)" onmouseover="this.style.borderColor='rgba(124,77,255,0.6)';this.style.background='linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,200,255,0.15) 100%)';this.style.boxShadow='inset 0 1px 3px rgba(0,0,0,0.15),0 0 10px rgba(124,77,255,0.2)'" onmouseout="if(!this.classList.contains('active')){this.style.background='linear-gradient(135deg,rgba(124,77,255,0.2) 0%,rgba(100,200,255,0.1) 100%)';this.style.borderColor='rgba(124,77,255,0.3)';this.style.boxShadow='inset 0 1px 2px rgba(0,0,0,0.1)'}" class="active">📅 최신순</button>
+    <button class="sort-btn" data-sort="popular" onclick="changeSortMode('popular')" style="flex:1;min-width:100px;padding:12px 14px;background:linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:10px;color:var(--text);font-family:inherit;font-weight:600;font-size:0.9rem;cursor:pointer;transition:all 0.2s;outline:none;box-shadow:inset 0 1px 2px rgba(0,0,0,0.1)" onmouseover="this.style.borderColor='rgba(124,77,255,0.6)';this.style.background='linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,200,255,0.15) 100%)';this.style.boxShadow='inset 0 1px 3px rgba(0,0,0,0.15),0 0 10px rgba(124,77,255,0.2)'" onmouseout="if(!this.classList.contains('active')){this.style.background='linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%)';this.style.borderColor='rgba(124,77,255,0.3)';this.style.boxShadow='inset 0 1px 2px rgba(0,0,0,0.1)'}">⭐ 인기순</button>
+    <button class="sort-btn" data-sort="best" onclick="changeSortMode('best')" style="flex:1;min-width:100px;padding:12px 14px;background:linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:10px;color:var(--text);font-family:inherit;font-weight:600;font-size:0.9rem;cursor:pointer;transition:all 0.2s;outline:none;box-shadow:inset 0 1px 2px rgba(0,0,0,0.1)" onmouseover="this.style.borderColor='rgba(124,77,255,0.6)';this.style.background='linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,200,255,0.15) 100%)';this.style.boxShadow='inset 0 1px 3px rgba(0,0,0,0.15),0 0 10px rgba(124,77,255,0.2)'" onmouseout="if(!this.classList.contains('active')){this.style.background='linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%)';this.style.borderColor='rgba(124,77,255,0.3)';this.style.boxShadow='inset 0 1px 2px rgba(0,0,0,0.1)'}">🏆 베스트</button>
   </div>
 
   <!-- 게시물 리스트 (깔끔함) -->
@@ -4376,6 +4374,22 @@ let currentSortMode = "latest";
 function changeSortMode(mode) {
   currentSortMode = mode;
   sortCommunityPosts(mode);
+
+  // 버튼 active 상태 업데이트
+  const buttons = document.querySelectorAll('.sort-btn');
+  buttons.forEach(btn => {
+    if (btn.dataset.sort === mode) {
+      btn.classList.add('active');
+      btn.style.background = 'linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,200,255,0.15) 100%)';
+      btn.style.borderColor = 'rgba(124,77,255,0.6)';
+      btn.style.boxShadow = '0 0 15px rgba(124,77,255,0.25)';
+    } else {
+      btn.classList.remove('active');
+      btn.style.background = 'linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%)';
+      btn.style.borderColor = 'rgba(124,77,255,0.3)';
+      btn.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.1)';
+    }
+  });
 
   // Firebase에 저장
   if (isLoggedIn && currentUser && db) {
