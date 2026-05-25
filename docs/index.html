@@ -4261,8 +4261,9 @@ function initCommunityPage() {
 // 현재 활성 리스너 추적
 let currentCommunityListener = null;
 
-// ── 게시글 이미지 URL 저장소 ──
+// ── 게시글 이미지 URL 및 public_id 저장소 ──
 let postImageUrl = null;
+let postImagePublicId = null; // Cloudinary 이미지 삭제용
 
 // ── 게시물 상세 모달 리스너 저장소 ──
 let postDetailListeners = {
@@ -5245,13 +5246,15 @@ async function submitPost() {
       views: 0,
       type: template, // 게시글 유형 저장
       isSchedule: isSchedule, // 일정 여부
-      imageUrl: postImageUrl || null // 이미지 URL (있으면 저장)
+      imageUrl: postImageUrl || null, // 이미지 URL (있으면 저장)
+      imagePublicId: postImagePublicId || null // Cloudinary public_id (이미지 삭제용)
     };
 
     await db.ref(`community/${selectedFandom}/${postId}`).set(postData);
 
-    // 게시글 작성 후 이미지 URL 초기화
+    // 게시글 작성 후 이미지 URL 및 public_id 초기화
     postImageUrl = null;
+    postImagePublicId = null;
 
     // 일정 게시글이면 "정보 제공자" 배지 부여
     if (isSchedule) {
@@ -5298,6 +5301,22 @@ async function deletePost(fandom, postId) {
   if (!confirm("정말 삭제하시겠어요? 복구할 수 없습니다.")) return;
 
   try {
+    // 먼저 게시물 데이터 조회 (이미지 정보 확인)
+    const postSnap = await db.ref(`community/${fandom}/${postId}`).once("value");
+    const postData = postSnap.val();
+
+    // Cloudinary 이미지가 있으면 Cloud Function으로 삭제
+    if (postData && postData.imagePublicId) {
+      try {
+        const deleteImageFunc = firebase.functions().httpsCallable('deleteCloudinaryImage');
+        await deleteImageFunc({ publicId: postData.imagePublicId });
+        console.log("✅ Cloudinary 이미지 삭제 완료");
+      } catch (funcError) {
+        console.error("⚠️ 이미지 삭제 실패 (계속 진행):", funcError);
+        // 이미지 삭제 실패해도 게시물은 삭제함
+      }
+    }
+
     // Database에서 게시물 삭제
     await db.ref(`community/${fandom}/${postId}`).remove();
     showToast("✅ 게시물이 삭제되었어요");
@@ -5616,6 +5635,8 @@ function openPostImageUpload() {
       const data = await response.json();
       // eager 변환 결과 사용 (최적화된 이미지)
       postImageUrl = data.eager ? data.eager[0].secure_url : data.secure_url;
+      // public_id 저장 (삭제 시 사용)
+      postImagePublicId = data.public_id;
 
       // 이미지 미리보기 표시
       const preview = document.getElementById('postImagePreview');
@@ -5635,6 +5656,7 @@ function openPostImageUpload() {
 // ── 게시글 이미지 제거 ──
 function removePostImage() {
   postImageUrl = null;
+  postImagePublicId = null; // public_id도 초기화
   document.getElementById('postImagePreview').style.display = 'none';
   document.getElementById('postImagePreviewImg').src = '';
   showToast("이미지가 제거되었습니다");
