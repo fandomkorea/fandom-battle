@@ -34,8 +34,6 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3646356464963069"
      crossorigin="anonymous"></script>
 
-  <!-- Cloudinary Upload Widget -->
-  <script src="https://upload-widget.cloudinary.com/latest/index.js"></script>
 
   <style>
     :root {
@@ -5569,64 +5567,55 @@ async function saveEditComment() {
 
 // ── 게시글 이미지 업로드 (Cloudinary) ──
 function openPostImageUpload() {
-  // Cloudinary가 로드될 때까지 대기
-  if (typeof cloudinary === 'undefined') {
-    showToast("⏳ 이미지 기능을 로드 중입니다...");
-    // 0.5초 후 다시 시도
-    setTimeout(() => openPostImageUpload(), 500);
-    return;
-  }
+  // Firebase Storage를 사용한 이미지 업로드
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const myWidget = cloudinary.createUploadWidget(
-    {
-      cloudName: "dhkgabcme", // Cloudinary Cloud Name
-      uploadPreset: "fandom_battle_images", // 업로드 프리셋
-      sources: ['local', 'url', 'camera'],
-      clientAllowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-      maxFileSize: 5000000, // 5MB
-      styles: {
-        palette: {
-          window: "#1a1b2e",
-          windowBorder: "#7c4dff",
-          tabIcon: "#7c4dff",
-          menuIcons: "#7c4dff",
-          textDark: "#f5f1ff",
-          textLight: "#f5f1ff",
-          link: "#7c4dff",
-          action: "#7c4dff",
-          inProgress: "#7c4dff",
-          complete: "#7c4dff",
-          error: "#ff4d8d",
-          inProgressBorder: "#7c4dff"
-        },
-        fonts: {
-          default: null,
-          "'Noto Sans KR', sans-serif": {
-            url: "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap",
-            active: true
-          }
-        }
-      }
-    },
-    (error, result) => {
-      if (!error && result && result.event === "success") {
-        postImageUrl = result.info.secure_url;
+    // 파일 검증
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
-        // 이미지 미리보기 표시
-        const preview = document.getElementById('postImagePreview');
-        const previewImg = document.getElementById('postImagePreviewImg');
-        previewImg.src = postImageUrl;
-        preview.style.display = 'block';
-
-        showToast("✅ 이미지가 추가되었습니다!");
-      } else if (error) {
-        console.error("이미지 업로드 실패:", error);
-        showToast("❌ 이미지 업로드에 실패했습니다.");
-      }
+    if (file.size > maxSize) {
+      showToast("❌ 5MB 이하의 이미지만 업로드 가능합니다");
+      return;
     }
-  );
 
-  myWidget.open();
+    if (!allowedTypes.includes(file.type)) {
+      showToast("❌ JPG, PNG, GIF, WebP 형식만 지원합니다");
+      return;
+    }
+
+    showToast("⏳ 이미지를 업로드 중입니다...");
+
+    try {
+      const storage = firebase.storage();
+      const timestamp = Date.now();
+      const filename = `post_images/${currentUser.uid}/${timestamp}_${file.name}`;
+      const ref = storage.ref(filename);
+
+      // 업로드
+      await ref.put(file);
+
+      // 다운로드 URL 획득
+      postImageUrl = await ref.getDownloadURL();
+
+      // 이미지 미리보기 표시
+      const preview = document.getElementById('postImagePreview');
+      const previewImg = document.getElementById('postImagePreviewImg');
+      previewImg.src = postImageUrl;
+      preview.style.display = 'block';
+
+      showToast("✅ 이미지가 추가되었습니다!");
+    } catch (error) {
+      console.error("이미지 업로드 실패:", error);
+      showToast("❌ 이미지 업로드에 실패했습니다.");
+    }
+  };
+  input.click();
 }
 
 // ── 게시글 이미지 제거 ──
