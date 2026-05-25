@@ -5569,9 +5569,11 @@ async function saveEditComment() {
 
 // ── 게시글 이미지 업로드 (Cloudinary) ──
 function openPostImageUpload() {
-  // Cloudinary가 로드되지 않았으면 경고
+  // Cloudinary가 로드될 때까지 대기
   if (typeof cloudinary === 'undefined') {
-    showToast("⚠️ 이미지 업로드를 사용할 수 없습니다. 나중에 다시 시도해주세요.");
+    showToast("⏳ 이미지 기능을 로드 중입니다...");
+    // 0.5초 후 다시 시도
+    setTimeout(() => openPostImageUpload(), 500);
     return;
   }
 
