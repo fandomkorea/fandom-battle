@@ -2512,11 +2512,12 @@ function canWritePost(selectedFandom) {
   console.log(`[DEBUG canWritePost] lastFandomChangeTime: ${lastChangeTime}, hoursPassedSinceChange: ${hoursPassedSinceChange.toFixed(2)}`);
 
   if (hoursPassedSinceChange < 24 && lastChangeTime > 0) {
-    const remainingMinutes = Math.ceil((24 * 60) - (hoursPassedSinceChange * 60));
-    const hoursLeft = Math.floor(remainingMinutes / 60);
-    const minutesLeft = remainingMinutes % 60;
+    const remainingMilliseconds = (24 * 60 * 60 * 1000) - (hoursPassedSinceChange * 60 * 60 * 1000);
+    const hoursLeft = Math.floor(remainingMilliseconds / (60 * 60 * 1000));
+    const minutesLeft = Math.floor((remainingMilliseconds % (60 * 60 * 1000)) / (60 * 1000));
+    const secondsLeft = Math.floor((remainingMilliseconds % (60 * 1000)) / 1000);
 
-    showPostRestrictionModal(hoursLeft, minutesLeft);
+    showPostRestrictionModal(hoursLeft, minutesLeft, secondsLeft);
     return false;
   }
 
@@ -2524,7 +2525,7 @@ function canWritePost(selectedFandom) {
 }
 
 // ── 팬덤 변경 후 24시간 제약 모달 ──
-function showPostRestrictionModal(hoursLeft, minutesLeft) {
+function showPostRestrictionModal(hoursLeft, minutesLeft, secondsLeft = 0) {
   const existing = document.getElementById("postRestrictionModal");
   if (existing) existing.remove();
 
@@ -2573,12 +2574,12 @@ function showPostRestrictionModal(hoursLeft, minutesLeft) {
 
     <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.95rem; margin-bottom: 24px; line-height: 1.6;">
       팬덤을 변경한 후 게시글 작성이 제한돼요.<br>
-      ${hoursLeft > 0 ? `<strong>${hoursLeft}시간 ${minutesLeft}분</strong> 후부터` : `<strong>${minutesLeft}분</strong> 후부터`} 작성할 수 있어요.
+      ${hoursLeft > 0 ? `<strong>${hoursLeft}시간 ${minutesLeft}분 ${secondsLeft}초</strong> 후부터` : `<strong>${minutesLeft}분 ${secondsLeft}초</strong> 후부터`} 작성할 수 있어요.
     </p>
 
     <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 24px;">
       <div style="font-size: 2rem; font-weight: 700; color: #ffc107;">
-        ${hoursLeft > 0 ? `${hoursLeft}시간 ${minutesLeft}분` : `${minutesLeft}분`}
+        ${hoursLeft > 0 ? `${hoursLeft}시간 ${minutesLeft}분 ${secondsLeft}초` : `${minutesLeft}분 ${secondsLeft}초`}
       </div>
     </div>
 
