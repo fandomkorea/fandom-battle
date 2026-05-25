@@ -2911,7 +2911,7 @@ function init() {
     renderMyVotingHistory();
     updateTodayVoteDisplay();
     buildCommentSelect();
-    startMonthlyCountdown();
+    startBiweeklyCountdown();
     setMonthLabel();
     renderNickDisplay();
     handleShareRef();
@@ -3045,18 +3045,27 @@ function setMonthLabel() {
   const el = document.getElementById("monthLabel");
   if (!el) return;
   const now = new Date();
-  el.textContent = (now.getMonth() + 1) + "월";
+  const nextPeriod = new Date(now);
+  nextPeriod.setDate(nextPeriod.getDate() + 14);
+  const monthStr = (nextPeriod.getMonth() + 1) + "월";
+  const dateStr = nextPeriod.getDate() + "일";
+  el.textContent = `${monthStr} ${dateStr} 마감`;
 }
 
-function startMonthlyCountdown() {
+function startBiweeklyCountdown() {
   if (_cdTimer) clearInterval(_cdTimer);
   function update() {
     const el = document.getElementById("countdownEl");
     if (!el) return;
     const now = new Date();
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0);
-    const diff = endOfMonth - now;
-    if (diff <= 0) { el.innerHTML = "이번 달 투표 마감!"; clearInterval(_cdTimer); return; }
+
+    // 다음 2주 마감 시간 (14일 뒤의 자정)
+    const endOfPeriod = new Date(now);
+    endOfPeriod.setDate(endOfPeriod.getDate() + 14);
+    endOfPeriod.setHours(0, 0, 0, 0);
+
+    const diff = endOfPeriod - now;
+    if (diff <= 0) { el.innerHTML = "투표 마감! 개표 중입니다."; clearInterval(_cdTimer); return; }
     const d = Math.floor(diff / 86400000);
     const h = Math.floor((diff % 86400000) / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
