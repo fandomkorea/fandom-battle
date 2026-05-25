@@ -2505,9 +2505,13 @@ function canWritePost(selectedFandom) {
 
   // 팬덤 변경 후 24시간 이내 작성 불가
   const now = Date.now();
-  const hoursPassedSinceChange = (now - currentUser.lastFandomChangeTime) / (1000 * 60 * 60);
+  const lastChangeTime = currentUser.lastFandomChangeTime || 0;
+  const hoursPassedSinceChange = (now - lastChangeTime) / (1000 * 60 * 60);
 
-  if (hoursPassedSinceChange < 24) {
+  // 디버그 로그
+  console.log(`[DEBUG canWritePost] lastFandomChangeTime: ${lastChangeTime}, hoursPassedSinceChange: ${hoursPassedSinceChange.toFixed(2)}`);
+
+  if (hoursPassedSinceChange < 24 && lastChangeTime > 0) {
     const hoursLeft = Math.ceil(24 - hoursPassedSinceChange);
     showToast(`⏳ 팬덤 변경 후 ${hoursLeft}시간 후부터 게시글을 작성할 수 있어요`);
     return false;
