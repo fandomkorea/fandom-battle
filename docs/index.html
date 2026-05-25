@@ -1459,15 +1459,18 @@
 
   <!-- 🏆 1등 팬덤 배너 -->
   <div id="communityBanner" style="display:none;margin-bottom:24px">
-    <div style="background:linear-gradient(90deg, rgba(255,193,7,0.2) 0%, rgba(255,193,7,0.1) 50%, rgba(255,193,7,0.2) 100%);border:1.5px solid rgba(255,193,7,0.4);border-radius:12px;padding:18px 20px;text-align:center;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(255,193,7,0.15)">
+    <div style="background:linear-gradient(90deg, rgba(255,193,7,0.2) 0%, rgba(255,193,7,0.1) 50%, rgba(255,193,7,0.2) 100%);border:1.5px solid rgba(255,193,7,0.4);border-radius:12px;padding:20px;text-align:center;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(255,193,7,0.15)">
       <!-- 반짝이 애니메이션 -->
       <div style="position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);animation:shimmerBanner 2.5s infinite;pointer-events:none"></div>
 
-      <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:16px">
-        <span style="font-size:2.5rem;display:flex;align-items:center">🏆</span>
-        <div style="text-align:left">
-          <p style="margin:0;font-size:0.9rem;color:rgba(255,255,255,0.7);font-weight:600">이번주 1등</p>
-          <p id="bannerWinnerName" style="margin:6px 0 0 0;font-size:1.35rem;font-weight:900;color:#ffc107;background:linear-gradient(135deg, #ffc107, #ff9800);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">팬덤명</p>
+      <div style="position:relative;z-index:1">
+        <p id="bannerVotePeriod" style="margin:0 0 12px 0;font-size:0.85rem;color:rgba(255,255,255,0.6);font-weight:600;letter-spacing:0.5px">투표 기간</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:12px">
+          <span style="font-size:2rem">🏆</span>
+          <div style="text-align:left">
+            <p style="margin:0;font-size:0.75rem;color:rgba(255,255,255,0.5);font-weight:600;text-transform:uppercase">1등</p>
+            <p id="bannerWinnerName" style="margin:4px 0 0 0;font-size:1.25rem;font-weight:900;color:#ffc107;background:linear-gradient(135deg, #ffc107, #ff9800);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:0.5px">팬덤명</p>
+          </div>
         </div>
       </div>
     </div>
@@ -3678,7 +3681,7 @@ function updateBannerDisplay() {
     const winnerIndex = Math.floor(cycleNumber / 2);
     const winner = bannerWinners[winnerIndex];
     if (winner) {
-      renderBanner(winner);
+      renderBanner(winner, cycleNumber);
     } else {
       hideBanner();
     }
@@ -3698,14 +3701,25 @@ function getCurrentBannerPeriod(timestamp) {
   return { bannerStartTime, bannerEndTime, cycleNumber };
 }
 
-function renderBanner(winner) {
+function renderBanner(winner, cycleNumber) {
   const bannerEl = document.getElementById("communityBanner");
   const winnerNameEl = document.getElementById("bannerWinnerName");
+  const votePeriodEl = document.getElementById("bannerVotePeriod");
 
   if (!bannerEl) return;
 
+  // 투표 기간 계산 (배너가 표시되는 주기 = 투표 결과 주기 - 1)
+  const votingCycleNumber = Math.floor(cycleNumber / 2);
+  const votingStartTime = BANNER_CONFIG.baseDate + (votingCycleNumber * BANNER_CONFIG.cycleLength);
+  const votingEndTime = votingStartTime + BANNER_CONFIG.cycleLength - 1;
+
+  // 날짜 포맷팅 (YYYY-MM-DD)
+  const startDate = new Date(votingStartTime).toISOString().slice(0, 10);
+  const endDate = new Date(votingEndTime).toISOString().slice(0, 10);
+
   bannerEl.style.display = "block";
   winnerNameEl.textContent = `${winner.emoji} ${winner.fandom}`;
+  votePeriodEl.textContent = `${startDate} ~ ${endDate} 투표 결과`;
 }
 
 function hideBanner() {
