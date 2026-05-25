@@ -2512,9 +2512,9 @@ function canWritePost(selectedFandom) {
   console.log(`[DEBUG canWritePost] lastFandomChangeTime: ${lastChangeTime}, hoursPassedSinceChange: ${hoursPassedSinceChange.toFixed(2)}`);
 
   if (hoursPassedSinceChange < 24 && lastChangeTime > 0) {
-    const remainingHours = 24 - hoursPassedSinceChange;
-    const hoursLeft = Math.floor(remainingHours);
-    const minutesLeft = Math.ceil((remainingHours - hoursLeft) * 60);
+    const remainingMinutes = Math.ceil((24 * 60) - (hoursPassedSinceChange * 60));
+    const hoursLeft = Math.floor(remainingMinutes / 60);
+    const minutesLeft = remainingMinutes % 60;
 
     showPostRestrictionModal(hoursLeft, minutesLeft);
     return false;
