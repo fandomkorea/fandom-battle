@@ -2588,20 +2588,21 @@ function showPostRestrictionModal(hoursLeft, minutesLeft, secondsLeft = 0) {
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-    ">팬덤 변경 제약 중</h2>
+    ">게시글 작성 제약 중</h2>
 
     <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.95rem; margin-bottom: 24px; line-height: 1.6;">
       팬덤을 변경한 후 게시글 작성이 제한돼요.<br>
-      ${hoursLeft > 0 ? `<strong>${hoursLeft}시간 ${minutesLeft}분 ${secondsLeft}초</strong> 후부터` : `<strong>${minutesLeft}분 ${secondsLeft}초</strong> 후부터`} 작성할 수 있어요.
+      <strong id="postTimerDisplay" style="font-size: 1.1rem; color: #ffc107">${hoursLeft}시간 ${minutesLeft}분 ${secondsLeft}초</strong> 후부터<br>
+      작성할 수 있어요.
     </p>
 
     <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 24px;">
-      <div style="font-size: 2rem; font-weight: 700; color: #ffc107;">
-        ${hoursLeft > 0 ? `${hoursLeft}시간 ${minutesLeft}분 ${secondsLeft}초` : `${minutesLeft}분 ${secondsLeft}초`}
+      <div style="font-size: 2rem; font-weight: 700; color: #ffc107;" id="postTimerLarge">
+        ${hoursLeft}시간 ${minutesLeft}분 ${secondsLeft}초
       </div>
     </div>
 
-    <button style="
+    <button id="postRestrictionClose" style="
       width: 100%;
       padding: 12px 24px;
       background: linear-gradient(135deg, #7c4dff 0%, #651fff 100%);
@@ -2613,7 +2614,7 @@ function showPostRestrictionModal(hoursLeft, minutesLeft, secondsLeft = 0) {
       cursor: pointer;
       transition: all 0.3s ease;
       box-shadow: 0 4px 12px rgba(124, 77, 255, 0.3);
-    " onclick="document.getElementById('postRestrictionModal')?.remove()" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(124, 77, 255, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(124, 77, 255, 0.3)'">
+    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(124, 77, 255, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(124, 77, 255, 0.3)'">
       확인했어요
     </button>
   `;
@@ -2621,9 +2622,39 @@ function showPostRestrictionModal(hoursLeft, minutesLeft, secondsLeft = 0) {
   modal.appendChild(content);
   document.body.appendChild(modal);
 
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) modal.remove();
-  });
+  // 실시간 타이머 업데이트
+  let currentSeconds = hoursLeft * 3600 + minutesLeft * 60 + secondsLeft;
+  const timerInterval = setInterval(() => {
+    currentSeconds--;
+    if (currentSeconds < 0) {
+      clearInterval(timerInterval);
+      modal.remove();
+      return;
+    }
+    const h = Math.floor(currentSeconds / 3600);
+    const m = Math.floor((currentSeconds % 3600) / 60);
+    const s = currentSeconds % 60;
+    const timerDisplay = document.getElementById("postTimerDisplay");
+    const timerLarge = document.getElementById("postTimerLarge");
+    if (timerDisplay) {
+      timerDisplay.textContent = `${h}시간 ${m}분 ${s}초`;
+    }
+    if (timerLarge) {
+      timerLarge.textContent = `${h}시간 ${m}분 ${s}초`;
+    }
+  }, 1000);
+
+  document.getElementById("postRestrictionClose").onclick = () => {
+    clearInterval(timerInterval);
+    modal.remove();
+  };
+
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      clearInterval(timerInterval);
+      modal.remove();
+    }
+  };
 }
 
 // ── 투표 가능 여부 (팬덤 변경 후 48시간 제약) ──
