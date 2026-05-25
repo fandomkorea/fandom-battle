@@ -2512,12 +2512,99 @@ function canWritePost(selectedFandom) {
   console.log(`[DEBUG canWritePost] lastFandomChangeTime: ${lastChangeTime}, hoursPassedSinceChange: ${hoursPassedSinceChange.toFixed(2)}`);
 
   if (hoursPassedSinceChange < 24 && lastChangeTime > 0) {
-    const hoursLeft = Math.ceil(24 - hoursPassedSinceChange);
-    showToast(`⏳ 팬덤 변경 후 ${hoursLeft}시간 후부터 게시글을 작성할 수 있어요`);
+    const remainingHours = 24 - hoursPassedSinceChange;
+    const hoursLeft = Math.floor(remainingHours);
+    const minutesLeft = Math.ceil((remainingHours - hoursLeft) * 60);
+
+    showPostRestrictionModal(hoursLeft, minutesLeft);
     return false;
   }
 
   return true;
+}
+
+// ── 팬덤 변경 후 24시간 제약 모달 ──
+function showPostRestrictionModal(hoursLeft, minutesLeft) {
+  const existing = document.getElementById("postRestrictionModal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "postRestrictionModal";
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(4px);
+  `;
+
+  const content = document.createElement("div");
+  content.style.cssText = `
+    background: linear-gradient(135deg, rgba(20, 15, 40, 0.98) 0%, rgba(30, 20, 50, 0.98) 100%);
+    border: 1.5px solid rgba(255, 193, 7, 0.3);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(255, 193, 7, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: modalSlideIn 0.3s ease-out;
+    text-align: center;
+  `;
+
+  content.innerHTML = `
+    <div style="font-size: 3.5rem; margin-bottom: 16px; animation: pulse 1s ease-in-out infinite">⏳</div>
+
+    <h2 style="
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #ffc107, #ff9800);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    ">팬덤 변경 제약 중</h2>
+
+    <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.95rem; margin-bottom: 24px; line-height: 1.6;">
+      팬덤을 변경한 후 게시글 작성이 제한돼요.<br>
+      ${hoursLeft > 0 ? `<strong>${hoursLeft}시간 ${minutesLeft}분</strong> 후부터` : `<strong>${minutesLeft}분</strong> 후부터`} 작성할 수 있어요.
+    </p>
+
+    <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+      <div style="font-size: 2rem; font-weight: 700; color: #ffc107;">
+        ${hoursLeft > 0 ? `${hoursLeft}:${String(minutesLeft).padStart(2, '0')}` : `${minutesLeft}m`}
+      </div>
+    </div>
+
+    <button style="
+      width: 100%;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #7c4dff 0%, #651fff 100%);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(124, 77, 255, 0.3);
+    " onclick="document.getElementById('postRestrictionModal')?.remove()" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(124, 77, 255, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(124, 77, 255, 0.3)'">
+      확인했어요
+    </button>
+  `;
+
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.remove();
+  });
 }
 
 // ── 투표 가능 여부 (팬덤 변경 후 48시간 제약) ──
@@ -5130,6 +5217,7 @@ function showPostCreateForm() {
 
   // 모달 표시
   const modal = document.getElementById("postCreateModal");
+  document.getElementById("communityFandomSelect").value = currentUser.primaryFandom;
   modal.style.display = "flex";
 
   // 포커스 설정
