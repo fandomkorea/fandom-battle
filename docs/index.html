@@ -3675,7 +3675,8 @@ function updateBannerDisplay() {
 
   // 배너 표시 기간 확인
   if (now >= bannerStartTime && now < bannerEndTime) {
-    const winner = bannerWinners[cycleNumber];
+    const winnerIndex = Math.floor(cycleNumber / 2);
+    const winner = bannerWinners[winnerIndex];
     if (winner) {
       renderBanner(winner);
     } else {
@@ -3691,7 +3692,7 @@ function getCurrentBannerPeriod(timestamp) {
   const cycleNumber = Math.floor(elapsed / BANNER_CONFIG.cycleLength);
 
   // 현재 주기의 배너 표시 기간 (투표 마감 후 시작)
-  const bannerStartTime = BANNER_CONFIG.baseDate + (cycleNumber * BANNER_CONFIG.cycleLength) + BANNER_CONFIG.cycleLength;
+  const bannerStartTime = BANNER_CONFIG.baseDate + (cycleNumber * BANNER_CONFIG.cycleLength);
   const bannerEndTime = bannerStartTime + BANNER_CONFIG.bannerDuration;
 
   return { bannerStartTime, bannerEndTime, cycleNumber };
