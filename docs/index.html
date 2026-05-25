@@ -5305,15 +5305,29 @@ async function deletePost(fandom, postId) {
     const postSnap = await db.ref(`community/${fandom}/${postId}`).once("value");
     const postData = postSnap.val();
 
-    // Cloudinary 이미지가 있으면 Cloud Function으로 삭제
+    // Cloudinary 이미지가 있으면 직접 삭제 (unsigned API)
     if (postData && postData.imagePublicId) {
       try {
-        const deleteImageFunc = firebase.functions().httpsCallable('deleteCloudinaryImage');
-        await deleteImageFunc({ publicId: postData.imagePublicId });
-        console.log("✅ Cloudinary 이미지 삭제 완료");
-      } catch (funcError) {
-        console.error("⚠️ 이미지 삭제 실패 (계속 진행):", funcError);
-        // 이미지 삭제 실패해도 게시물은 삭제함
+        const formData = new FormData();
+        formData.append('public_id', postData.imagePublicId);
+        formData.append('upload_preset', 'fandom_battle_images');
+
+        // Cloudinary destroy API 호출 (unsigned)
+        const response = await fetch(
+          'https://api.cloudinary.com/v1_1/dhkgabcme/image/destroy',
+          {
+            method: 'POST',
+            body: formData
+          }
+        );
+
+        if (response.ok) {
+          console.log("✅ Cloudinary 이미지 삭제 완료:", postData.imagePublicId);
+        } else {
+          console.warn("⚠️ 이미지 삭제 실패 (계속 진행)");
+        }
+      } catch (imgError) {
+        console.error("⚠️ 이미지 삭제 중 오류 (계속 진행):", imgError);
       }
     }
 
