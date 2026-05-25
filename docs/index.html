@@ -4335,20 +4335,60 @@ function openFavPicker() {
   };
   document.addEventListener("keydown", handleEsc);
 
-  const grid = ALL_GROUPS.map(g => {
-    const meta = GROUP_META[g] || { emoji:"🌟" };
-    // ★ 한글 + 영문 이름 표시
-    const displayName = meta.kr ? `${meta.kr} (${g})` : g;
-    return `<button class="fav-picker-btn ${myFav===g?"selected":""}" onclick="pickFav('${escAttr(g)}')">
-      <span class="fp-emoji">${meta.emoji}</span>
-      <span class="fp-name">${escHtml(displayName)}</span>
-    </button>`;
-  }).join("");
+  // 초기 그리드 렌더링
+  const renderGrid = (searchQuery = "") => {
+    const filtered = ALL_GROUPS.filter(g => {
+      const meta = GROUP_META[g] || { emoji:"🌟" };
+      const displayName = meta.kr ? `${meta.kr} ${g}` : g;
+      const searchLower = searchQuery.toLowerCase();
+      return displayName.toLowerCase().includes(searchLower);
+    });
+
+    return filtered.map(g => {
+      const meta = GROUP_META[g] || { emoji:"🌟" };
+      const displayName = meta.kr ? `${meta.kr} (${g})` : g;
+      return `<button class="fav-picker-btn ${myFav===g?"selected":""}" onclick="pickFav('${escAttr(g)}')">
+        <span class="fp-emoji">${meta.emoji}</span>
+        <span class="fp-name">${escHtml(displayName)}</span>
+      </button>`;
+    }).join("");
+  };
+
+  const initialGrid = renderGrid();
   overlay.innerHTML = `<div class="fav-picker-sheet">
     <div class="fav-picker-title">💜 내 최애 그룹은?<button class="fav-picker-close" onclick="closeFavPicker()">✕</button></div>
-    <div class="fav-picker-grid">${grid}</div>
+    <input type="text" id="fandomSearchInput" placeholder="🔍 팬덤 검색... (예: NCT, 뉴진스)" style="
+      width: 100%;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      border: 1.5px solid rgba(124,77,255,0.3);
+      border-radius: 10px;
+      background: rgba(124,77,255,0.08);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.2s;
+      box-sizing: border-box;
+    " />
+    <div class="fav-picker-grid" id="fandomGrid">${initialGrid}</div>
   </div>`;
   document.body.appendChild(overlay);
+
+  // 검색 입력 이벤트
+  const searchInput = document.getElementById("fandomSearchInput");
+  const gridContainer = document.getElementById("fandomGrid");
+
+  searchInput.addEventListener("input", (e) => {
+    const query = e.target.value;
+    gridContainer.innerHTML = renderGrid(query);
+
+    // 검색어 입력 중 포커스 유지
+    searchInput.focus();
+  });
+
+  // 자동 포커스
+  setTimeout(() => searchInput.focus(), 100);
 
   // 모바일 뒤로가기 처리: 모달 열릴 때 history에 entry 추가
   window.history.pushState({ modal: "favPicker" }, null, null);
