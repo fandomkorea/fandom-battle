@@ -60,6 +60,7 @@
     .live-badge { display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; padding: 4px 12px; border-radius: 20px; background: rgba(255,77,141,0.15); border: 1px solid rgba(255,77,141,0.3); font-size: 0.75rem; color: var(--pink); }
     .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pink); animation: pulse 1.4s infinite; }
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    @keyframes shimmerBanner { 0% { left: -100%; } 100% { left: 100%; } }
 
     /* ── 인증 컨테이너 ── */
     #authContainer { padding: 12px 16px; background: linear-gradient(135deg, rgba(124,77,255,0.08), rgba(255,77,141,0.04)); border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
@@ -1453,6 +1454,22 @@
         <span id="communityHeaderFandom">팬덤 선택</span>
       </h2>
       <p style="margin:8px 0 0 0;color:var(--muted);font-size:0.9rem">여기는 <span id="communityHeaderText" style="font-weight:700"></span> 커뮤니티입니다</p>
+    </div>
+  </div>
+
+  <!-- 🏆 1등 팬덤 배너 -->
+  <div id="communityBanner" style="display:none;margin-bottom:24px">
+    <div style="background:linear-gradient(90deg, rgba(255,193,7,0.2) 0%, rgba(255,193,7,0.1) 50%, rgba(255,193,7,0.2) 100%);border:1.5px solid rgba(255,193,7,0.4);border-radius:12px;padding:18px 20px;text-align:center;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(255,193,7,0.15)">
+      <!-- 반짝이 애니메이션 -->
+      <div style="position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);animation:shimmerBanner 2.5s infinite;pointer-events:none"></div>
+
+      <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:16px">
+        <span style="font-size:2.5rem;display:flex;align-items:center">🏆</span>
+        <div style="text-align:left">
+          <p style="margin:0;font-size:0.9rem;color:rgba(255,255,255,0.7);font-weight:600">이번주 1등</p>
+          <p id="bannerWinnerName" style="margin:6px 0 0 0;font-size:1.35rem;font-weight:900;color:#ffc107;background:linear-gradient(135deg, #ffc107, #ff9800);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">팬덤명</p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2904,6 +2921,7 @@ function init() {
 
     setupAuthListener();
     listenRankings();
+    listenBannerConfig();
     listenPrizeNotice();
     loadGroupRecords();
     loadMonthlyHistory();
@@ -3629,6 +3647,41 @@ let rankingSearchQuery = "";
 function filterRankings(query) {
   rankingSearchQuery = query.toLowerCase().trim();
   if (allRankingsData) renderRankings(allRankingsData);
+}
+
+// ── 배너 로드 및 렌더링 ──
+function listenBannerConfig() {
+  db.ref("bannerConfig").on("value", snap => {
+    const config = snap.val();
+    if (config && config.active) {
+      // 배너 만료 확인
+      const now = Date.now();
+      if (now < config.endTime) {
+        renderBanner(config);
+      } else {
+        hideBanner();
+      }
+    } else {
+      hideBanner();
+    }
+  });
+}
+
+function renderBanner(config) {
+  const bannerEl = document.getElementById("communityBanner");
+  const winnerNameEl = document.getElementById("bannerWinnerName");
+
+  if (!bannerEl) return;
+
+  bannerEl.style.display = "block";
+  winnerNameEl.textContent = `${config.winnerEmoji} ${config.currentWinner}`;
+}
+
+function hideBanner() {
+  const bannerEl = document.getElementById("communityBanner");
+  if (bannerEl) {
+    bannerEl.style.display = "none";
+  }
 }
 
 function renderRankings(data) {
