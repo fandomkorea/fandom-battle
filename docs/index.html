@@ -4471,11 +4471,19 @@ function handleFandomChange() {
 function showVotePage() {
   const votePage = document.getElementById("votePage");
   const communityPage = document.getElementById("communityPage");
-  const communityHeaderInfo = document.getElementById("communityHeaderInfo");
+  const pageTitle = document.querySelector("header h1");
+  const liveBadge = document.getElementById("liveBadge");
 
   if (votePage) votePage.classList.remove("hidden");
   if (communityPage) communityPage.classList.remove("show");
-  if (communityHeaderInfo) communityHeaderInfo.style.display = "none"; // 커뮤니티 헤더 숨기기
+
+  // 상단 제목을 원래대로 복원
+  if (pageTitle) {
+    pageTitle.textContent = "⚔️ 팬덤배틀";
+  }
+
+  // LIVE 배지 표시
+  if (liveBadge) liveBadge.style.display = "block";
 
   document.querySelectorAll(".nav-tab").forEach((tab, i) => {
     tab.classList.toggle("active", i === 0);
@@ -4494,10 +4502,21 @@ function showCommunityPage() {
   const votePage = document.getElementById("votePage");
   const communityPage = document.getElementById("communityPage");
   const communityHeaderInfo = document.getElementById("communityHeaderInfo");
+  const pageTitle = document.querySelector("header h1");
+  const liveBadge = document.getElementById("liveBadge");
 
   if (votePage) votePage.classList.add("hidden");
   if (communityPage) communityPage.classList.add("show");
-  if (communityHeaderInfo) communityHeaderInfo.style.display = "block"; // 커뮤니티 헤더 표시
+  if (communityHeaderInfo) communityHeaderInfo.style.display = "none"; // 커뮤니티 헤더 숨기기
+
+  // 상단 제목을 커뮤니티 이름으로 변경
+  if (pageTitle && currentUserFav && GROUP_META[currentUserFav]) {
+    const meta = GROUP_META[currentUserFav];
+    pageTitle.textContent = `${meta.emoji} ${currentUserFav} 커뮤니티`;
+  }
+
+  // LIVE 배지 숨기기
+  if (liveBadge) liveBadge.style.display = "none";
 
   document.querySelectorAll(".nav-tab").forEach((tab, i) => {
     tab.classList.toggle("active", i === 1);
