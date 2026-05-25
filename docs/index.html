@@ -2697,7 +2697,7 @@ function showVoteRestrictionModal(hoursLeft, minutesLeft, secondsLeft = 0) {
 
     <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.95rem; margin-bottom: 28px; line-height: 1.6;">
       팬덤을 변경한 후 투표를 할 수 없어요.<br>
-      <strong style="font-size: 1.1rem; color: #ff77b5">${hoursLeft}시간 ${minutesLeft}분 ${secondsLeft}초</strong> 후에<br>
+      <strong id="voteTimerDisplay" style="font-size: 1.1rem; color: #ff77b5">${hoursLeft}시간 ${minutesLeft}분 ${secondsLeft}초</strong> 후에<br>
       투표할 수 있어요.
     </p>
 
@@ -2738,12 +2738,32 @@ function showVoteRestrictionModal(hoursLeft, minutesLeft, secondsLeft = 0) {
   modal.appendChild(content);
   document.body.appendChild(modal);
 
+  // 실시간 타이머 업데이트
+  let currentSeconds = hoursLeft * 3600 + minutesLeft * 60 + secondsLeft;
+  const timerInterval = setInterval(() => {
+    currentSeconds--;
+    if (currentSeconds < 0) {
+      clearInterval(timerInterval);
+      modal.remove();
+      return;
+    }
+    const h = Math.floor(currentSeconds / 3600);
+    const m = Math.floor((currentSeconds % 3600) / 60);
+    const s = currentSeconds % 60;
+    const timerDisplay = document.getElementById("voteTimerDisplay");
+    if (timerDisplay) {
+      timerDisplay.textContent = `${h}시간 ${m}분 ${s}초`;
+    }
+  }, 1000);
+
   document.getElementById("voteRestrictionClose").onclick = () => {
+    clearInterval(timerInterval);
     modal.remove();
   };
 
   modal.onclick = (e) => {
     if (e.target === modal) {
+      clearInterval(timerInterval);
       modal.remove();
     }
   };
