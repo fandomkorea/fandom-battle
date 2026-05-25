@@ -2631,15 +2631,122 @@ function canVoteAfterFandomChange() {
   if (!isLoggedIn || !currentUser) return true; // 로그인 안 한 사람은 제약 없음
 
   const now = Date.now();
-  const hoursPassedSinceChange = (now - currentUser.lastFandomChangeTime) / (1000 * 60 * 60);
+  const lastChangeTime = currentUser.lastFandomChangeTime || 0;
+  const hoursPassedSinceChange = (now - lastChangeTime) / (1000 * 60 * 60);
 
-  if (hoursPassedSinceChange < 48) {
-    const hoursLeft = Math.ceil(48 - hoursPassedSinceChange);
-    showToast(`⏳ 팬덤 변경 후 ${hoursLeft}시간 후부터 투표할 수 있어요`);
+  if (hoursPassedSinceChange < 48 && lastChangeTime > 0) {
+    const remainingMilliseconds = (48 * 60 * 60 * 1000) - (now - lastChangeTime);
+    const hoursLeft = Math.floor(remainingMilliseconds / (1000 * 60 * 60));
+    const minutesLeft = Math.floor((remainingMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
+    const secondsLeft = Math.floor((remainingMilliseconds % (1000 * 60)) / 1000);
+
+    showVoteRestrictionModal(hoursLeft, minutesLeft, secondsLeft);
     return false;
   }
 
   return true;
+}
+
+// ── 투표 제약 모달 ──
+function showVoteRestrictionModal(hoursLeft, minutesLeft, secondsLeft = 0) {
+  const existing = document.getElementById("voteRestrictionModal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "voteRestrictionModal";
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(4px);
+  `;
+
+  const content = document.createElement("div");
+  content.style.cssText = `
+    background: linear-gradient(135deg, rgba(20, 15, 40, 0.98) 0%, rgba(30, 20, 50, 0.98) 100%);
+    border: 1.5px solid rgba(255, 77, 141, 0.3);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(255, 77, 141, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: modalSlideIn 0.3s ease-out;
+    text-align: center;
+  `;
+
+  content.innerHTML = `
+    <div style="font-size: 3rem; margin-bottom: 16px">⏳</div>
+
+    <h2 style="
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #ff4d8d, #ff6b9d);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    ">투표 제약 중</h2>
+
+    <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.95rem; margin-bottom: 28px; line-height: 1.6;">
+      팬덤을 변경한 후 투표를 할 수 없어요.<br>
+      <strong style="font-size: 1.1rem; color: #ff77b5">${hoursLeft}시간 ${minutesLeft}분 ${secondsLeft}초</strong> 후에<br>
+      투표할 수 있어요.
+    </p>
+
+    <div style="
+      background: linear-gradient(135deg, rgba(255, 77, 141, 0.1), rgba(255, 107, 157, 0.05));
+      border-left: 3px solid #ff4d8d;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 28px;
+      text-align: left;
+    ">
+      <div style="display: flex; gap: 8px; align-items: flex-start">
+        <span style="font-size: 1.2rem">ℹ️</span>
+        <div>
+          <div style="font-weight: 600; color: var(--text); font-size: 0.95rem">팬덤 변경 후 제약</div>
+          <div style="color: var(--muted); font-size: 0.85rem; margin-top: 4px">보안을 위해 팬덤 변경 후 48시간 동안 투표가 제한됩니다</div>
+        </div>
+      </div>
+    </div>
+
+    <button id="voteRestrictionClose" style="
+      width: 100%;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, var(--primary) 0%, rgba(124, 77, 255, 0.85) 100%);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 20px rgba(124,77,255,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
+      확인
+    </button>
+  `;
+
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+
+  document.getElementById("voteRestrictionClose").onclick = () => {
+    modal.remove();
+  };
+
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  };
 }
 
 // 닉네임/팬덤 설정 모달 표시
