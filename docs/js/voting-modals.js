@@ -583,8 +583,10 @@ function init() {
     setTimeout(showFavBar, 1500);
     if (isAdmin) {
       const pw = prompt("관리자 패스워드:");
-      if (pw === ADMIN_PW) setupAdmin();
-      else alert("패스워드가 틀렸습니다.");
+      db.ref('admin_config/pw').once('value').then(snap => {
+        if (snap.val() && pw === snap.val()) setupAdmin();
+        else alert("패스워드가 틀렸습니다.");
+      });
     }
 
     // ★ 마지막 활성 페이지 복원 (Firebase 데이터 사용)

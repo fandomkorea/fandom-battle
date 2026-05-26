@@ -123,6 +123,5 @@ const ALL_GROUPS = Object.keys(GROUP_META);
 let db = null;
 let allRankingsData = null;
 let showAllRankings = true; // ★ 투표 없는 그룹도 항상 펼쳐서 표시
-const ADMIN_PW = "fandom1234"; // 변경 가능
 const isAdmin = new URLSearchParams(location.search).has("admin");
 
