@@ -1,0 +1,111 @@
+    /* ── 빅매치 카드 ── */
+    .battle-card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+    .battle-header { text-align: center; padding: 14px 16px 12px; background: linear-gradient(135deg, rgba(255,77,141,0.1), rgba(124,77,255,0.1), rgba(77,158,255,0.1)); border-bottom: 1px solid var(--border); }
+    .battle-label { font-size: 0.72rem; font-weight: 700; color: var(--primary); letter-spacing: 2px; text-transform: uppercase; }
+    .countdown { font-size: 1.05rem; font-weight: 700; margin-top: 4px; color: var(--text); }
+    .countdown span { color: var(--pink); }
+    .total-votes-label { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+
+    /* ── 투표 완료 오버레이 ── */
+    .voted-overlay { padding: 18px 16px; text-align: center; background: rgba(124,77,255,0.08); border-top: 1px solid var(--border); display: none; }
+    .voted-overlay.show { display: block; }
+    .voted-msg { font-size: 0.88rem; color: var(--primary); font-weight: 700; line-height: 1.4; }
+    .voted-sub { font-size: 0.75rem; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+
+    /* ── 광고 자리 ── */
+    .ad-slot { background: var(--card); border: 1px dashed var(--border); border-radius: var(--radius); padding: 14px; text-align: center; color: var(--muted); font-size: 0.78rem; min-height: 60px; display: flex; align-items: center; justify-content: center; }
+
+    /* ── 투표 0개 빈 바 ── */
+    .bar-empty-hint { text-align: center; font-size: 0.74rem; color: var(--muted); padding: 6px 0 2px; }
+
+    /* ── 투표 인증 이미지 ── */
+    .proof-canvas { width: 100%; border-radius: 10px; display: block; margin-top: 10px; cursor: pointer; }
+    .proof-hint { font-size: 0.68rem; color: var(--muted); text-align: center; margin-top: 4px; }
+
+    /* ── VS 텍스트 ── */
+    .vs-text { font-size: 1.3rem; font-weight: 900; color: #7060bb; letter-spacing: -1px; }
+
+    /* ── 상품 배너 ── */
+    .prize-banner { background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(124,77,255,0.12)); border: 1px solid rgba(255,215,0,0.4); border-radius: var(--radius); padding: 20px; text-align: center; margin-top: 16px; animation: prizeGlow 3s ease-in-out infinite; position: relative; overflow: hidden; }
+    .prize-banner::before { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 40%, rgba(255,215,0,0.08) 50%, transparent 60%); background-size: 200% 100%; animation: shimmer 4s ease-in-out infinite; pointer-events: none; }
+    .prize-label { font-size: 0.72rem; font-weight: 700; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+    .prize-amount { font-size: 1.6rem; font-weight: 900; color: #fff; margin-bottom: 6px; }
+    .prize-amount span { color: var(--gold); text-shadow: 0 0 14px rgba(255,215,0,0.6); }
+    .prize-sub { font-size: 0.75rem; color: var(--muted); }
+    .prize-notice { font-size: 0.78rem; color: var(--gold); margin-top: 8px; font-weight: 600; min-height: 0; }
+
+    /* ── 초기 상태 (투표 없을 때) ── */
+    .ranking-empty-hint { text-align: center; padding: 18px 16px 10px; background: rgba(124,77,255,0.06); border: 1px dashed rgba(124,77,255,0.3); border-radius: 12px; margin-bottom: 8px; }
+    .ranking-empty-hint p { font-size: 0.84rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── 랭킹 투표 버튼 ── */
+    .vote-rank-btn { padding: 7px 15px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.75rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; min-width: 70px; text-align: center; }
+    .vote-rank-btn:hover:not(:disabled) { background: var(--primary); color: #fff; border-color: var(--primary); transform: scale(1.08); }
+    .vote-rank-btn:active:not(:disabled) { transform: scale(0.95); }
+    .vote-rank-btn.voted { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .vote-rank-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── 랭킹 내 퍼센트 바 ── */
+    .rank-pct-bar-wrap { flex: 1; height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; min-width: 40px; margin-top: 5px; }
+    .rank-pct-bar { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+    .rank-vote-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+    .rank-pct-label { font-size: 0.68rem; color: var(--muted); white-space: nowrap; }
+
+    /* ── 랭킹 우측 투표 컬럼 ── */
+    .rank-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+
+    /* ── 광고보고 추가투표 CTA 버튼 ── */
+    .ad-vote-cta { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; padding: 9px 16px; border-radius: 12px; border: 1px solid rgba(255,215,0,0.4); background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(124,77,255,0.1)); color: var(--gold); font-size: 0.82rem; font-weight: 700; font-family: inherit; cursor: pointer; width: 100%; transition: all 0.15s; }
+    .ad-vote-cta:hover { border-color: var(--gold); background: rgba(255,215,0,0.18); }
+    .ad-vote-cta:disabled { opacity: 0.38; cursor: not-allowed; }
+    .ad-pending-badge { display: inline-block; background: var(--gold); color: #1a1000; font-size: 0.65rem; font-weight: 900; padding: 2px 7px; border-radius: 8px; animation: pulse 1s infinite; }
+
+    /* ── 추가 투표 활성 상태 버튼 ── */
+    .vote-rank-btn.ad-active { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1000; border-color: #ffd700; font-weight: 900; animation: pulse 1s infinite; }
+    .vote-rank-btn.ad-active:hover:not(:disabled) { opacity: 0.9; transform: scale(1.1); }
+
+    /* ── 오늘 투표 진행바 ── */
+    .vote-progress-wrap { display: none; margin-top: 10px; }
+    .vote-progress-label { font-size: 0.72rem; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: 600; }
+    .vote-progress-bar-bg { height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .vote-progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--pink)); border-radius: 4px; transition: width 0.5s cubic-bezier(.4,0,.2,1); }
+
+    /* ── 투표 스트릭 뱃지 ── */
+    .streak-badge { display: inline-block; padding: 4px 10px; background: linear-gradient(135deg, rgba(255,107,53,0.2), rgba(255,77,141,0.1)); border: 1px solid rgba(255,107,53,0.3); border-radius: 20px; color: #ff6b35; font-size: 0.75rem; font-weight: 700; margin-top: 6px; animation: pulse 1.2s infinite; }
+
+    /* ── 투표 권장 배너 ── */
+    .vote-guide-banner { background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,77,141,0.08)); border: 1px solid rgba(255,77,141,0.3); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; text-align: center; }
+    .vote-guide-title { font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .vote-guide-sub { font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
+    .vote-guide-highlight { color: var(--gold); font-weight: 700; }
+
+    /* ── 모바일 최적화 ── */
+    @media (max-width: 480px) {
+      .voted-overlay { padding: 10px 10px; }
+      .voted-msg { font-size: 0.8rem; line-height: 1.2; margin-bottom: 2px; }
+      .voted-sub { font-size: 0.7rem; margin-top: 2px; line-height: 1.3; }
+      .share-row { margin-top: 4px; gap: 6px; }
+      .share-btn { padding: 8px 14px; font-size: 0.75rem; }
+      #adVoteCta { margin-bottom: 8px !important; padding: 10px !important; font-size: 0.8rem !important; }
+      #todayVoteCountBanner { padding: 10px; margin-bottom: 8px; font-size: 0.75rem; flex-direction: column; gap: 4px; text-align: center; }
+      #todayVoteCountBanner > div { width: 100%; font-size: 0.7rem; }
+      #todayVoteDisplay { font-size: 0.8rem; font-weight: 700; }
+      .prize-banner { padding: 16px 12px; margin-top: 12px; }
+      .prize-amount { font-size: 1.4rem; margin-bottom: 4px; }
+      .prize-label { font-size: 0.68rem; }
+      .battle-card { margin-top: 10px; }
+      .battle-header { padding: 12px; }
+      .countdown { font-size: 0.95rem; margin-top: 3px; }
+      .total-votes-label { font-size: 0.7rem; margin-top: 2px; }
+      .vote-guide-banner { padding: 10px 12px; margin-bottom: 8px; border-radius: 12px; }
+      .vote-guide-title { font-size: 0.75rem; margin-bottom: 4px; }
+      .vote-guide-sub { font-size: 0.68rem; line-height: 1.4; }
+      #adVoteCta { display: none !important; }
+      .vote-rank-btn { padding: 12px 12px; font-size: 0.75rem; font-weight: 700; border-radius: 10px; min-width: 85px; white-space: normal; line-height: 1.2; }
+      .vote-rank-btn:hover:not(:disabled) { transform: scale(1.06); }
+      .rank-pct-bar-wrap { height: 6px; margin-top: 4px; }
+      .rank-pct-label { font-size: 0.62rem; }
+      .rank-vote-meta { gap: 4px; }
+      .vote-progress-label { font-size: 0.67rem; margin-bottom: 4px; }
+      .vote-progress-bar-bg { height: 6px; }
+    }

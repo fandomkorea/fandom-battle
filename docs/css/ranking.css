@@ -1,0 +1,113 @@
+    /* ── 랭킹 ── */
+    .ranking-list { display: flex; flex-direction: column; gap: 8px; }
+    .rank-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; transition: border-color 0.15s; }
+    .rank-item:hover { border-color: var(--primary); }
+    .rank-item.battle-now { border-color: rgba(255,77,141,0.5); background: rgba(255,77,141,0.05); }
+    .rank-num { font-size: 1rem; font-weight: 900; min-width: 28px; text-align: center; }
+    .rank-num.gold { color: var(--gold); }
+    .rank-num.silver { color: #c0c0c0; }
+    .rank-num.bronze { color: #cd7f32; }
+    .rank-emoji { font-size: 1.5rem; }
+    .rank-info { flex: 1; min-width: 0; }
+    .rank-name { font-weight: 700; font-size: 0.95rem; word-break: break-word; line-height: 1.3; }
+    .rank-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .rank-votes { font-weight: 700; font-size: 0.92rem; color: var(--primary); white-space: nowrap; }
+    .battle-now-tag { font-size: 0.65rem; background: rgba(255,77,141,0.2); color: var(--pink); border-radius: 6px; padding: 2px 6px; font-weight: 700; }
+
+    /* ── 역대 기록 ── */
+    .history-list { display: flex; flex-direction: column; gap: 8px; }
+    .history-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-size: 0.84rem; }
+    .history-week { font-size: 0.7rem; color: var(--muted); min-width: 60px; }
+    .history-match { flex: 1; display: flex; align-items: center; gap: 8px; }
+    .history-winner { font-weight: 700; color: var(--gold); }
+    .history-loser { color: var(--muted); }
+    .history-score { font-size: 0.72rem; color: var(--muted); }
+
+    /* ── 랭킹 더보기 ── */
+    .rank-show-more { margin-top: 4px; }
+    .show-all-btn { width: 100%; padding: 10px; background: none; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: 0.8rem; font-family: inherit; cursor: pointer; transition: all 0.15s; }
+    .show-all-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ── 그룹 전적 뱃지 ── */
+    .record-badge { font-size: 0.65rem; background: rgba(255,215,0,0.12); color: var(--gold); border-radius: 6px; padding: 1px 6px; font-weight: 700; margin-left: 4px; }
+
+    /* ── 내 최애 랭킹 하이라이트 ── */
+    .rank-item.my-fav-rank { border-color: var(--primary); background: rgba(124,77,255,0.07); }
+    .my-fav-star { font-size: 0.65rem; margin-right: 3px; }
+
+    /* ── 내가 투표한 팀 강조 ── */
+    .rank-item.my-voted { border-color: var(--primary); background: rgba(124,77,255,0.12); border-width: 2px; }
+    .rank-item.my-voted .rank-name { color: var(--primary); font-weight: 900; }
+    .my-voted-badge { display: inline-block; font-size: 0.6rem; background: var(--primary); color: #fff; border-radius: 10px; padding: 2px 8px; margin-left: 5px; font-weight: 700; animation: pulse 1.5s infinite; }
+
+    /* ── 내 팀 배틀 참여 배너 ── */
+    .my-team-banner { background: linear-gradient(135deg,rgba(124,77,255,0.15),rgba(255,77,141,0.1)); border: 1px solid rgba(124,77,255,0.35); border-radius: 10px; padding: 9px 14px; margin-bottom: 10px; font-size: 0.82rem; font-weight: 700; color: var(--primary); text-align: center; animation: glowPulse 2s ease-in-out infinite; }
+
+    /* ── 월 우승 기록 ── */
+    .monthly-winner-item { background: linear-gradient(135deg, rgba(255,215,0,0.07), var(--card)); border: 1px solid rgba(255,215,0,0.2); border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+    .mw-month { font-size: 0.7rem; color: var(--muted); min-width: 54px; }
+    .mw-info { flex: 1; }
+    .mw-winner { font-weight: 900; color: var(--gold); font-size: 0.95rem; }
+    .mw-votes { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── 1위 그룹 특별 강조 ── */
+    .rank-item.rank-first { background: linear-gradient(135deg, rgba(255,215,0,0.09), rgba(255,150,0,0.05), var(--card)); border-color: rgba(255,215,0,0.55); animation: goldGlow 2.5s ease-in-out infinite; }
+    .rank-item.rank-first .rank-num { font-size: 1.3rem; filter: drop-shadow(0 0 6px rgba(255,215,0,0.8)); }
+    .rank-item.rank-first .rank-name { color: #fff; font-weight: 900; }
+    .rank-first-crown { font-size: 0.6rem; color: var(--gold); background: rgba(255,215,0,0.15); border-radius: 6px; padding: 1px 5px; margin-left: 5px; font-weight: 700; vertical-align: middle; }
+
+    /* ── 경쟁 뜨거운 경기 (상위 3팀이 가까운 경우) ── */
+    .rank-item.close-race { animation: closeRaceGlow 2s ease-in-out infinite; }
+    .close-race-badge { display: inline-block; font-size: 0.6rem; background: rgba(255,77,141,0.2); color: var(--pink); border-radius: 6px; padding: 1px 5px; margin-left: 4px; font-weight: 700; animation: pulse 1.2s infinite; }
+
+    /* ── 팬덤 이름 ── */
+    .rank-fandom { font-size: 0.65rem; color: var(--muted); margin-top: 1px; }
+
+    /* ── 닉네임 변경 버튼 ── */
+    .nick-change-btn { font-size: 0.6rem; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0 3px; font-family: inherit; text-decoration: underline; }
+    .nick-change-btn:hover { color: var(--primary); }
+
+    /* ── 내 팀 스크롤 하이라이트 ── */
+    .rank-item.highlight-flash { animation: rankHighlight 0.8s ease-in-out 2 !important; }
+
+    /* ── 팀 빠른접근 버튼 ── */
+    .quick-access-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 20px; background: var(--primary); color: #fff; border: none; font-weight: 700; font-family: inherit; font-size: 0.82rem; cursor: pointer; white-space: nowrap; transition: all 0.15s; margin-top: 8px; }
+    .quick-access-btn:hover { background: #6a3de8; transform: scale(1.05); }
+    .quick-access-emoji { font-size: 1.1rem; }
+
+    /* ── Skeleton Loader ── */
+    .skeleton { background: linear-gradient(90deg, var(--border) 0%, rgba(124,77,255,0.08) 50%, var(--border) 100%); background-size: 200% 100%; animation: shimmerPulse 1.5s infinite; border-radius: 10px; }
+    .rank-skeleton { height: 60px; margin-bottom: 8px; }
+    .skeleton-title { height: 20px; width: 40%; margin-bottom: 8px; }
+    .skeleton-subtitle { height: 14px; width: 60%; margin-bottom: 4px; }
+
+    /* ── 실시간 투표 활동 ── */
+    .activity-feed { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px; font-size: 0.78rem; }
+    .activity-item { display: flex; align-items: center; gap: 6px; color: var(--muted); padding: 4px 0; }
+    .activity-emoji { font-size: 1rem; flex-shrink: 0; }
+    .activity-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── 모바일 최적화 ── */
+    @media (max-width: 480px) {
+      .rank-item { padding: 12px; gap: 10px; border-radius: 10px; margin-bottom: 6px; }
+      .rank-emoji { font-size: 1.4rem; }
+      .rank-name { font-size: 0.88rem; font-weight: 700; }
+      .rank-fandom { display: none; }
+      .rank-sub { font-size: 0.65rem; }
+      .rank-votes { font-size: 0.85rem; }
+      .rank-num { font-size: 0.95rem; min-width: 26px; }
+      .rank-info > div:last-child { font-size: 0.68rem; color: var(--primary); margin-top: 4px; }
+      .activity-feed { padding: 6px 8px; margin-bottom: 6px; max-height: 80px; }
+      .activity-item { font-size: 0.7rem; padding: 2px 0; }
+      .activity-emoji { font-size: 0.85rem; }
+      .quick-access-btn { margin-top: 6px; padding: 8px 14px; font-size: 0.75rem; }
+      .quick-access-emoji { font-size: 1rem; }
+      #favChipArea { display: none; }
+      .fav-chip { display: none; }
+      .quick-access-btn { display: none; }
+    }
+
+    @media (max-width: 320px) {
+      .vote-rank-btn { padding: 10px 8px; font-size: 0.7rem; min-width: 70px; }
+      .rank-item { padding: 10px 8px; gap: 8px; }
+    }

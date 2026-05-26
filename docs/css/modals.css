@@ -1,0 +1,58 @@
+    /* ── 광고 모달 ── */
+    .ad-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .ad-modal-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 16px 16px;
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .ad-modal-title { font-size: 1.1rem; font-weight: 900; margin-bottom: 6px; }
+    .ad-modal-desc { font-size: 0.8rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+    .ad-countdown-ring { width: 72px; height: 72px; border-radius: 50%; border: 4px solid var(--border); border-top-color: var(--primary); animation: spin 1s linear infinite; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; }
+    .ad-countdown-circle { position: absolute; font-size: 1.6rem; font-weight: 900; color: var(--primary); animation: none; }
+    .ad-countdown-wrap { position: relative; width: 72px; height: 72px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; }
+    .ad-mock-content { background: var(--bg); border: 1px dashed rgba(124,77,255,0.3); border-radius: 10px; padding: 22px 16px; margin-bottom: 18px; color: var(--muted); font-size: 0.78rem; line-height: 1.6; }
+    .ad-skip-btn { width: 100%; padding: 13px; border-radius: 12px; border: none; background: var(--primary); color: #fff; font-weight: 900; font-size: 0.95rem; font-family: inherit; cursor: pointer; transition: all 0.2s; }
+    .ad-skip-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+    .ad-skip-btn.ready { background: linear-gradient(135deg, #ffd700, #ff9500); color: #1a1000; animation: glowPulse 1.2s ease-in-out infinite; }
+
+    /* ── 댓글 모달 ── */
+    #commentsModal {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 999 !important;
+    }
+    #commentsModal > div {
+      width: 100%;
+      max-width: 500px;
+      max-height: 85vh;
+    }
+
+    /* ── 관리자 패널 ── */
+    .admin-panel { background: var(--card); border: 1px solid #ff4d4d55; border-radius: var(--radius); padding: 20px; margin-top: 28px; }
+    .admin-panel h3 { color: #ff4d4d; font-size: 0.85rem; margin-bottom: 14px; letter-spacing: 1px; }
+    .admin-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+    .admin-row label { font-size: 0.78rem; color: var(--muted); min-width: 80px; }
+    .admin-row select, .admin-row input { padding: 7px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 0.82rem; flex: 1; min-width: 120px; }
+    .admin-btn { padding: 9px 18px; border-radius: 10px; border: none; background: var(--primary); color: #fff; font-weight: 700; font-family: inherit; font-size: 0.82rem; cursor: pointer; transition: opacity 0.15s; }
+    .admin-btn:hover { opacity: 0.85; }
+    .admin-btn.danger { background: #cc2222; }
+
+    /* ── 모바일 최적화 ── */
+    @media (max-width: 480px) {
+      .ad-modal-overlay { padding: 12px; }
+      .ad-modal-box { border-radius: 12px; padding: 16px 12px 12px; max-width: 95vw; }
+      .ad-modal-box { padding: 20px 16px 16px; }
+      .ad-modal-title { font-size: 0.95rem; }
+      .ad-modal-desc { font-size: 0.72rem; margin-bottom: 16px; }
+      .ad-countdown-wrap { margin: 0 auto 16px; }
+      .ad-skip-btn { padding: 12px; font-size: 0.85rem; }
+      #commentsModal { padding: 12px !important; }
+      #commentsModal > div { border-radius: 12px; max-height: 80vh; padding: 16px; }
+      #commentsModal textarea { min-height: 80px !important; font-size: 1rem; }
+    }
