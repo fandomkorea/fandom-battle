@@ -5567,6 +5567,11 @@ function openPostCreateModal() {
   document.getElementById("postContentCount").textContent = "0";
   document.getElementById("scheduleTemplate").style.display = "none";
 
+  // ★ 이미지 초기화 (이전 게시글의 이미지가 남지 않도록)
+  postImageUrl = null;
+  document.getElementById("postImagePreview").style.display = "none";
+  document.getElementById("postImagePreviewImg").src = "";
+
   // 팬덤 표시
   document.getElementById("postCreateFandom").textContent = selectedFandom;
 
