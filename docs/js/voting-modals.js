@@ -447,7 +447,6 @@ function saveAuthUserData(nickname, fandom) {
 
   db.ref(`users/${currentUser.uid}`).update(userData) // ★ set → update로 변경
     .then(() => {
-      console.log(`[DEBUG] 사용자 정보 저장 완료: ${nickname}, primaryFandom=${fandom}`);
       // ★ setMyFav() 호출 제거 - 이미 위에서 설정함
       document.getElementById("authSetupModal")?.remove();
       updateAuthUI();

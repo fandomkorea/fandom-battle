@@ -325,19 +325,13 @@ async function changePrimaryFandom(newFandom) {
     // ★ localStorage도 업데이트 (getMyFav() 호출 시 최신 값 사용)
     localStorage.setItem("my_fav_group", newFandom);
 
-    console.log(`[DEBUG] 팬덤 변경됨: ${newFandom}, currentUserFav=${currentUserFav}`);
-
     // 화면 갱신
-    console.log(`[DEBUG] renderFavChip() 호출 전`);
     renderFavChip(); // 하단 팬덤 표시 업데이트
-    console.log(`[DEBUG] renderFavChip() 호출 후, favChipArea:`, document.getElementById("favChipArea")?.innerHTML);
 
     // ★ 랭킹 하이라이트 즉시 갱신 (my-fav-rank 클래스 반영)
     if (allRankingsData) renderRankings(allRankingsData);
 
-    console.log(`[DEBUG] updateFavBar() 호출 전`);
     updateFavBar(); // 하단 바 업데이트
-    console.log(`[DEBUG] updateFavBar() 호출 후, favBar:`, document.getElementById("favBar")?.innerHTML.substring(0, 100));
 
     // ★ 커뮤니티 페이지 재로드 (팬덤 변경 반영)
     // showCommunityPage() 내에서 loadCommunityPosts()가 호출되므로, 여기서는 호출하지 않음
@@ -360,7 +354,6 @@ async function changePrimaryFandom(newFandom) {
 
     // ★ loadCommunityPosts() 호출 (showCommunityPage() 대신)
     loadCommunityPosts();
-    console.log(`[DEBUG] 커뮤니티 페이지 로드 완료`);
 
     // 팬덤 변경 성공 모달 표시
     await showFandomChangeSuccessModal(newFandom, emoji);
@@ -400,9 +393,6 @@ function canWritePost(selectedFandom) {
   const now = Date.now();
   const lastChangeTime = currentUser.lastFandomChangeTime || 0;
   const hoursPassedSinceChange = (now - lastChangeTime) / (1000 * 60 * 60);
-
-  // 디버그 로그
-  console.log(`[DEBUG canWritePost] lastFandomChangeTime: ${lastChangeTime}, hoursPassedSinceChange: ${hoursPassedSinceChange.toFixed(2)}`);
 
   if (hoursPassedSinceChange < 24 && lastChangeTime > 0) {
     const remainingMilliseconds = (24 * 60 * 60 * 1000) - (hoursPassedSinceChange * 60 * 60 * 1000);

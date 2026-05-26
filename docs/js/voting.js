@@ -81,7 +81,6 @@ async function updateVotingStreak() {
       lastVoteDate: today
     });
 
-    console.log(`[DEBUG updateVotingStreak] 스트릭 업데이트: ${newStreak}일`);
     return newStreak;
   } catch (e) {
     console.error("투표 스트릭 업데이트 실패:", e);

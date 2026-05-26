@@ -361,13 +361,10 @@ async function showPostDetail(fandom, postId) {
 
     const post = snap.val();
     const isAuthor = isLoggedIn && currentUser && post.authorUid === currentUser.uid;
-    // 디버깅
-    console.log(`[DEBUG] isAuthor: ${isAuthor}, isLoggedIn: ${isLoggedIn}, authorUid: ${post.authorUid}, currentUid: ${currentUser?.uid}`);
     const timeStr = getRelativeTime(post.timestamp);
 
-    // 조회수 증가
-    const currentViews = post.views || 0;
-    await db.ref(`community/${fandom}/${postId}/views`).set(currentViews + 1);
+    // 조회수 증가 (동시 접속 대비 transaction 사용)
+    await db.ref(`community/${fandom}/${postId}/views`).transaction(cur => (cur || 0) + 1);
 
     // 제목 설정
     document.getElementById("postDetailTitle").textContent = escHtml(post.title);
@@ -994,9 +991,8 @@ async function submitPost() {
     return;
   }
 
-  const submitBtn = event.target;
-  submitBtn.disabled = true;
-  submitBtn.textContent = "작성 중...";
+  const submitBtn = document.getElementById("submitPostBtn");
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "작성 중..."; }
 
   try {
     const postId = db.ref().push().key;
@@ -1065,12 +1061,22 @@ async function editPost(fandom, postId, title, content) {
 
 // ── 게시물 삭제 ──
 async function deletePost(fandom, postId) {
-  if (!confirm("정말 삭제하시겠어요? 복구할 수 없습니다.")) return;
+  // 작성자 권한 확인
+  if (!isLoggedIn || !currentUser) {
+    showToast("로그인이 필요합니다");
+    return;
+  }
 
   try {
-    // 먼저 게시물 데이터 조회 (이미지 정보 확인)
+    // 먼저 게시물 데이터 조회 (이미지 정보 + 작성자 확인)
     const postSnap = await db.ref(`community/${fandom}/${postId}`).once("value");
     const postData = postSnap.val();
+
+    if (!postData) { showToast("게시물을 찾을 수 없어요"); return; }
+    if (postData.authorUid !== currentUser.uid) {
+      showToast("본인 게시물만 삭제할 수 있어요");
+      return;
+    }
 
     // Cloudinary 이미지가 있으면 직접 삭제 (unsigned API)
     if (postData && postData.imagePublicId) {
@@ -1302,6 +1308,20 @@ async function submitComment(fandom, postId) {
 
 // ── 댓글 삭제 ──
 async function deleteComment(fandom, postId, commentId) {
+  if (!isLoggedIn || !currentUser) {
+    showToast("로그인이 필요합니다");
+    return;
+  }
+
+  // 댓글 작성자 확인
+  const snap = await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).once("value");
+  const comment = snap.val();
+  if (!comment) { showToast("댓글을 찾을 수 없어요"); return; }
+  if (comment.authorUid !== currentUser.uid) {
+    showToast("본인 댓글만 삭제할 수 있어요");
+    return;
+  }
+
   if (!confirm("댓글을 삭제하시겠어요?")) return;
 
   try {
@@ -1486,9 +1506,10 @@ async function reportPost(fandom, postId) {
   if (!reason) return;
 
   try {
-    // 기존 신고 데이터 조회
-    const snap = await db.ref(`reports/${postId}`).once("value");
-    const reportData = snap.val() || { reports: [], count: 0 };
+    // 기존 신고 데이터 조회 (fandom 포함 경로로 수정)
+    const reportPath = `reports/${fandom}/${postId}`;
+    const snap = await db.ref(reportPath).once("value");
+    const reportData = snap.val() || { reports: [], count: 0, fandom };
 
     // 중복 신고 확인
     if (reportData.reports.some(r => r.uid === currentUser.uid)) {
@@ -1505,7 +1526,7 @@ async function reportPost(fandom, postId) {
     reportData.count = reportData.reports.length;
 
     // 신고 저장
-    await db.ref(`reports/${postId}`).set(reportData);
+    await db.ref(reportPath).set(reportData);
 
     // 3회 이상 신고 시 게시물 숨김
     if (reportData.count >= 3) {

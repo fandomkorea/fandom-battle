@@ -262,7 +262,6 @@ function setMyFav(g) {
     db.ref(`users/${currentUser.uid}`).update({
       "preferences/primaryFandom": g
     });
-    console.log(`[DEBUG setMyFav] Firebase에 저장됨: ${g}`);
   }
 
   renderFavChip();
@@ -275,7 +274,6 @@ function updateQuickAccessBtn() {
   const btn = document.getElementById("quickAccessBtn");
   // ★ getMyFav() 제거: Firebase 기반의 currentUserFav 사용
   const fav = currentUserFav;
-  console.log(`[DEBUG updateQuickAccessBtn] fav=${fav}`);
   if (!btn) return;
   if (!fav) {
     btn.style.display = "none";
@@ -299,16 +297,10 @@ function scrollToMyTeam() {
 
 function renderFavChip() {
   const area = document.getElementById("favChipArea");
-  console.log(`[DEBUG renderFavChip] area found:`, !!area, `area=`, area);
-  if (!area) {
-    console.log(`[DEBUG renderFavChip] favChipArea 요소를 찾을 수 없음`);
-    return;
-  }
+  if (!area) return;
   const fav = currentUserFav; // Firebase 기반으로 변경
-  console.log(`[DEBUG renderFavChip] currentUserFav=${fav}`);
   if (!fav) {
     area.innerHTML = "";
-    console.log(`[DEBUG renderFavChip] fav가 없어서 innerHTML 초기화`);
     return;
   }
   const meta = GROUP_META[fav] || { emoji:"🌟" };
@@ -678,26 +670,17 @@ function showCommunityPage() {
     return;
   }
 
-  console.log("[DEBUG] GROUP_META 존재?", !!GROUP_META);
-  console.log("[DEBUG] GROUP_META 타입:", typeof GROUP_META);
-  console.log("[DEBUG] select.options.length:", select.options.length);
-
   // 팬덤 목록이 없으면 채우기
   if (select.options.length <= 1) {
     if (GROUP_META && typeof GROUP_META === 'object') {
-      console.log("[DEBUG] GROUP_META 옵션 추가 시작...");
       const groupNames = Object.keys(GROUP_META);
-      console.log("[DEBUG] 추가할 팬덤 수:", groupNames.length);
-
       groupNames.forEach(groupName => {
         const meta = GROUP_META[groupName];
         const option = document.createElement("option");
         option.value = groupName;
         option.textContent = `${meta.emoji} ${groupName}`;
         select.appendChild(option);
-        console.log("[DEBUG] 옵션 추가됨:", groupName);
       });
-      console.log("[DEBUG] 총 옵션 개수:", select.options.length);
     } else {
       console.error("[ERROR] GROUP_META가 객체가 아님");
     }
@@ -705,11 +688,7 @@ function showCommunityPage() {
 
   // 최애팬덤이 있으면 자동 선택
   if (currentUserFav) {
-    console.log("[DEBUG] currentUserFav 설정 중:", currentUserFav);
     select.value = currentUserFav;
-    console.log("[DEBUG] select.value 설정됨:", select.value);
-  } else {
-    console.log("[DEBUG] currentUserFav가 비어있음");
   }
 
   // 선택된 팬덤이 있으면 게시물 로드 (최애팬덤 여부와 상관없이)

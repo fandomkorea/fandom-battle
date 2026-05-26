@@ -352,14 +352,6 @@ function loadAuthUserData(callback) {
       currentUser.lastVoteDate = data.lastVoteDate || null;
       currentUser.activePage = data.activePage || "vote";
 
-      console.log(`[DEBUG setupAuthListener] 사용자 데이터 로드:`, {
-        primaryFandom: currentUser.primaryFandom,
-        currentUserFav,
-        lastFandomChangeTime: currentUser.lastFandomChangeTime,
-        votingStreak: currentUser.votingStreak,
-        lastVoteDate: currentUser.lastVoteDate,
-        activePage: currentUser.activePage
-      });
     }
     if (callback) callback();
   }).catch(err => {
