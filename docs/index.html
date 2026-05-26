@@ -2918,6 +2918,175 @@ function showAdRewardModal(totalVotes, watchCount) {
   };
 }
 
+// ── 투표 완료 모달 ──
+function showVoteCompleteModal(type, group, emoji, param3, param4) {
+  const existing = document.getElementById("voteCompleteModal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "voteCompleteModal";
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(4px);
+  `;
+
+  const content = document.createElement("div");
+
+  if (type === "free") {
+    // 무료 투표 완료
+    const streak = param3;
+    const streakDisplay = streak > 1 ? `🔥 ${streak}일 연속 투표 중!` : "";
+
+    content.style.cssText = `
+      background: linear-gradient(135deg, rgba(20, 15, 40, 0.98) 0%, rgba(30, 20, 50, 0.98) 100%);
+      border: 1.5px solid rgba(77, 158, 255, 0.4);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 420px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(77, 158, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      animation: modalSlideIn 0.3s ease-out;
+      text-align: center;
+    `;
+
+    content.innerHTML = `
+      <div style="font-size: 3.5rem; margin-bottom: 12px">✅</div>
+
+      <h2 style="
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, #4d9eff, #77b3ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      ">투표 완료!</h2>
+
+      <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.95rem; margin-bottom: 24px; line-height: 1.6;">
+        <strong style="font-size: 1.2rem; color: var(--blue)">${emoji} ${group}</strong>에 투표했어요!<br>
+        <span style="font-size: 0.9rem">1등을 향해 파이팅! 💪</span>
+      </p>
+
+      ${streakDisplay ? `
+      <div style="background: linear-gradient(135deg, rgba(255, 77, 141, 0.15) 0%, rgba(255, 107, 157, 0.1) 100%); border: 1.5px solid rgba(255, 77, 141, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+        <div style="font-size: 1.3rem; font-weight: 700; color: var(--pink)">${streakDisplay}</div>
+      </div>
+      ` : ``}
+
+      <button id="voteCompleteClose" style="
+        width: 100%;
+        padding: 14px 24px;
+        background: linear-gradient(135deg, var(--blue) 0%, rgba(77, 158, 255, 0.85) 100%);
+        border: none;
+        border-radius: 12px;
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-family: inherit;
+      " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 20px rgba(77,158,255,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
+        다음 투표하기
+      </button>
+    `;
+  } else if (type === "ad") {
+    // 광고 투표 완료
+    const adCount = param3;
+    const remaining = param4;
+
+    content.style.cssText = `
+      background: linear-gradient(135deg, rgba(20, 15, 40, 0.98) 0%, rgba(30, 20, 50, 0.98) 100%);
+      border: 1.5px solid rgba(255, 193, 7, 0.4);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 420px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(255, 193, 7, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      animation: modalSlideIn 0.3s ease-out;
+      text-align: center;
+    `;
+
+    content.innerHTML = `
+      <div style="font-size: 3.5rem; margin-bottom: 12px">🎉</div>
+
+      <h2 style="
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      ">광고 투표 완료!</h2>
+
+      <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.95rem; margin-bottom: 24px; line-height: 1.6;">
+        <strong style="font-size: 1.2rem; color: #ffc107">${emoji} ${group}</strong>에 투표했어요!<br>
+        <span style="font-size: 0.9rem">멋진 선택입니다! ⭐</span>
+      </p>
+
+      <div style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 152, 0, 0.1) 100%); border: 1.5px solid rgba(255, 193, 7, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-around;">
+          <div>
+            <div style="font-size: 0.7rem; color: rgba(255, 255, 255, 0.6); font-weight: 600; margin-bottom: 4px">광고 투표</div>
+            <div style="font-size: 1.8rem; font-weight: 700; color: #ffc107">${adCount}<span style="font-size: 1rem">/10</span></div>
+          </div>
+          <div>
+            <div style="font-size: 0.7rem; color: rgba(255, 255, 255, 0.6); font-weight: 600; margin-bottom: 4px">남은 투표권</div>
+            <div style="font-size: 1.8rem; font-weight: 700; color: #ffc107">${remaining}</div>
+          </div>
+        </div>
+      </div>
+
+      <button id="voteCompleteClose" style="
+        width: 100%;
+        padding: 14px 24px;
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        border: none;
+        border-radius: 12px;
+        color: #1a1a1a;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-family: inherit;
+      " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 20px rgba(255,193,7,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
+        완료!
+      </button>
+    `;
+  }
+
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+
+  // 타이머: 2.5초 후 자동 닫기
+  const autoCloseTimer = setTimeout(() => {
+    modal.remove();
+  }, 2500);
+
+  document.getElementById("voteCompleteClose").onclick = () => {
+    clearTimeout(autoCloseTimer);
+    modal.remove();
+  };
+
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      clearTimeout(autoCloseTimer);
+      modal.remove();
+    }
+  };
+}
+
 // 닉네임/팬덤 설정 모달 표시
 function showAuthSetupModal() {
   if (document.getElementById("authSetupModal")) return;
@@ -3408,8 +3577,7 @@ async function voteForGroup(group) {
       recordVote(group); // 로컬 히스토리 기록
       addActivity(group);
       const streak = updateVotingStreak();
-      const streakMsg = streak > 1 ? `🔥 ${streak}일 연속 투표 중!` : "";
-      showToast(meta.emoji + " " + group + " 무료 투표 완료! 1등을 향해!" + (streakMsg ? " " + streakMsg : ""));
+      showVoteCompleteModal("free", group, meta.emoji, streak);
       showConfetti(meta.color);
 
       // Firebase에 투표 기록 (비동기)
@@ -3458,8 +3626,7 @@ async function voteForGroup(group) {
       // Firebase에 투표 기록 (비동기)
       db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
 
-      const remaining = pendingAdVotes;
-      showToast(`${meta.emoji} ${group} 광고 투표 완료! 광고투표 ${newAdVoteCount}/10표 🎉 ${remaining > 0 ? `(남은 투표권: ${remaining}개)` : ""}`);
+      showVoteCompleteModal("ad", group, meta.emoji, newAdVoteCount, pendingAdVotes);
 
       renderMyVotingHistory();
       showMyVotedBar(cachedTodayFreeVote);
