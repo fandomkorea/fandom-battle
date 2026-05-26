@@ -4976,7 +4976,7 @@ function showFandomSetupPopup() {
         더 편리한 투표 경험을 할 수 있어요 ✨
       </div>
       <div style="display: flex; gap: 12px; flex-direction: column">
-        <button onclick="signInWithGoogle(); document.getElementById('fandomSetupPopup')?.remove();" style="
+        <button onclick="document.getElementById('fandomSetupPopup')?.remove(); showVoteLoginModal(null);" style="
           padding: 14px 24px;
           background: var(--primary);
           color: #fff;
