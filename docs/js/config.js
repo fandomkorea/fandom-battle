@@ -108,7 +108,7 @@ const GROUP_META = {
   "BOYNEXTDOOR":       { emoji: "🚪", color: "#1565c0", fandom: "BNDCLASS", kr: "보이넥스트도어" },
   "ILLIT":             { emoji: "💫", color: "#9c27b0", fandom: "ILLUMINATION", kr: "아일릿" },
   "BABYMONSTER":       { emoji: "👹", color: "#c41c3b", fandom: "BAEMON", kr: "베이비몬스터" },
-  "QWER":              { emoji: "🌈", color: "#ff6f00", fandom: "QWERIC", kr: "큐어" },
+  "QWER":              { emoji: "🎵", color: "#ff6f00", fandom: "QWERIC", kr: "큐어" },
   "Hearts2Hearts":     { emoji: "💖", color: "#ec407a", fandom: "HEARTS", kr: "하츠" },
   "KiiiKiii":          { emoji: "✨", color: "#e91e63", fandom: "KIIIS", kr: "키키키" },
   "Baby DONT Cry":     { emoji: "🎀", color: "#c2185b", fandom: "BEAVERS", kr: "베이비돈트크라이" },

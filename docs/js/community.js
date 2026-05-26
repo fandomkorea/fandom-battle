@@ -759,9 +759,8 @@ function showPostCreateForm() {
     document.getElementById("postContentCount").textContent = document.getElementById("postContent").value.length;
   };
 
-  // 모달 표시
+  // 모달 표시 (드롭다운은 이미 selectedFandom으로 확인됨 — 덮어쓰지 않음)
   const modal = document.getElementById("postCreateModal");
-  document.getElementById("communityFandomSelect").value = currentUser.primaryFandom;
   modal.style.display = "flex";
 
   // 포커스 설정

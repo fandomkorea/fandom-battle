@@ -414,6 +414,11 @@ function confirmAuthSetup() {
     return;
   }
 
+  if (!fandom) {
+    showToast("💜 최애 팬덤을 선택해주세요!");
+    return;
+  }
+
   saveAuthUserData(nickname, fandom);
 }
 

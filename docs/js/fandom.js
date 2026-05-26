@@ -301,21 +301,25 @@ async function changePrimaryFandom(newFandom) {
     return;
   }
 
-  // 변경 전 확인 메시지 (커스텀 모달)
-  const emoji = GROUP_META[newFandom]?.emoji || "💜";
-  const confirmed = await showFandomChangeConfirmModal(newFandom, emoji);
-
-  if (!confirmed) return;
+  // 처음 팬덤 설정이면 확인 모달 없이 바로 진행
+  const isFirstTimeSetting = !currentUser.primaryFandom;
+  if (!isFirstTimeSetting) {
+    const emoji = GROUP_META[newFandom]?.emoji || "💜";
+    const confirmed = await showFandomChangeConfirmModal(newFandom, emoji);
+    if (!confirmed) return;
+  }
 
   try {
     const now = Date.now();
-    await db.ref(`users/${currentUser.uid}`).update({
-      "preferences/primaryFandom": newFandom,
-      lastFandomChangeTime: now
-    });
+    const updateData = { "preferences/primaryFandom": newFandom };
+    if (!isFirstTimeSetting) {
+      updateData.lastFandomChangeTime = now; // 기존 팬덤이 있을 때만 변경 시간 기록
+    }
+
+    await db.ref(`users/${currentUser.uid}`).update(updateData);
 
     currentUser.primaryFandom = newFandom;
-    currentUser.lastFandomChangeTime = now;
+    currentUser.lastFandomChangeTime = isFirstTimeSetting ? null : now;
     currentUserFav = newFandom; // Firebase에서 읽어온 것처럼 동기화
 
     // ★ localStorage도 업데이트 (getMyFav() 호출 시 최신 값 사용)
@@ -377,6 +381,12 @@ function canChangeFandom() {
 function canWritePost(selectedFandom) {
   if (!isLoggedIn || !currentUser) {
     showToast("로그인이 필요합니다");
+    return false;
+  }
+
+  // 팬덤 미설정이면 팬덤 선택 안내
+  if (!currentUser.primaryFandom) {
+    showToast("💜 팬덤을 먼저 설정해주세요! 하단 '팬덤 선택' 버튼을 눌러보세요.");
     return false;
   }
 
