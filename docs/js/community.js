@@ -395,8 +395,8 @@ async function showPostDetail(fandom, postId) {
 
     // 참여 버튼 설정 (좋아요, 댓글)
     const engagementHTML = `
-      <button class="post-action-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,rgba(255,100,100,0.1) 0%,rgba(255,140,140,0.05) 100%);border:1px solid rgba(255,100,100,0.2);position:relative;overflow:hidden;border-radius:8px;padding:8px 12px;font-size:0.9rem;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);cursor:pointer" onclick="toggleLike('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()" onmouseover="this.style.background='linear-gradient(135deg,rgba(255,100,100,0.18) 0%,rgba(255,140,140,0.12) 100%)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(255,100,100,0.2)';this.style.borderColor='rgba(255,100,100,0.4)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(255,100,100,0.1) 0%,rgba(255,140,140,0.05) 100%)';this.style.transform='translateY(0)';this.style.boxShadow='none';this.style.borderColor='rgba(255,100,100,0.2)'">
-        <span style="font-size:1rem;display:inline-block;transition:transform 0.3s">❤️</span>
+      <button id="postDetailLikeBtn" class="post-action-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,rgba(255,100,100,0.1) 0%,rgba(255,140,140,0.05) 100%);border:1px solid rgba(255,100,100,0.2);position:relative;overflow:hidden;border-radius:8px;padding:8px 12px;font-size:0.9rem;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);cursor:pointer" onclick="toggleLike('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(255,100,100,0.2)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
+        <span id="postDetailLikeHeart" style="font-size:1rem;display:inline-block;transition:transform 0.3s">🤍</span>
         <span style="font-weight:700;color:var(--text);font-size:0.9rem">좋아요</span>
         <span id="detail-like-count-${postId}" style="background:rgba(255,100,100,0.2);padding:2px 8px;border-radius:12px;font-size:0.8rem;font-weight:700;color:rgb(255,100,100);transition:all 0.2s">0</span>
       </button>
@@ -413,7 +413,7 @@ async function showPostDetail(fandom, postId) {
     if (isAuthor) {
       managementHTML = `
         <button class="post-action-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,rgba(100,200,100,0.1) 0%,rgba(140,220,140,0.05) 100%);border:1px solid rgba(100,200,100,0.2);border-radius:8px;padding:8px 12px;font-size:0.9rem;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);color:var(--text);cursor:pointer" onclick="editPost('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(post.title)}', '${escAttr(post.content)}'); event.stopPropagation()" onmouseover="this.style.background='linear-gradient(135deg,rgba(100,200,100,0.18) 0%,rgba(140,220,140,0.12) 100%)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(100,200,100,0.2)';this.style.borderColor='rgba(100,200,100,0.4)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(100,200,100,0.1) 0%,rgba(140,220,140,0.05) 100%)';this.style.transform='translateY(0)';this.style.boxShadow='none';this.style.borderColor='rgba(100,200,100,0.2)'"><span style="font-size:1rem">✏️</span><span style="font-weight:700">수정</span></button>
-        <button class="post-action-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,rgba(255,100,100,0.15) 0%,rgba(255,120,120,0.05) 100%);border:1px solid rgba(255,100,100,0.3);border-radius:8px;padding:8px 12px;font-size:0.9rem;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);color:rgb(255,100,100);cursor:pointer" onclick="confirmDeletePost('${escAttr(fandom)}', '${escAttr(postId)}'); closePostDetail(); event.stopPropagation()" onmouseover="this.style.background='linear-gradient(135deg,rgba(255,100,100,0.25) 0%,rgba(255,120,120,0.15) 100%)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(255,100,100,0.25)';this.style.borderColor='rgba(255,100,100,0.5)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(255,100,100,0.15) 0%,rgba(255,120,120,0.05) 100%)';this.style.transform='translateY(0)';this.style.boxShadow='none';this.style.borderColor='rgba(255,100,100,0.3)'"><span style="font-size:1rem">🗑️</span><span style="font-weight:700">삭제</span></button>
+        <button class="post-action-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,rgba(255,100,100,0.15) 0%,rgba(255,120,120,0.05) 100%);border:1px solid rgba(255,100,100,0.3);border-radius:8px;padding:8px 12px;font-size:0.9rem;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);color:rgb(255,100,100);cursor:pointer" onclick="confirmDeletePost('${escAttr(fandom)}', '${escAttr(postId)}', true); event.stopPropagation()" onmouseover="this.style.background='linear-gradient(135deg,rgba(255,100,100,0.25) 0%,rgba(255,120,120,0.15) 100%)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(255,100,100,0.25)';this.style.borderColor='rgba(255,100,100,0.5)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(255,100,100,0.15) 0%,rgba(255,120,120,0.05) 100%)';this.style.transform='translateY(0)';this.style.boxShadow='none';this.style.borderColor='rgba(255,100,100,0.3)'"><span style="font-size:1rem">🗑️</span><span style="font-weight:700">삭제</span></button>
       `;
     } else {
       managementHTML = `
@@ -422,12 +422,24 @@ async function showPostDetail(fandom, postId) {
     }
     document.getElementById("postDetailManagement").innerHTML = managementHTML;
 
-    // 좋아요 수 업데이트 (리스너 저장)
+    // 좋아요 수 업데이트 + 내 좋아요 상태 반영 (리스너 저장)
     const likesCallback = (snap) => {
       const likes = snap.val() || {};
       const likeCount = Object.keys(likes).length;
       const el = document.getElementById(`detail-like-count-${postId}`);
       if (el) el.textContent = likeCount;
+
+      // 내가 좋아요 했는지 시각적으로 표시
+      const likeBtn = document.getElementById("postDetailLikeBtn");
+      const likeHeart = document.getElementById("postDetailLikeHeart");
+      if (likeBtn && isLoggedIn && currentUser) {
+        const hasLiked = !!likes[currentUser.uid];
+        likeBtn.style.background = hasLiked
+          ? 'linear-gradient(135deg,rgba(255,80,80,0.35) 0%,rgba(255,120,120,0.25) 100%)'
+          : 'linear-gradient(135deg,rgba(255,100,100,0.1) 0%,rgba(255,140,140,0.05) 100%)';
+        likeBtn.style.borderColor = hasLiked ? 'rgba(255,80,80,0.6)' : 'rgba(255,100,100,0.2)';
+        if (likeHeart) likeHeart.textContent = hasLiked ? '❤️' : '🤍';
+      }
     };
     const likesRef = db.ref(`community/${fandom}/${postId}/likes`);
     likesRef.on("value", likesCallback);
@@ -716,9 +728,9 @@ function updateCommentCount(fandom, postId) {
 }
 
 // ── 게시물 삭제 확인 ──
-function confirmDeletePost(fandom, postId) {
+function confirmDeletePost(fandom, postId, closeDetail = false) {
   if (confirm("정말 이 게시물을 삭제하시겠어요?\n삭제하면 댓글도 함께 사라져요.")) {
-    deletePost(fandom, postId);
+    deletePost(fandom, postId, closeDetail);
   }
 }
 
@@ -808,6 +820,14 @@ function openPostCreateModal() {
   // 팬덤 표시
   document.getElementById("postCreateFandom").textContent = selectedFandom;
 
+  // 글자 수 카운터 oninput 핸들러 연결
+  document.getElementById("postTitle").oninput = () => {
+    document.getElementById("postTitleCount").textContent = document.getElementById("postTitle").value.length;
+  };
+  document.getElementById("postContent").oninput = () => {
+    document.getElementById("postContentCount").textContent = document.getElementById("postContent").value.length;
+  };
+
   // 모달 표시
   document.getElementById("postCreateModal").style.display = "flex";
   document.getElementById("postTitle").focus();
@@ -840,20 +860,30 @@ function closePostCreateModal() {
   document.getElementById("postImagePreviewImg").src = "";
 }
 
-// 모달 외부 클릭 시 닫기
+// 작성 중 내용 확인 후 닫기
+function confirmAndClosePostModal() {
+  const title = document.getElementById("postTitle").value.trim();
+  const content = document.getElementById("postContent").value.trim();
+  if (title || content || postImageUrl) {
+    if (!confirm("작성 중인 내용이 사라져요. 정말 닫으시겠어요?")) return;
+  }
+  closePostCreateModal();
+}
+
+// 모달 외부 클릭 시 닫기 (내용 있으면 확인)
 document.addEventListener("click", (e) => {
   const modal = document.getElementById("postCreateModal");
   if (e.target === modal) {
-    closePostCreateModal();
+    confirmAndClosePostModal();
   }
 });
 
-// ESC 키로 모달 닫기
+// ESC 키로 모달 닫기 (내용 있으면 확인)
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     const modal = document.getElementById("postCreateModal");
     if (modal.style.display === "flex") {
-      closePostCreateModal();
+      confirmAndClosePostModal();
     }
   }
 });
@@ -1064,7 +1094,7 @@ async function editPost(fandom, postId, title, content) {
 }
 
 // ── 게시물 삭제 ──
-async function deletePost(fandom, postId) {
+async function deletePost(fandom, postId, closeAfterDelete = false) {
   // 작성자 권한 확인
   if (!isLoggedIn || !currentUser) {
     showToast("로그인이 필요합니다");
@@ -1111,6 +1141,7 @@ async function deletePost(fandom, postId) {
     // Database에서 게시물 삭제
     await db.ref(`community/${fandom}/${postId}`).remove();
     showToast("✅ 게시물이 삭제되었어요");
+    if (closeAfterDelete) closePostDetail();
   } catch (error) {
     showToast("삭제 실패: " + error.message);
     console.error(error);
@@ -1214,6 +1245,9 @@ function loadLikesForPostList(fandom, postId) {
     const likeCount = Object.keys(likes).length;
     if (likeCountEl) {
       likeCountEl.textContent = likeCount;
+      // 인기순 정렬 기준 data-likes 속성도 실시간 업데이트
+      const postEl = likeCountEl.closest('.post-item');
+      if (postEl) postEl.setAttribute('data-likes', likeCount);
     }
   };
 
@@ -1414,7 +1448,8 @@ function openPostImageUpload() {
       return;
     }
 
-    showToast("⏳ 이미지를 Cloudinary에 업로드 중입니다...");
+    const uploadBtn = document.getElementById("postImageUploadBtn");
+    if (uploadBtn) { uploadBtn.disabled = true; uploadBtn.textContent = "⏳ 업로드 중..."; }
 
     try {
       const formData = new FormData();
@@ -1453,6 +1488,8 @@ function openPostImageUpload() {
     } catch (error) {
       console.error("이미지 업로드 실패:", error);
       showToast("❌ 이미지 업로드에 실패했습니다.");
+    } finally {
+      if (uploadBtn) { uploadBtn.disabled = false; uploadBtn.textContent = "📸 이미지 추가"; }
     }
   };
   input.click();
