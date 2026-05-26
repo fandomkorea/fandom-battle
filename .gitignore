@@ -1,0 +1,11 @@
+# 사이트 관리 문서 (민감한 정보 포함 가능 — GitHub에 올리지 않음)
+SITE_MANAGEMENT.md
+
+# 로컬 개발 환경
+node_modules/
+.env
+.env.local
+
+# OS 파일
+.DS_Store
+Thumbs.db
