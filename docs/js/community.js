@@ -380,9 +380,14 @@ async function showPostDetail(fandom, postId) {
     const contentEl = document.getElementById("postDetailContent");
     contentEl.textContent = post.content;
 
+    // 이전 게시글 이미지 요소 제거 (다른 게시글 볼 때 이미지 잔류 방지)
+    const existingImageEl = document.getElementById("postDetailImageEl");
+    if (existingImageEl) existingImageEl.remove();
+
     // 이미지 표시 (있으면)
     if (post.imageUrl) {
       const imageEl = document.createElement("div");
+      imageEl.id = "postDetailImageEl";
       imageEl.style.cssText = "margin:16px 0;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(124,77,255,0.2)";
       imageEl.innerHTML = `<img src="${escHtml(post.imageUrl)}" style="width:100%;height:auto;object-fit:cover;display:block" alt="게시물 이미지">`;
       contentEl.parentNode.insertBefore(imageEl, contentEl.nextSibling);
@@ -1027,15 +1032,14 @@ async function submitPost() {
       showToast("✅ 게시물이 작성되었어요!");
     }
     closePostCreateModal();
-
-    showToast("✅ 게시물이 작성되었어요!");
-    closePostCreateModal();
   } catch (error) {
     showToast("게시물 작성 실패: " + error.message);
     console.error(error);
   } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = "작성하기";
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "작성하기";
+    }
   }
 }
 
@@ -1173,9 +1177,9 @@ async function toggleLike(fandom, postId) {
   loadLikes(fandom, postId);
 }
 
-// ── 좋아요 수 로드 ──
+// ── 좋아요 수 로드 (once: toggleLike 후 1회성 갱신용) ──
 function loadLikes(fandom, postId) {
-  db.ref(`community/${fandom}/${postId}/likes`).on("value", snap => {
+  db.ref(`community/${fandom}/${postId}/likes`).once("value", snap => {
     const likes = snap.val() || {};
     const likeCount = Object.keys(likes).length;
     const likeCountEl = document.getElementById(`like-count-${postId}`);
