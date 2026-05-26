@@ -1879,9 +1879,67 @@ function signInWithGoogle() {
     });
 }
 
-// Kakao 로그인 (현재 스텁)
-function signInWithKakao() {
-  showToast("Kakao 로그인은 준비 중입니다 🔜");
+// X (Twitter) 로그인
+function signInWithTwitter() {
+  const provider = new firebase.auth.TwitterAuthProvider();
+  firebase.auth().signInWithPopup(provider)
+    .then(result => {
+      currentUser = result.user;
+      isLoggedIn = true;
+      syncVotesWithServer();
+      loadAuthUserData(() => {
+        if (!currentUser.customNickname) {
+          showAuthSetupModal();
+        } else {
+          updateAuthUI();
+          showToast(`👤 ${currentUser.customNickname}님 환영합니다!`);
+
+          // 투표 대기 중이면 투표 진행
+          if (window.pendingVoteGroup) {
+            const group = window.pendingVoteGroup;
+            window.pendingVoteGroup = null;
+            setTimeout(() => voteForGroup(group), 500);
+          }
+        }
+      });
+    })
+    .catch(error => {
+      showToast("X 로그인 실패: " + error.message);
+      console.error(error);
+    });
+}
+
+// Apple ID 로그인
+function signInWithApple() {
+  const provider = new firebase.auth.OAuthProvider('apple.com');
+  provider.addScope('email');
+  provider.addScope('name');
+
+  firebase.auth().signInWithPopup(provider)
+    .then(result => {
+      currentUser = result.user;
+      isLoggedIn = true;
+      syncVotesWithServer();
+      loadAuthUserData(() => {
+        if (!currentUser.customNickname) {
+          showAuthSetupModal();
+        } else {
+          updateAuthUI();
+          showToast(`👤 ${currentUser.customNickname}님 환영합니다!`);
+
+          // 투표 대기 중이면 투표 진행
+          if (window.pendingVoteGroup) {
+            const group = window.pendingVoteGroup;
+            window.pendingVoteGroup = null;
+            setTimeout(() => voteForGroup(group), 500);
+          }
+        }
+      });
+    })
+    .catch(error => {
+      showToast("Apple ID 로그인 실패: " + error.message);
+      console.error(error);
+    });
 }
 
 // 로그아웃
@@ -1931,6 +1989,18 @@ function loginFromVoteModalKakao(group) {
   document.getElementById("voteLoginModal")?.remove();
   window.pendingVoteGroup = group;
   signInWithKakao();
+}
+
+function loginFromVoteModalTwitter(group) {
+  document.getElementById("voteLoginModal")?.remove();
+  window.pendingVoteGroup = group;
+  signInWithTwitter();
+}
+
+function loginFromVoteModalApple(group) {
+  document.getElementById("voteLoginModal")?.remove();
+  window.pendingVoteGroup = group;
+  signInWithApple();
 }
 
 // 로그인 상태 감시
@@ -3287,9 +3357,13 @@ function showVoteLoginModal(group) {
           <i class="fab fa-google" style="font-size: 1.3rem"></i>
           <span>Google로 로그인</span>
         </button>
-        <button onclick="loginFromVoteModalKakao('${escAttr(group)}')" style="width: 100%; padding: 16px 12px; background: #ffe812; border: none; border-radius: 8px; color: #000; font-weight: 700; font-size: 1rem; font-family: inherit; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.12)">
-          <svg width="20" height="20" viewBox="0 0 200 200" style="fill: #000"><text x="100" y="130" font-size="140" font-weight="900" text-anchor="middle" font-family="sans-serif">K</text></svg>
-          <span>Kakao로 로그인</span>
+        <button onclick="loginFromVoteModalTwitter('${escAttr(group)}')" style="width: 100%; padding: 16px 12px; background: #000; border: none; border-radius: 8px; color: #fff; font-weight: 700; font-size: 1rem; font-family: inherit; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.3)">
+          <i class="fab fa-x-twitter" style="font-size: 1.3rem"></i>
+          <span>X로 로그인</span>
+        </button>
+        <button onclick="loginFromVoteModalApple('${escAttr(group)}')" style="width: 100%; padding: 16px 12px; background: #000; border: none; border-radius: 8px; color: #fff; font-weight: 700; font-size: 1rem; font-family: inherit; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.3)">
+          <i class="fab fa-apple" style="font-size: 1.3rem"></i>
+          <span>Apple ID로 로그인</span>
         </button>
       </div>
     </div>
