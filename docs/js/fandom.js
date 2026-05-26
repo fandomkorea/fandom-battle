@@ -328,6 +328,9 @@ async function changePrimaryFandom(newFandom) {
     renderFavChip(); // 하단 팬덤 표시 업데이트
     console.log(`[DEBUG] renderFavChip() 호출 후, favChipArea:`, document.getElementById("favChipArea")?.innerHTML);
 
+    // ★ 랭킹 하이라이트 즉시 갱신 (my-fav-rank 클래스 반영)
+    if (allRankingsData) renderRankings(allRankingsData);
+
     console.log(`[DEBUG] updateFavBar() 호출 전`);
     updateFavBar(); // 하단 바 업데이트
     console.log(`[DEBUG] updateFavBar() 호출 후, favBar:`, document.getElementById("favBar")?.innerHTML.substring(0, 100));

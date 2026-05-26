@@ -786,6 +786,11 @@ function openPostCreateModal() {
     return;
   }
 
+  // 팬덤 변경 후 24시간 제약 확인
+  if (!canWritePost(selectedFandom)) {
+    return;
+  }
+
   // 모달 초기화
   document.getElementById("postTemplate").value = "free";
   document.getElementById("postTitle").value = "";
