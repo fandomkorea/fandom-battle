@@ -632,7 +632,7 @@ function showVotePage() {
     tab.classList.toggle("active", i === 0);
   });
 
-  // ★ Firebase에 저장 (비동기, 에러 무시)
+  sessionStorage.setItem('activePage', 'vote');
   if (isLoggedIn && currentUser && db) {
     db.ref(`users/${currentUser.uid}`).update({ activePage: "vote" }).catch(() => {});
   }
@@ -665,7 +665,7 @@ function showCommunityPage() {
     tab.classList.toggle("active", i === 1);
   });
 
-  // ★ Firebase에 저장 (비동기, 에러 무시)
+  sessionStorage.setItem('activePage', 'community');
   if (isLoggedIn && currentUser && db) {
     db.ref(`users/${currentUser.uid}`).update({ activePage: "community" }).catch(() => {});
   }

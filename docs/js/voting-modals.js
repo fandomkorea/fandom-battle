@@ -589,8 +589,8 @@ function init() {
       });
     }
 
-    // ★ 마지막 활성 페이지 복원 (Firebase 데이터 사용)
-    const activePage = (isLoggedIn && currentUser?.activePage) ? currentUser.activePage : "vote";
+    // ★ 마지막 활성 페이지 복원 (sessionStorage 우선, Firebase 보조)
+    const activePage = sessionStorage.getItem('activePage') || "vote";
     if (activePage === "community") {
       showCommunityPage();
     } else {

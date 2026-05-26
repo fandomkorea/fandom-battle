@@ -328,7 +328,9 @@ async function showPostDetail(fandom, postId) {
     window.addEventListener('popstate', function(event) {
       if (document.getElementById("postDetailPage").style.display !== "none") {
         if (!event.state || event.state.page !== "postDetail") {
+          window.popstateActive = true;
           closePostDetail();
+          window.popstateActive = false;
         }
       }
     });
