@@ -366,6 +366,13 @@ function watchAd() {
   }
   if (!currentUser) return;
 
+  // PC 환경 체크 — TNK 오퍼월은 모바일 전용
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  if (!isMobile) {
+    showToast('📱 광고 시청은 모바일에서만 가능해요! 모바일로 접속해주세요 😊');
+    return;
+  }
+
   const uid = currentUser.uid;
   const prevPendingAdVotes = pendingAdVotes;
   const prevAdWatchCount = adWatchCount;
