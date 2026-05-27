@@ -209,24 +209,40 @@ async function loadUserAdVotes() {
   if (!currentUser) return;
 
   try {
-    const snap = await db.ref(`users/${currentUser.uid}/pendingAdVotes`).once("value");
-    pendingAdVotes = snap.val() || 0;
-
-    // ★ 광고 시청 횟수 로드 (일일 리셋)
     const today = getTodayKey();
-    const adWatchSnap = await db.ref(`users/${currentUser.uid}/ad_watch_count_${today}`).once("value");
-    adWatchCount = adWatchSnap.val() || 0;
 
-    // ★ 최애팬덤은 loadAuthUserData()에서 처리됨 (preferences/primaryFandom)
+    // ★ 2회 병렬 읽기로 통합
+    // 기존: users/{uid} 하위 경로 개별 4회 + votes/{today}/{uid} 1회 = 5회 순차
+    // 변경: users/{uid} 전체 1회 + votes/{today}/{uid} 1회 = 2회 병렬 (~5배 빠름)
+    const [userSnap, freeVoteSnap] = await Promise.all([
+      db.ref(`users/${currentUser.uid}`).once("value"),
+      db.ref(`votes/${today}/${currentUser.uid}`).once("value")
+    ]);
 
-    // 오늘의 투표 정보도 함께 로드
-    await loadTodayVotesFromFirebase();
+    // ── users/{uid} 전체에서 필요한 값 추출 ──
+    const data = userSnap.val() || {};
 
-    // ★ 사용자 닉네임/팬덤 로드
-    await new Promise((resolve) => loadAuthUserData(resolve));
+    // 투표권
+    pendingAdVotes = data.pendingAdVotes || 0;
+    adWatchCount = data[`ad_watch_count_${today}`] || 0;
+    cachedTodayAdVotes = data[`ad_votes_used_${today}`] || 0;
 
-    updateFavBar(); // 로드 후 팬덤 선택 바 업데이트
-    updateAuthUI(); // ★ 닉네임 표시 업데이트
+    // 무료 투표 기록
+    cachedTodayFreeVote = freeVoteSnap.exists() ? freeVoteSnap.val().group : null;
+
+    // 닉네임 / 팬덤 (기존 loadAuthUserData 역할 통합)
+    currentUser.customNickname = data.nickname || null;
+    currentUser.customFandom = data.fandom || null;
+    currentUser.primaryFandom = data.preferences?.primaryFandom || null;
+    currentUserFav = data.preferences?.primaryFandom || null;
+    if (currentUserFav) localStorage.setItem('my_fav_group', currentUserFav);
+    currentUser.lastFandomChangeTime = data.lastFandomChangeTime || 0;
+    currentUser.votingStreak = data.votingStreak || 0;
+    currentUser.lastVoteDate = data.lastVoteDate || null;
+    currentUser.activePage = data.activePage || "vote";
+
+    updateFavBar();
+    updateAuthUI();
 
     // ★ 새로고침 시 커뮤니티 페이지 복원
     // communityPostsLoaded가 false이면 init() → loadCommunityPosts()가 실패한 것 → 재시도

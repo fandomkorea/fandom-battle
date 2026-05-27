@@ -42,7 +42,6 @@ async function loadTodayVotesFromFirebase() {
     cachedTodayAdVotes = 0;
   }
 
-  console.log(`오늘 투표 로드: 무료=${cachedTodayFreeVote}, 광고=${cachedTodayAdVotes}`);
 }
 
 // ── 투표 스트릭 (연속 투표 일수) ──
