@@ -332,8 +332,8 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
 
   postEl.innerHTML = `
     <div class="post-list-left">
-      ${fandomBadgeHtml}
       <div class="post-title-row">
+        ${fandomBadgeHtml}
         <div class="post-list-title">${escHtml(post.title)}</div>
         <div class="post-list-indicators">
           <span class="post-comment-badge">💬 <span id="comment-count-${postId}">0</span></span>
