@@ -169,6 +169,18 @@ function setupAuthListener() {
     if (user) {
       currentUser = user;
       isLoggedIn = true;
+
+      // ★ 커뮤니티 게시물 조기 로드: auth 완료 즉시 localStorage 팬덤 캐시로 선제 로드
+      // (loadUserAdVotes 체인 완료까지 기다리지 않아 체감 속도 개선)
+      const _cachedFandom = localStorage.getItem('my_fav_group');
+      if (sessionStorage.getItem('activePage') === 'community' && _cachedFandom) {
+        const _sel = document.getElementById('communityFandomSelect');
+        if (_sel && !_sel.value) {
+          _sel.value = _cachedFandom;
+          if (typeof loadCommunityPosts === 'function') loadCommunityPosts();
+        }
+      }
+
       await loadUserAdVotes(); // Firebase에서 광고 투표권 로드 (닉네임도 함께 로드)
       // loadUserAdVotes() 내에서 updateAuthUI()를 호출하므로 여기서는 안 함
 

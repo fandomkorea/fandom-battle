@@ -84,9 +84,9 @@ function loadCommunityPosts() {
     </div>
   `;
 
-  // Firebase 실시간 리스너
+  // 1회 읽기 (실시간 구독 제거 → 읽기 횟수 절감)
   currentCommunityListener = `community/${selectedFandom}`;
-  db.ref(currentCommunityListener).on("value", snap => {
+  db.ref(currentCommunityListener).once("value", snap => {
     const posts = snap.val() || {};
 
     if (Object.keys(posts).length === 0) {
