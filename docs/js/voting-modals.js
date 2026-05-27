@@ -21,23 +21,48 @@ function showVotePurchaseModal() {
   const packagesHtml = VOTE_PACKAGES.map((pkg, i) => `
     <div style="
       background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-      border: 1.5px solid ${pkg.color}44;
-      border-radius: 16px; padding: 20px 16px; text-align: center;
+      border: 1.5px solid ${i === 1 ? pkg.color : pkg.color + '44'};
+      border-radius: 16px; padding: 16px 18px;
+      display: flex; align-items: center; gap: 14px;
       transition: all 0.2s; cursor: pointer; position: relative;
-      ${i === 1 ? `box-shadow: 0 0 0 2px ${pkg.color}; border-color: ${pkg.color};` : ''}
+      ${i === 1 ? `box-shadow: 0 0 0 1.5px ${pkg.color}55;` : ''}
     "
-    onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px ${pkg.color}44'"
-    onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='${i===1?`0 0 0 2px ${pkg.color}`:'none'}'"
+    onmouseover="this.style.transform='translateX(3px)';this.style.boxShadow='0 6px 20px ${pkg.color}33'"
+    onmouseout="this.style.transform='translateX(0)';this.style.boxShadow='${i===1?`0 0 0 1.5px ${pkg.color}55`:'none'}'"
     onclick="purchaseVotePackage('${pkg.id}')">
-      ${i === 1 ? `<div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:${pkg.color};color:#fff;font-size:0.7rem;font-weight:800;padding:3px 12px;border-radius:20px;white-space:nowrap">✨ 인기</div>` : ''}
-      <div style="font-size:2rem;margin-bottom:8px">${pkg.emoji}</div>
-      <div style="font-size:1rem;font-weight:800;color:#fff;margin-bottom:4px">${pkg.label}</div>
-      <div style="font-size:2rem;font-weight:900;color:${pkg.color};line-height:1.1">${pkg.votes}<span style="font-size:1rem;font-weight:600">개</span></div>
-      <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin:4px 0 12px">${pkg.perVote}</div>
-      <div style="background:${pkg.color};color:#fff;border-radius:10px;padding:8px 0;font-weight:800;font-size:0.95rem">
-        ${pkg.price.toLocaleString()}원
+
+      ${i === 1 ? `<div style="position:absolute;top:-11px;left:16px;background:${pkg.color};color:#fff;font-size:0.68rem;font-weight:800;padding:2px 10px;border-radius:20px;white-space:nowrap">✨ 인기</div>` : ''}
+
+      <!-- 이모지 -->
+      <div style="font-size:2rem;flex-shrink:0;width:40px;text-align:center">${pkg.emoji}</div>
+
+      <!-- 정보 -->
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:baseline;gap:6px">
+          <span style="font-size:1rem;font-weight:800;color:#fff">${pkg.label}</span>
+          <span style="font-size:0.75rem;color:rgba(255,255,255,0.4)">${pkg.desc}</span>
+        </div>
+        <div style="margin-top:2px">
+          <span style="font-size:1.6rem;font-weight:900;color:${pkg.color};line-height:1">${pkg.votes}</span>
+          <span style="font-size:0.85rem;font-weight:600;color:${pkg.color}">개</span>
+          <span style="font-size:0.72rem;color:rgba(255,255,255,0.35);margin-left:6px">${pkg.perVote}</span>
+        </div>
       </div>
-      <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);margin-top:6px">${pkg.desc}</div>
+
+      <!-- 구매 버튼 -->
+      <button style="
+        flex-shrink:0;background:${pkg.color};color:#fff;
+        border:none;border-radius:12px;padding:10px 18px;
+        font-weight:800;font-size:0.95rem;cursor:pointer;
+        font-family:inherit;white-space:nowrap;
+        box-shadow:0 4px 12px ${pkg.color}44;
+        transition:all 0.15s
+      "
+      onmouseover="this.style.transform='scale(1.05)'"
+      onmouseout="this.style.transform='scale(1)'"
+      onclick="event.stopPropagation();purchaseVotePackage('${pkg.id}')">
+        ${pkg.price.toLocaleString()}원
+      </button>
     </div>
   `).join('');
 
@@ -45,42 +70,42 @@ function showVotePurchaseModal() {
     <div style="
       background: linear-gradient(160deg, rgba(18,12,40,0.99) 0%, rgba(28,18,55,0.99) 100%);
       border: 1.5px solid rgba(124,77,255,0.35);
-      border-radius: 24px; padding: 32px 24px 28px;
-      max-width: 440px; width: 100%;
+      border-radius: 24px; padding: 28px 22px 24px;
+      max-width: 420px; width: 100%;
       box-shadow: 0 24px 80px rgba(124,77,255,0.3), inset 0 1px 0 rgba(255,255,255,0.07);
       animation: modalSlideIn 0.3s ease-out;
     ">
-      <div style="text-align:center;margin-bottom:24px">
-        <div style="font-size:2.8rem;margin-bottom:8px">💳</div>
+      <div style="text-align:center;margin-bottom:22px">
+        <div style="font-size:2.4rem;margin-bottom:8px">💳</div>
         <h2 style="
-          font-size:1.4rem;font-weight:800;margin:0 0 6px;
+          font-size:1.35rem;font-weight:800;margin:0 0 6px;
           background:linear-gradient(135deg,#ff4d8d,#7c4dff);
           -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
         ">투표권 구매</h2>
-        <p style="color:rgba(255,255,255,0.5);font-size:0.85rem;margin:0">
+        <p style="color:rgba(255,255,255,0.45);font-size:0.83rem;margin:0">
           무료 투표 외에 추가로 투표할 수 있어요 💜
         </p>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px">
         ${packagesHtml}
       </div>
 
       <div style="
         background:rgba(255,255,255,0.04);border-radius:12px;
-        padding:12px 14px;margin-bottom:20px;
+        padding:10px 14px;margin-bottom:16px;
         display:flex;gap:8px;align-items:center
       ">
-        <span style="font-size:1.1rem">🔒</span>
-        <span style="font-size:0.78rem;color:rgba(255,255,255,0.45);line-height:1.5">
-          토스페이먼츠로 안전하게 결제돼요.<br>결제 후 즉시 투표권이 지급됩니다.
+        <span style="font-size:1rem">🔒</span>
+        <span style="font-size:0.76rem;color:rgba(255,255,255,0.4);line-height:1.5">
+          토스페이먼츠로 안전하게 결제돼요. 결제 후 즉시 투표권이 지급됩니다.
         </span>
       </div>
 
       <button onclick="document.getElementById('votePurchaseModal').remove()" style="
-        width:100%;padding:13px;background:rgba(255,255,255,0.07);
+        width:100%;padding:12px;background:rgba(255,255,255,0.07);
         border:1px solid rgba(255,255,255,0.1);border-radius:12px;
-        color:rgba(255,255,255,0.5);font-size:0.9rem;cursor:pointer;
+        color:rgba(255,255,255,0.45);font-size:0.88rem;cursor:pointer;
         font-family:inherit;transition:all 0.15s
       " onmouseover="this.style.background='rgba(255,255,255,0.12)'"
          onmouseout="this.style.background='rgba(255,255,255,0.07)'">
