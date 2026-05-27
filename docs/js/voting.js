@@ -349,92 +349,85 @@ function watchAdWithLoginCheck() {
   watchAd();
 }
 
-// ── 광고 시청 → 추가 투표권 ──
+// ── TNK Factory 앱 ID ──
+const TNK_APP_ID = '1050e030f0c1796ee6971c0d0b040f09';
+
+// ── 광고 시청 → 추가 투표권 (TNK 오퍼월) ──
 function watchAd() {
-  // 총 투표를 모두 사용한 경우 광고 시청 불가
+  // 총 투표를 모두 사용한 경우
   if (getTodayVoteCount() >= MAX_TOTAL_VOTES_PER_DAY) {
     showToast(`🏆 오늘 최대 투표 11표를 모두 사용했어요! 내일 또 와줘 💜`);
     return;
   }
-
-  // ★ 광고를 10번 이상 본 경우
+  // 광고를 10번 이상 본 경우
   if (adWatchCount >= MAX_AD_VOTES_PER_DAY) {
-    showToast(`🎁 광고 시청은 하루 최대 10회까지 가능해요! (현재: ${adWatchCount}회 시청, ${pendingAdVotes}개 투표권 보유)`);
+    showToast(`🎁 광고 시청은 하루 최대 10회까지 가능해요! (현재: ${adWatchCount}회 시청)`);
+    return;
+  }
+  if (!currentUser) return;
+
+  const uid = currentUser.uid;
+  const prevPendingAdVotes = pendingAdVotes;
+  const prevAdWatchCount = adWatchCount;
+
+  // TNK 오퍼월 팝업 열기
+  const offerUrl = `https://api3.tnkfactory.com/tnk/offerwall.web.main`
+                 + `?md_user_nm=${encodeURIComponent(uid)}&app_id=${TNK_APP_ID}`;
+  const popup = window.open(offerUrl, 'tnk_offerwall',
+    'width=420,height=700,scrollbars=yes,resizable=yes');
+
+  if (!popup) {
+    showToast('⚠️ 팝업이 차단됐어요! 브라우저 팝업 허용 후 다시 시도해주세요.');
     return;
   }
 
-  if (document.getElementById("adModal")) return;
+  showToast('📺 광고를 보고 돌아오면 투표권이 자동으로 지급돼요!');
 
-  const modal = document.createElement("div");
-  modal.id = "adModal";
-  modal.className = "ad-modal-overlay";
-  let sec = 30; // ⭐ 30초로 변경
+  // Firebase 실시간 감지 — pendingAdVotes 증가 시 알림
+  let tnkListenerActive = true;
+  const adVotesRef = db.ref(`users/${uid}/pendingAdVotes`);
 
-  modal.innerHTML = `
-    <div class="ad-modal-box">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div class="ad-modal-title" style="margin:0">📺 광고 시청 중...</div>
-        <button onclick="document.getElementById('adModal')?.remove()" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;padding:0;line-height:1">✕</button>
-      </div>
-      <div class="ad-modal-desc">광고를 보면 투표권 9개를 드려요!<br>광고 1회당 투표권 9개 (하루 최대 10회 = 90개)</div>
-      <div class="ad-countdown-wrap">
-        <div class="ad-countdown-ring" id="adRing"></div>
-        <div class="ad-countdown-circle" id="adCircle">${sec}</div>
-      </div>
-      <div class="ad-mock-content">
-        🎵 K-POP 팬이라면 주목!<br>
-        <span style="opacity:.6;font-size:.72rem">여기에 실제 광고가 표시됩니다</span>
-      </div>
-      <button class="ad-skip-btn" id="adSkipBtn" disabled>⏳ ${sec}초 후 투표권 받기</button>
-    </div>`;
-  document.body.appendChild(modal);
+  const tnkListener = adVotesRef.on('value', snap => {
+    if (!tnkListenerActive) return;
+    const newVotes = snap.val() || 0;
+    if (newVotes > prevPendingAdVotes) {
+      tnkListenerActive = false;
+      adVotesRef.off('value', tnkListener);
 
-  const timer = setInterval(() => {
-    sec--;
-    const circle = document.getElementById("adCircle");
-    const btn = document.getElementById("adSkipBtn");
-    if (circle) circle.textContent = sec;
-    if (sec <= 0) {
-      clearInterval(timer);
-      const ring = document.getElementById("adRing");
-      if (ring) { ring.style.animation = "none"; ring.style.borderColor = "#ffd700"; ring.style.borderTopColor = "#ffd700"; }
-      if (circle) { circle.textContent = "🎁"; circle.style.color = "#ffd700"; }
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "✅ 투표권 받기!";
-        btn.classList.add("ready");
-        btn.onclick = claimAdReward;
-      }
-    } else {
-      if (btn) btn.textContent = `⏳ ${sec}초 후 투표권 받기`;
+      // 최신 값 반영
+      const gained = newVotes - prevPendingAdVotes;
+      pendingAdVotes = newVotes;
+      adWatchCount = prevAdWatchCount + gained;
+
+      // UI 업데이트
+      updateFavBar();
+      updateAuthUI();
+      if (allRankingsData) renderRankings(allRankingsData);
+      showAdRewardModal(pendingAdVotes, adWatchCount);
+
+      // 랭킹으로 자동 스크롤
+      setTimeout(() => {
+        const ranking = document.getElementById("rankingList");
+        if (ranking) ranking.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 300);
+      showMyVotedBar(cachedTodayFreeVote);
     }
-  }, 1000);
-}
+  });
 
-async function claimAdReward() {
-  document.getElementById("adModal")?.remove();
-  pendingAdVotes += 1; // 투표권 1개 획득 (광고 1회 = 1표)
-  adWatchCount += 1; // ★ 광고 시청 횟수 증가
-  await savePendingAdVotes(); // Firebase 저장
-  await saveAdWatchCount(); // ★ 광고 시청 횟수 저장
-  showAdRewardModal(pendingAdVotes, adWatchCount);
-
-  // 팬덤 선택 바 업데이트
-  updateFavBar();
-  updateAuthUI(); // ★ 닉네임 옆 투표권 정보 업데이트
-
-  // ★ 투표권 획득 후 랭킹 버튼 상태 업데이트 (활성화)
-  if (allRankingsData) {
-    renderRankings(allRankingsData);
-  }
-
-  // 랭킹으로 자동 스크롤
-  setTimeout(() => {
-    const ranking = document.getElementById("rankingList");
-    if (ranking) ranking.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, 300);
-
-  showMyVotedBar(cachedTodayFreeVote);
+  // 팝업 닫힘 감지 — 닫히면 리스너 해제 + 최신값 갱신
+  let checkCount = 0;
+  const checkClosed = setInterval(() => {
+    checkCount++;
+    if (!popup || popup.closed || checkCount > 72) { // 최대 6분
+      clearInterval(checkClosed);
+      if (tnkListenerActive) {
+        tnkListenerActive = false;
+        adVotesRef.off('value', tnkListener);
+        // 팝업 닫힌 후 최신 투표권 수 다시 로드
+        loadUserAdVotes();
+      }
+    }
+  }, 5000);
 }
 
 // ── 투표 후 상태 복원 (페이지 로드 시) ──
