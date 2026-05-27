@@ -170,13 +170,13 @@ function setupAuthListener() {
       currentUser = user;
       isLoggedIn = true;
 
-      // ★ 커뮤니티 게시물 조기 로드: auth 완료 즉시 localStorage 팬덤 캐시로 선제 로드
-      // (loadUserAdVotes 체인 완료까지 기다리지 않아 체감 속도 개선)
+      // ★ 커뮤니티 게시물 조기 로드: auth 완료 즉시 재시도
+      // (init()의 loadCommunityPosts가 permission-denied로 실패했을 경우 여기서 재시도)
       const _cachedFandom = localStorage.getItem('my_fav_group');
       if (sessionStorage.getItem('activePage') === 'community' && _cachedFandom) {
         const _sel = document.getElementById('communityFandomSelect');
-        if (_sel && !_sel.value) {
-          _sel.value = _cachedFandom;
+        if (_sel && typeof communityPostsLoaded !== 'undefined' && !communityPostsLoaded) {
+          if (!_sel.value) _sel.value = _cachedFandom;
           if (typeof loadCommunityPosts === 'function') loadCommunityPosts();
         }
       }
@@ -229,14 +229,12 @@ async function loadUserAdVotes() {
     updateAuthUI(); // ★ 닉네임 표시 업데이트
 
     // ★ 새로고침 시 커뮤니티 페이지 복원
-    // init()에서 showCommunityPage()가 호출될 때는 auth가 아직 로드 안 된 상태라
-    // communityFandomSelect.value가 비어 loadCommunityPosts()가 실행 안 됨.
-    // auth 완료 후 여기서 드롭다운 값과 게시물을 재설정.
+    // communityPostsLoaded가 false이면 init() → loadCommunityPosts()가 실패한 것 → 재시도
     const activePage = sessionStorage.getItem('activePage') || currentUser?.activePage || "vote";
     if (activePage === "community" && currentUserFav) {
       const select = document.getElementById("communityFandomSelect");
-      if (select && !select.value) {
-        select.value = currentUserFav;
+      if (select && typeof communityPostsLoaded !== 'undefined' && !communityPostsLoaded) {
+        if (!select.value) select.value = currentUserFav;
         if (typeof loadCommunityPosts === "function") loadCommunityPosts();
       }
     }
@@ -370,6 +368,8 @@ function loadAuthUserData(callback) {
       // ★ 경로 수정: preferences/primaryFandom에서 읽기
       currentUser.primaryFandom = data.preferences?.primaryFandom || null; // 기본 팬덤
       currentUserFav = data.preferences?.primaryFandom || null; // ← Firebase에서 읽은 팬덤을 전역 변수에도 설정
+      // ★ localStorage 캐시 업데이트 (새로고침 시 즉시 로드를 위해)
+      if (currentUserFav) localStorage.setItem('my_fav_group', currentUserFav);
       currentUser.lastFandomChangeTime = data.lastFandomChangeTime || 0; // 마지막 팬덤 변경 시간
 
       // ★ 투표 스트릭 데이터 로드

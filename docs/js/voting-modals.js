@@ -436,6 +436,7 @@ function saveAuthUserData(nickname, fandom) {
   currentUser.customFandom = fandom;
   currentUser.primaryFandom = fandom; // ★ primaryFandom도 설정
   currentUserFav = fandom; // ★ 전역 변수도 설정
+  if (fandom) localStorage.setItem('my_fav_group', fandom); // ★ 새로고침 시 즉시 로드용 캐시
 
   // ★ update() 사용: 기존 데이터는 유지하고 필요한 부분만 업데이트
   const userData = {

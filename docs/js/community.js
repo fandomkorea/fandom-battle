@@ -18,6 +18,7 @@ function initCommunityPage() {
 
 // 현재 활성 리스너 추적
 let currentCommunityListener = null;
+let communityPostsLoaded = false; // ★ 게시물 로드 성공 여부 (auth 재시도 판단용)
 
 // ── 게시글 이미지 URL 및 public_id 저장소 ──
 let postImageUrl = null;
@@ -85,8 +86,10 @@ function loadCommunityPosts() {
   `;
 
   // 1회 읽기 (실시간 구독 제거 → 읽기 횟수 절감)
+  communityPostsLoaded = false;
   currentCommunityListener = `community/${selectedFandom}`;
   db.ref(currentCommunityListener).once("value", snap => {
+    communityPostsLoaded = true;
     const posts = snap.val() || {};
 
     if (Object.keys(posts).length === 0) {
@@ -120,6 +123,9 @@ function loadCommunityPosts() {
       sortDropdown.value = currentSortMode;
     }
     sortCommunityPosts(currentSortMode);
+  }, error => {
+    // ★ 권한 없음 (auth 미완료) → 스피너 유지, auth 완료 후 auth.js에서 자동 재시도
+    console.log("커뮤니티 로드 대기 (auth 완료 후 재시도):", error.code);
   });
 }
 
