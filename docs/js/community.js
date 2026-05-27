@@ -1244,12 +1244,23 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// ── 좋아요 처리 중 중복 클릭 방지 ──
+const _likingInProgress = new Set();
+
 // ── 좋아요 토글 ──
 async function toggleLike(fandom, postId) {
   if (!isLoggedIn || !currentUser) {
     showToast("로그인 후 좋아요를 할 수 있습니다");
     return;
   }
+
+  const likeKey = `${fandom}/${postId}`;
+  if (_likingInProgress.has(likeKey)) return; // 처리 중 중복 클릭 무시
+  _likingInProgress.add(likeKey);
+
+  // 버튼 즉시 비활성화 (시각적 피드백)
+  const likeBtn = document.getElementById("postDetailLikeBtn");
+  if (likeBtn) likeBtn.style.opacity = "0.5";
 
   const likeRef = db.ref(`community/${fandom}/${postId}/likes/${currentUser.uid}`);
 
@@ -1285,6 +1296,9 @@ async function toggleLike(fandom, postId) {
     } else {
       showToast("좋아요 저장에 실패했어요. 다시 시도해주세요.");
     }
+  } finally {
+    _likingInProgress.delete(likeKey);
+    if (likeBtn) likeBtn.style.opacity = "";
   }
 }
 
