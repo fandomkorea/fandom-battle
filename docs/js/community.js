@@ -514,6 +514,9 @@ function loadDetailComments(fandom, postId) {
 
         const isCommentAuthor = isLoggedIn && currentUser && comment.authorUid === currentUser.uid;
         const timeStr = getRelativeTime(comment.timestamp);
+        const commentLikes = comment.likes || {};
+        const commentLikeCount = Object.keys(commentLikes).length;
+        const hasLikedComment = isLoggedIn && currentUser && !!commentLikes[currentUser.uid];
 
         const commentEl = document.createElement("div");
         commentEl.style.cssText = "padding:12px 14px;background:linear-gradient(135deg,rgba(124,77,255,0.08) 0%,rgba(100,150,255,0.04) 100%);border:1px solid rgba(124,77,255,0.15);border-radius:10px;margin-bottom:10px;font-size:0.9rem;transition:all 0.2s";
@@ -539,7 +542,13 @@ function loadDetailComments(fandom, postId) {
               <button onclick="deleteComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="font-size:0.75rem;background:rgba(255,100,100,0.1);border:1px solid rgba(255,100,100,0.3);color:rgb(255,100,100);cursor:pointer;padding:5px 10px;border-radius:6px;font-weight:600;transition:all 0.2s;white-space:nowrap" onmouseover="this.style.background='rgba(255,100,100,0.2)';this.style.borderColor='rgba(255,100,100,0.5)'" onmouseout="this.style.background='rgba(255,100,100,0.1)';this.style.borderColor='rgba(255,100,100,0.3)'">삭제</button>
             </div>` : ''}
           </div>
-          <div style="color:var(--text);line-height:1.6;word-break:break-word">${escHtml(comment.content)}</div>
+          <div style="color:var(--text);line-height:1.6;word-break:break-word;margin-bottom:8px">${escHtml(comment.content)}</div>
+          <div style="display:flex;justify-content:flex-end">
+            <button onclick="toggleCommentLike('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="display:flex;align-items:center;gap:4px;background:${hasLikedComment ? 'rgba(255,80,80,0.2)' : 'rgba(255,100,100,0.06)'};border:1px solid ${hasLikedComment ? 'rgba(255,80,80,0.45)' : 'rgba(255,100,100,0.15)'};border-radius:20px;padding:4px 10px;cursor:pointer;transition:all 0.2s;font-size:0.8rem" onmouseover="this.style.background='rgba(255,100,100,0.2)';this.style.borderColor='rgba(255,100,100,0.4)'" onmouseout="this.style.background='${hasLikedComment ? 'rgba(255,80,80,0.2)' : 'rgba(255,100,100,0.06)'}';this.style.borderColor='${hasLikedComment ? 'rgba(255,80,80,0.45)' : 'rgba(255,100,100,0.15)'}'">
+              <span>${hasLikedComment ? '❤️' : '🤍'}</span>
+              <span style="color:${hasLikedComment ? 'rgb(255,100,100)' : 'var(--muted)'}; font-weight:600">${commentLikeCount > 0 ? commentLikeCount : ''}</span>
+            </button>
+          </div>
         `;
         commentsList.appendChild(commentEl);
       });
@@ -1206,6 +1215,22 @@ async function toggleLike(fandom, postId) {
   }
 
   loadLikes(fandom, postId);
+}
+
+// ── 댓글 좋아요 토글 ──
+async function toggleCommentLike(fandom, postId, commentId) {
+  if (!isLoggedIn || !currentUser) {
+    showToast("로그인 후 좋아요를 할 수 있습니다");
+    return;
+  }
+  const likeRef = db.ref(`community/${fandom}/${postId}/comments/${commentId}/likes/${currentUser.uid}`);
+  const snap = await likeRef.once("value");
+  if (snap.exists()) {
+    await likeRef.remove();
+  } else {
+    await likeRef.set(true);
+  }
+  // 댓글 리스너가 comments 경로 전체를 구독하므로 자동으로 UI 재렌더링됨
 }
 
 // ── 좋아요 수 로드 (once: toggleLike 후 1회성 갱신용) ──
