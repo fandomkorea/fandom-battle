@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>팬덤배틀 - 아이돌 팬덤 파워 월간 랭킹</title>
-  <meta name="description" content="BTS, 블랙핑크, 에스파, 뉴진스! 매달 팬덤 파워 랭킹 투표. 이달 1위 팬덤에게 100만원 상당 포토카드 증정!" />
+  <meta name="description" content="BTS, 블랙핑크, 에스파, 뉴진스! 매달 팬덤 파워 랭킹 투표. 내 최애 그룹에 투표하고 1위를 만들어봐!" />
   <meta property="og:title" content="팬덤배틀 - 팬덤 파워 월간 랭킹" />
-  <meta property="og:description" content="이달 1위 팬덤에게 100만원 포토카드 증정! 지금 내 최애 그룹에 투표해봐 💪" />
+  <meta property="og:description" content="K-pop 팬덤 파워 랭킹! 지금 내 최애 그룹에 투표해봐 💪" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://fandombattle.com/" />
   <meta property="og:image" content="https://fandomkorea.github.io/fandom-battle/og-image.png" />
@@ -14,7 +14,7 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="팬덤배틀 - 팬덤 파워 월간 랭킹" />
-  <meta name="twitter:description" content="이달 1위 팬덤에게 100만원 포토카드 증정! 지금 내 최애 그룹에 투표해봐 💪" />
+  <meta name="twitter:description" content="K-pop 팬덤 파워 랭킹! 지금 내 최애 그룹에 투표해봐 💪" />
   <meta name="twitter:image" content="https://fandomkorea.github.io/fandom-battle/og-image.png" />
   <meta name="google-adsense-account" content="ca-pub-3646356464963069">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>" />
@@ -37,15 +37,15 @@
 
 
   <!-- ★ v= 숫자만 바꾸면 모든 파일 캐시 갱신 -->
-  <link rel="stylesheet" href="css/base.css?v=20260528" />
-  <link rel="stylesheet" href="css/layout.css?v=20260528" />
-  <link rel="stylesheet" href="css/auth.css?v=20260528" />
-  <link rel="stylesheet" href="css/voting.css?v=20260528" />
-  <link rel="stylesheet" href="css/ranking.css?v=20260528" />
-  <link rel="stylesheet" href="css/fandom.css?v=20260528" />
-  <link rel="stylesheet" href="css/modals.css?v=20260528" />
-  <link rel="stylesheet" href="css/posts.css?v=20260528" />
-  <link rel="stylesheet" href="css/main.css?v=20260528" />
+  <link rel="stylesheet" href="css/base.css?v=20260529" />
+  <link rel="stylesheet" href="css/layout.css?v=20260529" />
+  <link rel="stylesheet" href="css/auth.css?v=20260529" />
+  <link rel="stylesheet" href="css/voting.css?v=20260529" />
+  <link rel="stylesheet" href="css/ranking.css?v=20260529" />
+  <link rel="stylesheet" href="css/fandom.css?v=20260529" />
+  <link rel="stylesheet" href="css/modals.css?v=20260529" />
+  <link rel="stylesheet" href="css/posts.css?v=20260529" />
+  <link rel="stylesheet" href="css/main.css?v=20260529" />
 
 </head>
 <body>
@@ -83,17 +83,6 @@
   <div id="votePage">
   <!-- 🎁 이달의 상품 & 투표 카운트다운 통합 배너 -->
   <div class="battle-card" style="margin-top:12px">
-    <!-- 상품 배너 영역 -->
-    <div style="background:linear-gradient(135deg,rgba(255,215,0,0.1),rgba(124,77,255,0.12));border-bottom:1px solid var(--border);padding:18px 16px;text-align:center;position:relative;overflow:hidden">
-      <div style="position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(255,215,0,0.08) 50%,transparent 60%);background-size:200% 100%;animation:shimmer 4s ease-in-out infinite;pointer-events:none"></div>
-      <div style="position:relative;z-index:1">
-        <div style="font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">🏆 이달의 1등 팬덤에게</div>
-        <div style="font-size:1.6rem;font-weight:900;color:#fff;margin-bottom:6px"><span style="color:var(--gold);text-shadow:0 0 14px rgba(255,215,0,0.6)">100만원</span> 상당 포토카드 증정</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px">매월 1일 투표 초기화 · 월말 1위 팬덤이 상품을 받아요!</div>
-        <div class="prize-notice" id="prizeNotice" style="font-size:0.78rem;color:var(--gold);font-weight:600;min-height:0"></div>
-      </div>
-    </div>
-
     <!-- 투표 카운트다운 영역 -->
     <div class="battle-header">
       <div class="battle-label">🗳️ <span id="monthLabel">이번 달</span> 팬덤 파워 투표</div>
@@ -411,14 +400,14 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=20260528"></script>
-<script src="js/auth.js?v=20260528"></script>
-<script src="js/fandom.js?v=20260528"></script>
-<script src="js/voting-modals.js?v=20260528"></script>
-<script src="js/voting.js?v=20260528"></script>
-<script src="js/ranking.js?v=20260528"></script>
-<script src="js/utils.js?v=20260528"></script>
-<script src="js/community.js?v=20260528"></script>
+<script src="js/config.js?v=20260529"></script>
+<script src="js/auth.js?v=20260529"></script>
+<script src="js/fandom.js?v=20260529"></script>
+<script src="js/voting-modals.js?v=20260529"></script>
+<script src="js/voting.js?v=20260529"></script>
+<script src="js/ranking.js?v=20260529"></script>
+<script src="js/utils.js?v=20260529"></script>
+<script src="js/community.js?v=20260529"></script>
 </body>
 </html>
 
