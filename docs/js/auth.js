@@ -216,6 +216,19 @@ async function loadUserAdVotes() {
     updateFavBar(); // 로드 후 팬덤 선택 바 업데이트
     updateAuthUI(); // ★ 닉네임 표시 업데이트
 
+    // ★ 새로고침 시 커뮤니티 페이지 복원
+    // init()에서 showCommunityPage()가 호출될 때는 auth가 아직 로드 안 된 상태라
+    // communityFandomSelect.value가 비어 loadCommunityPosts()가 실행 안 됨.
+    // auth 완료 후 여기서 드롭다운 값과 게시물을 재설정.
+    const activePage = sessionStorage.getItem('activePage') || currentUser?.activePage || "vote";
+    if (activePage === "community" && currentUserFav) {
+      const select = document.getElementById("communityFandomSelect");
+      if (select && !select.value) {
+        select.value = currentUserFav;
+        if (typeof loadCommunityPosts === "function") loadCommunityPosts();
+      }
+    }
+
     // ★ 투표권 로드 후 랭킹 다시 렌더링 (버튼 활성화 상태 업데이트)
     if (allRankingsData) {
       renderRankings(allRankingsData);
