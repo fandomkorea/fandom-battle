@@ -298,7 +298,7 @@ function scrollToMyTeam() {
 function renderFavChip() {
   const area = document.getElementById("favChipArea");
   if (!area) return;
-  const fav = currentUserFav; // Firebase 기반으로 변경
+  const fav = currentUserFav || localStorage.getItem('my_fav_group'); // ★ localStorage 캐시 폴백
   if (!fav) {
     area.innerHTML = "";
     return;
@@ -317,7 +317,7 @@ function renderFavChip() {
 // ── 하단 팬덤 선택 바 업데이트 ──
 function updateFavBar() {
   let bar = document.getElementById("favBar");
-  const fav = currentUserFav; // Firebase 기반으로 변경
+  const fav = currentUserFav || localStorage.getItem('my_fav_group'); // ★ localStorage 캐시 폴백
 
   // 바가 없으면 생성
   if (!bar) {
