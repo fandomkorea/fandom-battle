@@ -1252,26 +1252,40 @@ async function toggleLike(fandom, postId) {
   }
 
   const likeRef = db.ref(`community/${fandom}/${postId}/likes/${currentUser.uid}`);
-  const snapshot = await likeRef.once("value");
 
-  if (snapshot.exists()) {
-    // 좋아요 취소
-    await likeRef.remove();
-  } else {
-    // 좋아요 추가
-    await likeRef.set(true);
+  try {
+    const snapshot = await likeRef.once("value");
+    const wasLiked = snapshot.exists();
+
+    if (wasLiked) {
+      await likeRef.remove();
+    } else {
+      await likeRef.set(true);
+    }
+
+    // 좋아요 수 업데이트 및 data-likes 속성 갱신
+    const likesSnap = await db.ref(`community/${fandom}/${postId}/likes`).once("value");
+    const likeCount = Object.keys(likesSnap.val() || {}).length;
+
+    const postEl = document.querySelector(`[data-postid="${postId}"]`);
+    if (postEl) postEl.setAttribute("data-likes", likeCount);
+
+    loadLikes(fandom, postId);
+
+  } catch (e) {
+    console.error("좋아요 저장 실패:", e.code, e.message);
+    // 실패 시 즉시 UI 원복 (heart를 이전 상태로)
+    const likeHeart = document.getElementById("postDetailLikeHeart");
+    if (likeHeart) {
+      const currentHeart = likeHeart.textContent;
+      likeHeart.textContent = currentHeart === '❤️' ? '🤍' : '❤️';
+    }
+    if (e.code === 'PERMISSION_DENIED') {
+      showToast("⚠️ 좋아요 저장 실패! Firebase 보안 규칙을 확인해주세요.");
+    } else {
+      showToast("좋아요 저장에 실패했어요. 다시 시도해주세요.");
+    }
   }
-
-  // 좋아요 수 업데이트 및 data-likes 속성 갱신
-  const likesSnap = await db.ref(`community/${fandom}/${postId}/likes`).once("value");
-  const likeCount = Object.keys(likesSnap.val() || {}).length;
-
-  const postEl = document.querySelector(`[data-postid="${postId}"]`);
-  if (postEl) {
-    postEl.setAttribute("data-likes", likeCount);
-  }
-
-  loadLikes(fandom, postId);
 }
 
 // ── 댓글 좋아요 토글 ──
@@ -1281,13 +1295,18 @@ async function toggleCommentLike(fandom, postId, commentId) {
     return;
   }
   const likeRef = db.ref(`community/${fandom}/${postId}/comments/${commentId}/likes/${currentUser.uid}`);
-  const snap = await likeRef.once("value");
-  if (snap.exists()) {
-    await likeRef.remove();
-  } else {
-    await likeRef.set(true);
+  try {
+    const snap = await likeRef.once("value");
+    if (snap.exists()) {
+      await likeRef.remove();
+    } else {
+      await likeRef.set(true);
+    }
+    // 댓글 리스너가 comments 경로 전체를 구독하므로 자동으로 UI 재렌더링됨
+  } catch (e) {
+    console.error("댓글 좋아요 실패:", e.code, e.message);
+    showToast("댓글 좋아요 저장에 실패했어요.");
   }
-  // 댓글 리스너가 comments 경로 전체를 구독하므로 자동으로 UI 재렌더링됨
 }
 
 // ── 좋아요 수 로드 (once: toggleLike 후 1회성 갱신용) ──

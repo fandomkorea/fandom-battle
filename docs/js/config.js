@@ -42,9 +42,9 @@ Firebase Rules를 Firebase Console에서 다음과 같이 설정하세요:
         "pendingPaidVotes": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000" }
       }
     },
-    "comments": {
+    "community": {
       ".read": true,
-      ".write": true
+      ".write": "auth != null"
     },
     "group_records": {
       ".read": true,
