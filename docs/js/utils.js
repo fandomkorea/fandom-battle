@@ -686,9 +686,10 @@ function showCommunityPage() {
     }
   }
 
-  // 최애팬덤이 있으면 자동 선택
-  if (currentUserFav) {
-    select.value = currentUserFav;
+  // 최애팬덤이 있으면 자동 선택 (Firebase auth 미완료면 localStorage 캐시 사용)
+  const favToUse = currentUserFav || localStorage.getItem('my_fav_group');
+  if (favToUse) {
+    select.value = favToUse;
   }
 
   // 선택된 팬덤이 있으면 게시물 로드 (최애팬덤 여부와 상관없이)
