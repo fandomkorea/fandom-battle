@@ -633,10 +633,14 @@ function showCommunityPage() {
   if (communityPage) communityPage.classList.add("show");
   if (communityHeaderInfo) communityHeaderInfo.style.display = "none"; // 커뮤니티 헤더 숨기기
 
-  // 상단 제목을 커뮤니티 이름으로 변경
-  if (pageTitle && currentUserFav && GROUP_META[currentUserFav]) {
-    const meta = GROUP_META[currentUserFav];
-    pageTitle.textContent = `${meta.emoji} ${currentUserFav} 커뮤니티`;
+  // 상단 제목 업데이트 (현재 탭에 따라)
+  if (pageTitle) {
+    if (typeof currentFeedMode !== 'undefined' && currentFeedMode === 'all') {
+      pageTitle.textContent = '🌍 전체 피드';
+    } else if (currentUserFav && GROUP_META[currentUserFav]) {
+      const meta = GROUP_META[currentUserFav];
+      pageTitle.textContent = `${meta.emoji} ${currentUserFav} 커뮤니티`;
+    }
   }
 
   // LIVE 배지 숨기기
@@ -681,9 +685,26 @@ function showCommunityPage() {
     select.value = favToUse;
   }
 
-  // 선택된 팬덤이 있으면 게시물 로드 (최애팬덤 여부와 상관없이)
-  if (select.value) {
+  // ── 팬덤 탭 바 초기화 ──
+  // 이미 전체 피드를 보고 있었다면 유지, 아니면 내 팬덤 탭으로 기본 선택
+  if (typeof currentSelectedTab === 'undefined' || currentSelectedTab === null) {
+    currentSelectedTab = select.value || 'all';
+  }
+  if (typeof renderFandomTabBar === 'function') renderFandomTabBar();
+
+  // 게시물 로드
+  if (currentFeedMode === 'all') {
+    // 전체 피드 유지
+    if (typeof loadAllFandomPosts === 'function') loadAllFandomPosts();
+  } else if (select.value) {
+    currentSelectedTab = select.value;
     loadCommunityPosts();
+  } else {
+    // 팬덤 미설정 → 전체 피드로 기본
+    currentSelectedTab = 'all';
+    currentFeedMode = 'all';
+    if (typeof renderFandomTabBar === 'function') renderFandomTabBar();
+    if (typeof loadAllFandomPosts === 'function') loadAllFandomPosts();
   }
 }
 

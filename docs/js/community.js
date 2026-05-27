@@ -1,12 +1,15 @@
 ﻿// ── 커뮤니티 게시물 새로고침 ──
 function refreshCommunityPosts() {
+  if (currentFeedMode === 'all') {
+    showToast("🔄 전체 피드를 새로고침 중...");
+    loadAllFandomPosts();
+    return;
+  }
   const selectedFandom = document.getElementById("communityFandomSelect").value;
   if (!selectedFandom) {
     showToast("팬덤을 선택해주세요");
     return;
   }
-
-  // 게시물 목록 초기화 후 다시 로드
   showToast("🔄 게시물을 새로고침 중입니다...");
   loadCommunityPosts();
 }
@@ -19,6 +22,10 @@ function initCommunityPage() {
 // 현재 활성 리스너 추적
 let currentCommunityListener = null;
 let communityPostsLoaded = false; // ★ 게시물 로드 성공 여부 (auth 재시도 판단용)
+
+// ── 전체 피드 상태 ──
+let currentFeedMode = 'my'; // 'my' | 'all'
+let currentSelectedTab = null; // 선택된 탭: 팬덤명 | 'all'
 
 // ── 게시글 이미지 URL 및 public_id 저장소 ──
 let postImageUrl = null;
@@ -275,9 +282,18 @@ function getRelativeTime(timestamp) {
   return date.toLocaleDateString('ko-KR', {month:'short', day:'numeric'});
 }
 
+// ── 헥스 컬러 → rgba 변환 헬퍼 ──
+function hexToRgba(hex, alpha) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 // ── 게시물 렌더링 ──
 // ── 게시물 목록 아이템 렌더링 (컴팩트 리스트) ──
-function renderPost(fandom, postId, post, index) {
+function renderPost(fandom, postId, post, index, showFandomBadge = false) {
   const timeStr = getRelativeTime(post.timestamp);
   const postNumber = index + 1; // 1부터 시작하는 순번
 
@@ -292,8 +308,18 @@ function renderPost(fandom, postId, post, index) {
   // 사진 여부 확인
   const hasImage = post.imageUrl ? '📷' : '';
 
+  // 팬덤 배지 (전체 피드 모드에서만 표시)
+  let fandomBadgeHtml = '';
+  if (showFandomBadge) {
+    const meta = GROUP_META[fandom] || {};
+    const color = meta.color || '#7c4dff';
+    const emoji = meta.emoji || '';
+    fandomBadgeHtml = `<span class="fandom-badge" style="background:${hexToRgba(color, 0.13)};border-color:${hexToRgba(color, 0.38)};color:${color}">${emoji} ${escHtml(fandom)}</span>`;
+  }
+
   postEl.innerHTML = `
     <div class="post-list-left">
+      ${fandomBadgeHtml}
       <div class="post-title-row">
         <div class="post-list-title">${escHtml(post.title)}</div>
         <div class="post-list-indicators">
@@ -1636,5 +1662,190 @@ window.addEventListener('popstate', (e) => {
     closePostCreateModal();
   }
 });
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 전체 피드 & 팬덤 탭 바
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ── 팬덤 탭 바 렌더링 ──
+function renderFandomTabBar() {
+  const bar = document.getElementById("fandomTabBar");
+  if (!bar) return;
+
+  const myFav = currentUserFav || localStorage.getItem('my_fav_group');
+
+  // 랭킹 상위 팬덤 목록 (최대 6개, 내 팬덤 제외)
+  let topFandoms = [];
+  if (allRankingsData) {
+    topFandoms = Object.entries(allRankingsData)
+      .filter(([, cnt]) => cnt > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name]) => name)
+      .filter(name => name !== myFav)
+      .slice(0, 6);
+  }
+
+  // 탭 배열: 🌍전체 → ⭐내팬덤 → 상위팬덤들
+  const tabs = [
+    { id: 'all', label: '🌍 전체', color: '#7c4dff', isMy: false }
+  ];
+  if (myFav && GROUP_META[myFav]) {
+    tabs.push({ id: myFav, label: `${GROUP_META[myFav].emoji} ${myFav}`, color: GROUP_META[myFav].color, isMy: true });
+  }
+  topFandoms.forEach(name => {
+    const meta = GROUP_META[name] || {};
+    tabs.push({ id: name, label: `${meta.emoji || ''} ${name}`, color: meta.color || '#7c4dff', isMy: false });
+  });
+
+  bar.innerHTML = tabs.map(tab => {
+    const isActive = currentSelectedTab === tab.id;
+    let style = '';
+    if (isActive) {
+      style = `background:${tab.color};border-color:${tab.color};color:#fff;box-shadow:0 2px 10px ${hexToRgba(tab.color, 0.4)}`;
+    } else if (tab.isMy) {
+      style = `border-color:${hexToRgba(tab.color, 0.5)};color:${tab.color}`;
+    }
+    const myMark = tab.isMy ? ' <span style="font-size:0.65rem;opacity:0.9">내꺼</span>' : '';
+    return `<button class="fandom-tab${isActive ? ' active' : ''}" data-tabid="${escAttr(tab.id)}" style="${style}">${tab.label}${myMark}</button>`;
+  }).join('');
+
+  // 이벤트 바인딩
+  bar.querySelectorAll('.fandom-tab').forEach(btn => {
+    btn.addEventListener('click', () => selectFandomTab(btn.dataset.tabid));
+  });
+}
+
+// ── 팬덤 탭 선택 ──
+function selectFandomTab(tabId) {
+  currentSelectedTab = tabId;
+  renderFandomTabBar();
+
+  const writeBtn = document.getElementById("communityWriteBtn");
+  const pageTitle = document.querySelector("header h1");
+
+  if (tabId === 'all') {
+    currentFeedMode = 'all';
+    if (writeBtn) writeBtn.onclick = () => openPostCreateModalForAll();
+    if (pageTitle) pageTitle.textContent = '🌍 전체 피드';
+    loadAllFandomPosts();
+  } else {
+    currentFeedMode = 'my';
+    // hidden select 값 업데이트 (programmatic = change 이벤트 미발생)
+    const select = document.getElementById("communityFandomSelect");
+    if (select) select.value = tabId;
+    if (writeBtn) writeBtn.onclick = () => openPostCreateModal();
+    const meta = GROUP_META[tabId];
+    if (pageTitle && meta) pageTitle.textContent = `${meta.emoji} ${tabId} 커뮤니티`;
+    loadCommunityPosts();
+  }
+}
+
+// ── 전체 피드 로드 (상위 팬덤 게시글 병렬 수집) ──
+async function loadAllFandomPosts() {
+  // 기존 리스너 해제
+  clearPostListListeners();
+  if (currentCommunityListener) {
+    db.ref(currentCommunityListener).off("value");
+    currentCommunityListener = null;
+  }
+
+  const postsList = document.getElementById("communityPostsList");
+  postsList.innerHTML = `
+    <div class="community-empty">
+      <div class="spinner" style="display:inline-block;margin-bottom:12px"></div>
+      <div class="community-empty-text">전체 피드를 불러오는 중...</div>
+    </div>
+  `;
+
+  // 로드할 팬덤 목록 결정 (랭킹 상위 15개 + 내 팬덤)
+  const myFav = currentUserFav || localStorage.getItem('my_fav_group');
+  let fandomsToLoad;
+
+  if (allRankingsData && Object.keys(allRankingsData).length > 0) {
+    fandomsToLoad = Object.entries(allRankingsData)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15)
+      .map(([name]) => name);
+  } else {
+    fandomsToLoad = ALL_GROUPS.slice(0, 15);
+  }
+
+  if (myFav && !fandomsToLoad.includes(myFav)) {
+    fandomsToLoad.push(myFav);
+  }
+
+  try {
+    // 모든 팬덤 게시글 병렬 로드
+    const snapshots = await Promise.all(
+      fandomsToLoad.map(fandom => db.ref(`community/${fandom}`).once("value"))
+    );
+
+    // 전체 게시글 수집
+    let allPosts = [];
+    snapshots.forEach((snap, i) => {
+      const fandom = fandomsToLoad[i];
+      const posts = snap.val() || {};
+      Object.entries(posts).forEach(([postId, post]) => {
+        if (!post.isHidden) {
+          allPosts.push({ fandom, postId, post });
+        }
+      });
+    });
+
+    // 최신순 정렬 후 최대 80개
+    allPosts.sort((a, b) => (b.post.timestamp || 0) - (a.post.timestamp || 0));
+    allPosts = allPosts.slice(0, 80);
+
+    communityPostsLoaded = true;
+
+    if (allPosts.length === 0) {
+      postsList.innerHTML = `
+        <div class="community-empty">
+          <div class="community-empty-icon">📭</div>
+          <div class="community-empty-text">아직 게시물이 없어요<br>첫 번째 게시물을 작성해보세요!</div>
+        </div>
+      `;
+      return;
+    }
+
+    postsList.innerHTML = "";
+    allPosts.forEach(({ fandom, postId, post }, index) => {
+      const postEl = renderPost(fandom, postId, post, index, true); // true = 팬덤 배지 표시
+      postsList.appendChild(postEl);
+    });
+
+    // 정렬 버튼 동기화
+    const sortDropdown = document.getElementById("sortDropdown");
+    if (sortDropdown) sortDropdown.value = currentSortMode;
+    sortCommunityPosts(currentSortMode);
+
+  } catch (e) {
+    console.error("전체 피드 로드 실패:", e);
+    postsList.innerHTML = `
+      <div class="community-empty">
+        <div class="community-empty-icon">⚠️</div>
+        <div class="community-empty-text">피드를 불러오지 못했어요<br>잠시 후 다시 시도해주세요</div>
+      </div>
+    `;
+  }
+}
+
+// ── 전체 피드 모드에서 글쓰기 (내 팬덤으로 포스팅) ──
+function openPostCreateModalForAll() {
+  if (!isLoggedIn || !currentUser) {
+    showToast("로그인이 필요합니다");
+    return;
+  }
+  const myFav = currentUserFav || localStorage.getItem('my_fav_group');
+  if (!myFav) {
+    showToast("팬덤을 먼저 설정해주세요");
+    return;
+  }
+  // 내 팬덤으로 hidden select 설정 후 모달 오픈
+  const select = document.getElementById("communityFandomSelect");
+  if (select) select.value = myFav;
+  openPostCreateModal();
+}
 
 init();
