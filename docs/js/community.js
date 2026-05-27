@@ -26,6 +26,9 @@ let communityPostsLoaded = false; // ★ 게시물 로드 성공 여부 (auth �
 // ── 전체 피드 상태 ──
 let currentFeedMode = 'my'; // 'my' | 'all'
 let currentSelectedTab = null; // 선택된 탭: 팬덤명 | 'all'
+let allFeedPosts = []; // 전체 피드 로드된 포스트 전체 배열
+let allFeedDisplayed = 0; // 현재 화면에 표시된 수
+const ALL_FEED_PAGE_SIZE = 20; // 한 번에 표시할 게시글 수
 
 // ── 게시글 이미지 URL 및 public_id 저장소 ──
 let postImageUrl = null;
@@ -186,7 +189,17 @@ let currentSortMode = "latest";
 
 function changeSortMode(mode) {
   currentSortMode = mode;
-  sortCommunityPosts(mode);
+
+  // 전체 피드 모드: 배열 재정렬 후 처음부터 다시 표시
+  if (currentFeedMode === 'all' && allFeedPosts.length > 0) {
+    sortAllFeedPostsArray(mode);
+    const postsList = document.getElementById("communityPostsList");
+    postsList.innerHTML = "";
+    allFeedDisplayed = 0;
+    renderMoreFeedPosts();
+  } else {
+    sortCommunityPosts(mode);
+  }
 
   // 버튼 active 상태 업데이트
   const buttons = document.querySelectorAll('.sort-btn');
@@ -1793,10 +1806,6 @@ async function loadAllFandomPosts() {
       });
     });
 
-    // 최신순 정렬 후 최대 80개
-    allPosts.sort((a, b) => (b.post.timestamp || 0) - (a.post.timestamp || 0));
-    allPosts = allPosts.slice(0, 80);
-
     communityPostsLoaded = true;
 
     if (allPosts.length === 0) {
@@ -1809,16 +1818,16 @@ async function loadAllFandomPosts() {
       return;
     }
 
-    postsList.innerHTML = "";
-    allPosts.forEach(({ fandom, postId, post }, index) => {
-      const postEl = renderPost(fandom, postId, post, index, true); // true = 팬덤 배지 표시
-      postsList.appendChild(postEl);
-    });
+    // 정렬 후 전체 배열 저장 (최대 200개)
+    allPosts.sort((a, b) => (b.post.timestamp || 0) - (a.post.timestamp || 0));
+    allFeedPosts = allPosts.slice(0, 200);
+    allFeedDisplayed = 0;
 
-    // 정렬 버튼 동기화
-    const sortDropdown = document.getElementById("sortDropdown");
-    if (sortDropdown) sortDropdown.value = currentSortMode;
-    sortCommunityPosts(currentSortMode);
+    // 현재 정렬 모드 반영
+    if (currentSortMode !== 'latest') sortAllFeedPostsArray(currentSortMode);
+
+    postsList.innerHTML = "";
+    renderMoreFeedPosts(); // 첫 20개 표시
 
   } catch (e) {
     console.error("전체 피드 로드 실패:", e);
@@ -1828,6 +1837,57 @@ async function loadAllFandomPosts() {
         <div class="community-empty-text">피드를 불러오지 못했어요<br>잠시 후 다시 시도해주세요</div>
       </div>
     `;
+  }
+}
+
+// ── 전체 피드 배열 정렬 ──
+function sortAllFeedPostsArray(mode) {
+  if (mode === 'latest') {
+    allFeedPosts.sort((a, b) => (b.post.timestamp || 0) - (a.post.timestamp || 0));
+  } else if (mode === 'popular') {
+    allFeedPosts.sort((a, b) => {
+      const la = Object.keys(a.post.likes || {}).length;
+      const lb = Object.keys(b.post.likes || {}).length;
+      return lb - la || (b.post.timestamp || 0) - (a.post.timestamp || 0);
+    });
+  } else if (mode === 'best') {
+    allFeedPosts.sort((a, b) => {
+      const la = Object.keys(a.post.likes || {}).length;
+      const lb = Object.keys(b.post.likes || {}).length;
+      const va = a.post.views || 0;
+      const vb = b.post.views || 0;
+      const scoreA = la * 0.4 + va * 0.6;
+      const scoreB = lb * 0.4 + vb * 0.6;
+      return scoreB - scoreA;
+    });
+  }
+}
+
+// ── 전체 피드 다음 배치 렌더링 ──
+function renderMoreFeedPosts() {
+  const postsList = document.getElementById("communityPostsList");
+
+  // 기존 "더 보기" 버튼 제거
+  const existingBtn = document.getElementById("loadMoreFeedBtn");
+  if (existingBtn) existingBtn.remove();
+
+  // 다음 PAGE_SIZE개 렌더링
+  const batch = allFeedPosts.slice(allFeedDisplayed, allFeedDisplayed + ALL_FEED_PAGE_SIZE);
+  batch.forEach(({ fandom, postId, post }, i) => {
+    const postEl = renderPost(fandom, postId, post, allFeedDisplayed + i, true);
+    postsList.appendChild(postEl);
+  });
+  allFeedDisplayed += batch.length;
+
+  // 남은 게시글이 있으면 "더 보기" 버튼 표시
+  const remaining = allFeedPosts.length - allFeedDisplayed;
+  if (remaining > 0) {
+    const btn = document.createElement("button");
+    btn.id = "loadMoreFeedBtn";
+    btn.className = "load-more-feed-btn";
+    btn.innerHTML = `📄 더 보기 <span style="background:rgba(124,77,255,0.15);padding:2px 8px;border-radius:10px;font-size:0.8rem">${remaining}개 남음</span>`;
+    btn.onclick = renderMoreFeedPosts;
+    postsList.appendChild(btn);
   }
 }
 
