@@ -40,10 +40,20 @@ exports.tnkCallback = functions.https.onRequest(async (req, res) => {
       return res.status(200).send('OK'); // 이미 처리됨
     }
 
-    // 4. Firebase DB에 투표권 + 광고 시청 횟수 지급
+    // 4. 하루 최대 10회 제한 체크
     const uid = md_user_nm; // Firebase UID
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const MAX_AD_PER_DAY = 10;
 
+    const watchCountSnap = await db.ref(`users/${uid}/ad_watch_count_${today}`).once('value');
+    const todayWatchCount = watchCountSnap.val() || 0;
+
+    if (todayWatchCount >= MAX_AD_PER_DAY) {
+      console.log(`⚠️ 하루 최대 광고 시청 초과: uid=${uid}, count=${todayWatchCount}`);
+      return res.status(200).send('OK'); // TNK에는 OK 반환 (재시도 방지)
+    }
+
+    // 5. Firebase DB에 투표권 + 광고 시청 횟수 지급
     await Promise.all([
       // 투표권 +1
       db.ref(`users/${uid}/pendingAdVotes`)
