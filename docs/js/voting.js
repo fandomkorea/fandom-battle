@@ -1,23 +1,17 @@
-﻿// ── 투표 제한 (하루 최대: 무료 1표 + 광고 10표 = 11표) ──
+﻿// ── 투표 제한 (무료 1표/일 + 구매한 투표권) ──
 const MAX_FREE_VOTES_PER_DAY = 1;
-const MAX_AD_VOTES_PER_DAY = 10;
-const MAX_TOTAL_VOTES_PER_DAY = 11; // 무료(1) + 광고(10) 합계
-let pendingAdVotes = 0; // 광고로부터 얻은 미사용 투표권 개수
-let adWatchCount = 0; // ★ 광고 시청 횟수 (0-10)
+let pendingPaidVotes = 0; // 구매한 미사용 투표권 개수
 
 function getTodayKey()      { return new Date().toISOString().slice(0, 10); }
 
 // ── Firebase 캐시 변수 ──
 let cachedTodayFreeVote = null;   // 오늘 무료 투표한 그룹 or null
-let cachedTodayAdVotes = 0;       // 오늘 사용한 광고 투표 개수 (0-10)
 
 // ── 투표 상태 함수들 (Firebase 기반) ──
 function getTodayFreeVoteCount()  { return cachedTodayFreeVote ? 1 : 0; } // 무료 투표 사용 여부 (0 or 1)
-function getTodayAdVoteCount()    { return cachedTodayAdVotes; } // 광고 투표 사용 개수 (0-10)
-function getTodayVoteCount()      { return getTodayFreeVoteCount() + getTodayAdVoteCount(); } // 총 투표 개수 (0-11)
+function getTodayVoteCount()      { return getTodayFreeVoteCount(); } // 오늘 사용한 무료 투표
 function canUseFreeVote()         { return getTodayFreeVoteCount() === 0; } // 무료 투표 가능 여부
-function canUseAdVotes()          { return getTodayAdVoteCount() < MAX_AD_VOTES_PER_DAY && pendingAdVotes > 0; } // 광고 투표 가능 여부
-function getRemainingAdVotes()    { return MAX_AD_VOTES_PER_DAY - getTodayAdVoteCount(); } // 남은 광고 투표권 개수
+function canUsePaidVotes()        { return pendingPaidVotes > 0; } // 구매 투표권 사용 가능 여부
 
 // ── Firebase에서 오늘의 투표 데이터 로드 ──
 async function loadTodayVotesFromFirebase() {
@@ -31,15 +25,6 @@ async function loadTodayVotesFromFirebase() {
     cachedTodayFreeVote = freeVoteSnap.exists() ? freeVoteSnap.val().group : null;
   } catch (e) {
     console.error("무료 투표 로드 실패:", e);
-  }
-
-  // 2. 광고 투표 개수 확인 (users/{uid}/ad_votes_used_{date})
-  try {
-    const adVotesSnap = await db.ref(`users/${currentUser.uid}/ad_votes_used_${today}`).once("value");
-    cachedTodayAdVotes = adVotesSnap.val() || 0;
-  } catch (e) {
-    console.error("광고 투표 로드 실패:", e);
-    cachedTodayAdVotes = 0;
   }
 
 }
@@ -200,22 +185,12 @@ async function voteForGroup(group) {
     return;
   }
 
-  // ★ 광고 투표 사용 가능할 때 (무료 투표 사용 후, 대기 중인 광고 투표권이 있을 때)
-  if (canUseAdVotes()) {
-    // Firebase에 광고 투표 기록
-    const today = getTodayKey();
-    const newAdVoteCount = cachedTodayAdVotes + 1;
-
+  // ★ 구매한 투표권 사용 가능할 때 (무료 투표 사용 후)
+  if (canUsePaidVotes()) {
     try {
-      // Firebase에 광고 투표 개수 저장
-      await db.ref(`users/${currentUser.uid}/ad_votes_used_${today}`).set(newAdVoteCount);
-
-      // 캐시 업데이트
-      cachedTodayAdVotes = newAdVoteCount;
-
-      // 광고 투표권 차감
-      pendingAdVotes -= 1;
-      await savePendingAdVotes();
+      // 구매 투표권 차감
+      pendingPaidVotes -= 1;
+      await savePendingPaidVotes();
 
       recordVote(group); // 로컬 히스토리 기록
       addActivity(group);
@@ -223,31 +198,23 @@ async function voteForGroup(group) {
       // Firebase에 투표 기록 (비동기)
       db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
 
-      showVoteCompleteModal("ad", group, meta.emoji, newAdVoteCount, pendingAdVotes);
+      showVoteCompleteModal("paid", group, meta.emoji, pendingPaidVotes);
 
       renderMyVotingHistory();
       showMyVotedBar(cachedTodayFreeVote);
-      updateFavBar(); // 광고 바 상태 업데이트 (남은 투표권 표시)
-      updateAuthUI(); // ★ 닉네임 옆 투표권 정보 업데이트
+      updateFavBar();
+      updateAuthUI();
     } catch (e) {
-      console.error("광고 투표 저장 실패:", e);
+      console.error("구매 투표 저장 실패:", e);
       showToast("⚠️ 투표 저장에 실패했습니다. 다시 시도해주세요.");
     }
-
-    // listenRankings()에서 자동으로 Firebase 데이터 감지 후 renderRankings() 호출
     return;
   }
 
-  // ★ 이미 모든 투표를 사용한 경우
-  if (getTodayVoteCount() >= MAX_TOTAL_VOTES_PER_DAY) {
-    showToast(`🏆 오늘 최대 투표 11표를 모두 사용했어요! 내일 또 와줘 💜`);
+  // ★ 무료 투표 이미 사용, 투표권 없는 경우
+  if (!canUseFreeVote() && !canUsePaidVotes()) {
+    showToast(`💳 오늘 무료 투표를 사용했어요! 투표권을 구매하면 더 투표할 수 있어요 🎁`);
     updateFavBar();
-    return;
-  }
-
-  // ★ 광고 투표권이 없는 경우
-  if (getTodayAdVoteCount() < MAX_AD_VOTES_PER_DAY && pendingAdVotes === 0) {
-    showToast(`📺 광고를 보고 투표권을 얻어보세요! 광고 1회 = 투표권 9개 🎁`);
     return;
   }
 
@@ -298,10 +265,13 @@ function showMyVotedBar(group) {
   const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000);
   const todayCount = getTodayVoteCount();
 
-  // 모든 투표를 사용한 경우 특별 메시지
-  if (todayCount >= MAX_TOTAL_VOTES_PER_DAY) {
-    sub = `🏆 오늘 최대 투표 ${MAX_TOTAL_VOTES_PER_DAY}/${MAX_TOTAL_VOTES_PER_DAY}표 모두 사용! 대단해! 💪`;
-    sub += `<br style="height:4px"> ⏰ 내일 ${h}시간 ${m}분 후 다시 투표할 수 있어요!`;
+  // 무료 투표 사용한 경우
+  if (!canUseFreeVote()) {
+    if (pendingPaidVotes > 0) {
+      sub += `  💳 구매 투표권 ${pendingPaidVotes}개 남음`;
+    } else {
+      sub += `<br style="height:4px"> ⏰ 내일 ${h}시간 ${m}분 후 무료 투표 가능`;
+    }
   } else {
     sub += `  ⏰ ${h}시간 ${m}분 후 재투표`;
   }
@@ -326,115 +296,15 @@ function showMyVotedBar(group) {
   bar.style.display = "block";
 }
 
-// ── 광고 버튼 항상 표시 ──
-function showAdButtonAlways() {
-  const adCtaEl = document.getElementById("adVoteCta");
-  if (!adCtaEl) return;
-
-  adCtaEl.innerHTML = `📺 광고보기 • 9표 투표하기`;
-  adCtaEl.disabled = false;
-  adCtaEl.onclick = watchAdWithLoginCheck;
-  adCtaEl.style.display = "flex";
-}
-
-// ── 로그인 여부 확인 후 광고 시청 ──
-function watchAdWithLoginCheck() {
+// ── 투표권 구매 버튼 클릭 ──
+function openVotePurchase() {
   if (!isLoggedIn) {
-    showToast("🔐 광고를 보시려면 로그인이 필요합니다!");
-    showVoteLoginModal(null); // 로그인 모달만 띄우기
+    showToast("🔐 로그인 후 투표권을 구매할 수 있어요!");
+    showVoteLoginModal(null);
     return;
   }
-
-  // 기존 광고 시청 로직
-  watchAd();
-}
-
-// ── TNK Factory 앱 ID ──
-const TNK_APP_ID = '1050e030f0c1796ee6971c0d0b040f09';
-
-// ── 광고 시청 → 추가 투표권 (TNK 오퍼월) ──
-function watchAd() {
-  // 총 투표를 모두 사용한 경우
-  if (getTodayVoteCount() >= MAX_TOTAL_VOTES_PER_DAY) {
-    showToast(`🏆 오늘 최대 투표 11표를 모두 사용했어요! 내일 또 와줘 💜`);
-    return;
-  }
-  // 광고를 10번 이상 본 경우
-  if (adWatchCount >= MAX_AD_VOTES_PER_DAY) {
-    showToast(`🎁 광고 시청은 하루 최대 10회까지 가능해요! (현재: ${adWatchCount}회 시청)`);
-    return;
-  }
-  if (!currentUser) return;
-
-  // PC 환경 체크 — TNK 오퍼월은 모바일 전용
-  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-  if (!isMobile) {
-    showToast('📱 광고 시청은 모바일에서만 가능해요! 모바일로 접속해주세요 😊');
-    return;
-  }
-
-  const uid = currentUser.uid;
-  const prevPendingAdVotes = pendingAdVotes;
-  const prevAdWatchCount = adWatchCount;
-
-  // TNK 오퍼월 팝업 열기
-  const offerUrl = `https://api3.tnkfactory.com/tnk/offerwall.web.main`
-                 + `?md_user_nm=${encodeURIComponent(uid)}&app_id=${TNK_APP_ID}`;
-  const popup = window.open(offerUrl, 'tnk_offerwall',
-    'width=420,height=700,scrollbars=yes,resizable=yes');
-
-  if (!popup) {
-    showToast('⚠️ 팝업이 차단됐어요! 브라우저 팝업 허용 후 다시 시도해주세요.');
-    return;
-  }
-
-  showToast('📺 광고를 보고 돌아오면 투표권이 자동으로 지급돼요!');
-
-  // Firebase 실시간 감지 — pendingAdVotes 증가 시 알림
-  let tnkListenerActive = true;
-  const adVotesRef = db.ref(`users/${uid}/pendingAdVotes`);
-
-  const tnkListener = adVotesRef.on('value', snap => {
-    if (!tnkListenerActive) return;
-    const newVotes = snap.val() || 0;
-    if (newVotes > prevPendingAdVotes) {
-      tnkListenerActive = false;
-      adVotesRef.off('value', tnkListener);
-
-      // 최신 값 반영
-      const gained = newVotes - prevPendingAdVotes;
-      pendingAdVotes = newVotes;
-      adWatchCount = prevAdWatchCount + gained;
-
-      // UI 업데이트
-      updateFavBar();
-      updateAuthUI();
-      if (allRankingsData) renderRankings(allRankingsData);
-      showAdRewardModal(pendingAdVotes, adWatchCount);
-
-      // 랭킹으로 자동 스크롤
-      setTimeout(() => {
-        const ranking = document.getElementById("rankingList");
-        if (ranking) ranking.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 300);
-      showMyVotedBar(cachedTodayFreeVote);
-    }
-  });
-
-  // 팝업 닫힘 감지 — 닫히면 리스너 해제 + 최신값 갱신
-  let checkCount = 0;
-  const checkClosed = setInterval(() => {
-    checkCount++;
-    if (!popup || popup.closed || checkCount > 72) { // 최대 6분
-      clearInterval(checkClosed);
-      if (tnkListenerActive) {
-        tnkListenerActive = false;
-        adVotesRef.off('value', tnkListener);
-        // 팝업 닫힌 후 최신 투표권 수 다시 로드
-        loadUserAdVotes();
-      }
-    }
-  }, 5000);
+  // TODO: 토스페이먼츠 결제 연동 예정
+  showToast("💳 투표권 구매 기능이 곧 오픈돼요! 조금만 기다려주세요 🙏");
 }
 
 // ── 투표 후 상태 복원 (페이지 로드 시) ──
@@ -442,32 +312,18 @@ function restoreVotedState() {
   const group = cachedTodayFreeVote;
   if (!group) return;
   showMyVotedBar(group);
-  updateFavBar(); // 광고 바 상태 복원
-  // Firebase에서의 로드는 setupAuthListener()에서 처리됨
+  updateFavBar();
 }
 
-// ── Firebase에 광고 투표권 저장 ──
-async function savePendingAdVotes() {
+// ── Firebase에 구매 투표권 저장 ──
+async function savePendingPaidVotes() {
   if (!currentUser) return;
 
   try {
-    await db.ref(`users/${currentUser.uid}/pendingAdVotes`).set(pendingAdVotes);
+    await db.ref(`users/${currentUser.uid}/pendingPaidVotes`).set(pendingPaidVotes);
   } catch (e) {
-    console.error("광고 투표권 저장 실패:", e);
+    console.error("구매 투표권 저장 실패:", e);
     showToast("⚠️ 데이터 저장에 실패했습니다. 다시 시도하세요.");
-  }
-}
-
-// ★ Firebase에 광고 시청 횟수 저장 (일일 리셋) ──
-async function saveAdWatchCount() {
-  if (!currentUser) return;
-
-  try {
-    const today = getTodayKey();
-    await db.ref(`users/${currentUser.uid}/ad_watch_count_${today}`).set(adWatchCount);
-  } catch (e) {
-    console.error("광고 시청 횟수 저장 실패:", e);
-    showToast("⚠️ 광고 횟수 저장에 실패했습니다. 다시 시도하세요.");
   }
 }
 

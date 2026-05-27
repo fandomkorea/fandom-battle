@@ -1,120 +1,4 @@
-﻿// ── 광고 보상 모달 ──
-function showAdRewardModal(totalVotes, watchCount) {
-  const existing = document.getElementById("adRewardModal");
-  if (existing) existing.remove();
-
-  const modal = document.createElement("div");
-  modal.id = "adRewardModal";
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-    backdrop-filter: blur(4px);
-  `;
-
-  const content = document.createElement("div");
-  content.style.cssText = `
-    background: linear-gradient(135deg, rgba(20, 15, 40, 0.98) 0%, rgba(30, 20, 50, 0.98) 100%);
-    border: 1.5px solid rgba(255, 193, 7, 0.4);
-    border-radius: 20px;
-    padding: 40px;
-    max-width: 420px;
-    width: 90%;
-    box-shadow: 0 20px 60px rgba(255, 193, 7, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    animation: modalSlideIn 0.3s ease-out;
-    text-align: center;
-  `;
-
-  content.innerHTML = `
-    <div style="font-size: 3.5rem; margin-bottom: 12px; animation: bounce 0.8s ease-in-out infinite">🎁</div>
-
-    <h2 style="
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 8px;
-      background: linear-gradient(135deg, #ffc107, #ff9800);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    ">투표권 획득 완료!</h2>
-
-    <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.95rem; margin-bottom: 24px; line-height: 1.6;">
-      광고 시청해주셔서 감사합니다!<br>
-      <strong style="font-size: 1.1rem; color: #ffc107">+1 투표권</strong>을 획득했어요
-    </p>
-
-    <div style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 152, 0, 0.1) 100%); border: 1.5px solid rgba(255, 193, 7, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-        <div>
-          <div style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.6); font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px">누적 투표권</div>
-          <div style="font-size: 2rem; font-weight: 700; color: #ffc107">${totalVotes}</div>
-          <div style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.5); margin-top: 4px">개</div>
-        </div>
-        <div>
-          <div style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.6); font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px">광고 시청</div>
-          <div style="font-size: 2rem; font-weight: 700; color: #ffc107">${watchCount}</div>
-          <div style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.5); margin-top: 4px">/10회</div>
-        </div>
-      </div>
-    </div>
-
-    <div style="background: rgba(255, 193, 7, 0.08); border: 1px solid rgba(255, 193, 7, 0.2); border-radius: 12px; padding: 14px; margin-bottom: 24px;">
-      <div style="display: flex; gap: 8px; align-items: flex-start">
-        <span style="font-size: 1.1rem">💡</span>
-        <div style="text-align: left;">
-          <div style="font-weight: 600; color: var(--text); font-size: 0.9rem">팁</div>
-          <div style="color: var(--muted); font-size: 0.8rem; margin-top: 4px">아래에서 좋아하는 팀을 선택해 투표하세요!</div>
-        </div>
-      </div>
-    </div>
-
-    <button id="adRewardClose" style="
-      width: 100%;
-      padding: 14px 24px;
-      background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-      border: none;
-      border-radius: 12px;
-      color: #1a1a1a;
-      font-weight: 700;
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-family: inherit;
-    " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 20px rgba(255,193,7,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
-      👍 투표하러 가기
-    </button>
-  `;
-
-  modal.appendChild(content);
-  document.body.appendChild(modal);
-
-  // 타이머: 3초 후 자동 닫기
-  const autoCloseTimer = setTimeout(() => {
-    modal.remove();
-  }, 3000);
-
-  document.getElementById("adRewardClose").onclick = () => {
-    clearTimeout(autoCloseTimer);
-    modal.remove();
-  };
-
-  modal.onclick = (e) => {
-    if (e.target === modal) {
-      clearTimeout(autoCloseTimer);
-      modal.remove();
-    }
-  };
-}
-
-// ── 투표 완료 모달 ──
+﻿// ── 투표 완료 모달 ──
 function showVoteCompleteModal(type, group, emoji, param3, param4) {
   const existing = document.getElementById("voteCompleteModal");
   if (existing) existing.remove();
@@ -195,19 +79,18 @@ function showVoteCompleteModal(type, group, emoji, param3, param4) {
         다음 투표하기
       </button>
     `;
-  } else if (type === "ad") {
-    // 광고 투표 완료
-    const adCount = param3;
-    const remaining = param4;
+  } else if (type === "paid") {
+    // 구매 투표권 사용 완료
+    const remaining = param3;
 
     content.style.cssText = `
       background: linear-gradient(135deg, rgba(20, 15, 40, 0.98) 0%, rgba(30, 20, 50, 0.98) 100%);
-      border: 1.5px solid rgba(255, 193, 7, 0.4);
+      border: 1.5px solid rgba(255, 77, 141, 0.4);
       border-radius: 20px;
       padding: 40px;
       max-width: 420px;
       width: 90%;
-      box-shadow: 0 20px 60px rgba(255, 193, 7, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 60px rgba(255, 77, 141, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
       animation: modalSlideIn 0.3s ease-out;
       text-align: center;
     `;
@@ -220,44 +103,31 @@ function showVoteCompleteModal(type, group, emoji, param3, param4) {
         font-weight: 700;
         color: var(--text);
         margin-bottom: 8px;
-        background: linear-gradient(135deg, #ffc107, #ff9800);
+        background: linear-gradient(135deg, #ff4d8d, #7c4dff);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-      ">광고 투표 완료!</h2>
+      ">투표 완료!</h2>
 
       <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.95rem; margin-bottom: 24px; line-height: 1.6;">
-        <strong style="font-size: 1.2rem; color: #ffc107">${emoji} ${group}</strong>에 투표했어요!<br>
-        <span style="font-size: 0.9rem">멋진 선택입니다! ⭐</span>
+        <strong style="font-size: 1.2rem; color: var(--pink)">${emoji} ${group}</strong>에 투표했어요!<br>
+        <span style="font-size: 0.9rem">남은 투표권: <strong style="color: var(--pink)">${remaining}개</strong></span>
       </p>
-
-      <div style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 152, 0, 0.1) 100%); border: 1.5px solid rgba(255, 193, 7, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 24px;">
-        <div style="display: flex; justify-content: space-around;">
-          <div>
-            <div style="font-size: 0.7rem; color: rgba(255, 255, 255, 0.6); font-weight: 600; margin-bottom: 4px">광고 투표</div>
-            <div style="font-size: 1.8rem; font-weight: 700; color: #ffc107">${adCount}<span style="font-size: 1rem">/10</span></div>
-          </div>
-          <div>
-            <div style="font-size: 0.7rem; color: rgba(255, 255, 255, 0.6); font-weight: 600; margin-bottom: 4px">남은 투표권</div>
-            <div style="font-size: 1.8rem; font-weight: 700; color: #ffc107">${remaining}</div>
-          </div>
-        </div>
-      </div>
 
       <button id="voteCompleteClose" style="
         width: 100%;
         padding: 14px 24px;
-        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        background: linear-gradient(135deg, #ff4d8d 0%, #7c4dff 100%);
         border: none;
         border-radius: 12px;
-        color: #1a1a1a;
+        color: #fff;
         font-weight: 700;
         font-size: 0.95rem;
         cursor: pointer;
         transition: all 0.3s ease;
         font-family: inherit;
-      " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 20px rgba(255,193,7,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
-        완료!
+      " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 20px rgba(255,77,141,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
+        계속 투표하기 💜
       </button>
     `;
   }
@@ -541,7 +411,7 @@ async function proceedWithVote(group) {
 
   const already = await checkUserVotedToday();
   if (already) {
-    showToast(`📺 광고를 보고 추가로 투표할 수 있어! 광고 영역에서 시작하세요!`);
+    showToast(`💳 투표권을 구매하면 더 많이 투표할 수 있어요!`);
     return;
   }
 

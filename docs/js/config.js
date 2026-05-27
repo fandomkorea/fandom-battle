@@ -39,8 +39,7 @@ Firebase Rules를 Firebase Console에서 다음과 같이 설정하세요:
         ".write": "$uid === auth.uid",
         "nickname": { ".validate": "newData.isString() && newData.val().length > 0" },
         "fandom": { ".validate": "newData.isString()" },
-        "pendingAdVotes": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
-        "ad_watch_count_*": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10" }
+        "pendingPaidVotes": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000" }
       }
     },
     "comments": {

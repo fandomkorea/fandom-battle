@@ -175,7 +175,7 @@ function renderRankings(data) {
 
   // 투표 후 상태바 갱신
   if (alreadyVoted) restoreVotedState();
-  const isAdPending = pendingAdVotes > 0; // 광고로부터 얻은 투표권이 있는지 확인
+  const hasPaidVotes = pendingPaidVotes > 0; // 구매한 투표권이 있는지 확인
 
   // 검색 필터 적용
   const filtered = rankingSearchQuery
@@ -238,10 +238,10 @@ function renderRankings(data) {
         </div>
         <div class="rank-right">
           <div class="rank-votes">${fmtVotes(votes)}</div>
-          <button class="vote-rank-btn ${isVoted ? "voted" : ""} ${isAdPending ? "ad-active" : ""}"
+          <button class="vote-rank-btn ${isVoted ? "voted" : ""} ${hasPaidVotes ? "ad-active" : ""}"
             onclick="voteForGroup('${escAttr(group)}')"
-            ${(pendingAdVotes === 0 && !canUseFreeVote()) ? "disabled" : ""}>
-            ${isAdPending ? "⚡ 추가 투표!" : isVoted ? "✅ 투표함" : meta.emoji + " 투표"}
+            ${(!canUseFreeVote() && !canUsePaidVotes()) ? "disabled" : ""}>
+            ${hasPaidVotes ? "⚡ 추가 투표!" : isVoted ? "✅ 투표함" : meta.emoji + " 투표"}
           </button>
         </div>
       </div>`;

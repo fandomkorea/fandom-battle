@@ -365,26 +365,15 @@ function updateFavBar() {
   // 버튼 상태 결정 (★ 최애팬덤 빠른 투표 버튼)
   let rightButton = '';
   if (isLoggedIn && fav) {
-    const freeVoteCount = getTodayFreeVoteCount();
-    const adVoteCount = getTodayAdVoteCount();
-    const totalVoteCount = getTodayVoteCount();
-    const canVote = canUseFreeVote() || (pendingAdVotes > 0 && adVoteCount < MAX_AD_VOTES_PER_DAY);
+    const canVote = canUseFreeVote() || canUsePaidVotes();
 
-    // ★ 모든 투표를 사용한 경우 축하 메시지
-    if (totalVoteCount >= MAX_TOTAL_VOTES_PER_DAY) {
-      rightButton = `<span style="font-size:0.85rem;color:var(--gold);font-weight:700">🏆 11표 완투! 내일 또 와줘!</span>`;
-    }
-    // ★ 투표권이 있으면 활성화 버튼 (무료 또는 광고)
-    else if (canVote) {
+    // ★ 투표권이 있으면 활성화 버튼
+    if (canVote) {
       rightButton = `<button class="fav-bar-ad-btn show ready" onclick="voteForGroup('${escAttr(fav)}')">🎁 ${escHtml(shortName)}에 빠른 투표하기</button>`;
     }
-    // ★ 투표권이 없으면 비활성화 버튼
-    else if (adWatchCount < MAX_AD_VOTES_PER_DAY) {
-      rightButton = `<button class="fav-bar-ad-btn" onclick="showToast('투표권을 먼저 획득해주세요! 광고를 시청하면 투표권이 생겨요 🎁')" disabled style="opacity:0.5;cursor:not-allowed">🎁 ${escHtml(shortName)}에 빠른 투표하기</button>`;
-    }
-    // ★ 광고 10회 완료
+    // ★ 투표권이 없으면 구매 유도
     else {
-      rightButton = `<span style="font-size:0.85rem;color:var(--gold)">✨ 내일 투표권이 생겨요!</span>`;
+      rightButton = `<button class="fav-bar-ad-btn" onclick="openVotePurchase()" style="opacity:0.8">💳 투표권 구매하기</button>`;
     }
   }
 

@@ -112,10 +112,8 @@ function signOut() {
     currentUserFav = null;
 
     // 캐시 초기화
-    pendingAdVotes = 0;
-    adWatchCount = 0; // ★ 광고 시청 횟수도 초기화
+    pendingPaidVotes = 0;
     cachedTodayFreeVote = null;
-    cachedTodayAdVotes = 0;
 
     // ★ localStorage 제거 (Firebase로 마이그레이션 완료)
     // localStorage.removeItem("my_fav_group"); ← 더 이상 필요 없음
@@ -181,16 +179,15 @@ function setupAuthListener() {
         }
       }
 
-      await loadUserAdVotes(); // Firebase에서 광고 투표권 로드 (닉네임도 함께 로드)
-      // loadUserAdVotes() 내에서 updateAuthUI()를 호출하므로 여기서는 안 함
+      await loadUserVotes(); // Firebase에서 투표권 로드 (닉네임도 함께 로드)
+      // loadUserVotes() 내에서 updateAuthUI()를 호출하므로 여기서는 안 함
 
       // ★ 팬덤 설정 팝업 닫기
       closeFandomSetupPopup();
     } else {
       currentUser = null;
       isLoggedIn = false;
-      pendingAdVotes = 0;
-      adWatchCount = 0; // ★ 광고 시청 횟수도 초기화
+      pendingPaidVotes = 0;
       updateAuthUI(); // 로그아웃 경로에서만 여기서 호출
       updateFavBar();
 
@@ -204,33 +201,27 @@ function setupAuthListener() {
   });
 }
 
-// ── Firebase에서 광고 투표권 로드 ──
-async function loadUserAdVotes() {
+// ── Firebase에서 투표 데이터 로드 ──
+async function loadUserVotes() {
   if (!currentUser) return;
 
   try {
     const today = getTodayKey();
 
-    // ★ 2회 병렬 읽기로 통합
-    // 기존: users/{uid} 하위 경로 개별 4회 + votes/{today}/{uid} 1회 = 5회 순차
-    // 변경: users/{uid} 전체 1회 + votes/{today}/{uid} 1회 = 2회 병렬 (~5배 빠름)
     const [userSnap, freeVoteSnap] = await Promise.all([
       db.ref(`users/${currentUser.uid}`).once("value"),
       db.ref(`votes/${today}/${currentUser.uid}`).once("value")
     ]);
 
-    // ── users/{uid} 전체에서 필요한 값 추출 ──
     const data = userSnap.val() || {};
 
-    // 투표권
-    pendingAdVotes = data.pendingAdVotes || 0;
-    adWatchCount = data[`ad_watch_count_${today}`] || 0;
-    cachedTodayAdVotes = data[`ad_votes_used_${today}`] || 0;
+    // 구매 투표권
+    pendingPaidVotes = data.pendingPaidVotes || 0;
 
     // 무료 투표 기록
     cachedTodayFreeVote = freeVoteSnap.exists() ? freeVoteSnap.val().group : null;
 
-    // 닉네임 / 팬덤 (기존 loadAuthUserData 역할 통합)
+    // 닉네임 / 팬덤
     currentUser.customNickname = data.nickname || null;
     currentUser.customFandom = data.fandom || null;
     currentUser.primaryFandom = data.preferences?.primaryFandom || null;
@@ -245,7 +236,6 @@ async function loadUserAdVotes() {
     updateAuthUI();
 
     // ★ 새로고침 시 커뮤니티 페이지 복원
-    // communityPostsLoaded가 false이면 init() → loadCommunityPosts()가 실패한 것 → 재시도
     const activePage = sessionStorage.getItem('activePage') || currentUser?.activePage || "vote";
     if (activePage === "community" && currentUserFav) {
       const select = document.getElementById("communityFandomSelect");
@@ -255,16 +245,14 @@ async function loadUserAdVotes() {
       }
     }
 
-    // ★ 투표권 로드 후 랭킹 다시 렌더링 (버튼 활성화 상태 업데이트)
+    // ★ 투표권 로드 후 랭킹 다시 렌더링
     if (allRankingsData) {
       renderRankings(allRankingsData);
     }
   } catch (e) {
-    console.error("광고 투표권 로드 실패:", e);
-    pendingAdVotes = 0;
-    adWatchCount = 0;
+    console.error("투표 데이터 로드 실패:", e);
+    pendingPaidVotes = 0;
     cachedTodayFreeVote = null;
-    cachedTodayAdVotes = 0;
   }
 }
 
@@ -282,36 +270,14 @@ function updateAuthUI() {
 
     // ★ 투표 정보 계산
     const freeVotes = getTodayFreeVoteCount();
-    const adVotes = getTodayAdVoteCount();
-    const totalVotes = getTodayVoteCount();
-    const remainingFree = MAX_FREE_VOTES_PER_DAY - freeVotes;
-    const remainingAd = MAX_AD_VOTES_PER_DAY - adVotes;
-    const remainingTotal = MAX_TOTAL_VOTES_PER_DAY - totalVotes;
-
-    // ★ 투표권 정보 텍스트 (무료 1개 + 광고권)
-    const availableVotes = (canUseFreeVote() ? 1 : 0) + pendingAdVotes; // 사용 가능한 투표권
-    const voteInfo = `${nickname} · ${totalVotes}/11표 | 투표권: ${availableVotes}개`;
+    const availableVotes = (canUseFreeVote() ? 1 : 0) + pendingPaidVotes; // 사용 가능한 투표권
+    const voteInfo = `${nickname} · 투표권: ${availableVotes}개`;
     document.getElementById("userDisplayName").textContent = voteInfo;
 
-    // ★ 상단 광고 버튼 렌더링
+    // ★ 상단 구매 버튼 렌더링
     const adButtonContainer = document.getElementById("adButtonContainer");
     if (adButtonContainer) {
-      let adButton = '';
-
-      // 모든 투표를 사용한 경우
-      if (totalVotes >= MAX_TOTAL_VOTES_PER_DAY) {
-        adButton = `<span style="font-size:0.75rem;color:var(--gold);font-weight:700">✨ 내일 투표권이 생겨요!</span>`;
-      }
-      // 광고 시청을 10회 이상 한 경우
-      else if (adWatchCount >= MAX_AD_VOTES_PER_DAY) {
-        adButton = `<span style="font-size:0.75rem;color:var(--gold);font-weight:700">🎁 광고 10회 완료!</span>`;
-      }
-      // ★ 광고 시청 버튼 (항상 표시 - 투표권 여부 관계없이)
-      else if (totalVotes < MAX_TOTAL_VOTES_PER_DAY && adWatchCount < MAX_AD_VOTES_PER_DAY) {
-        adButton = `<button style="padding:6px 10px;font-size:0.75rem;border-radius:6px;border:1px solid var(--primary);background:rgba(124,77,255,0.2);color:var(--primary);cursor:pointer;transition:all 0.15s;white-space:nowrap" onclick="watchAdWithLoginCheck()">🎁 광고 보고 투표권 획득</button>`;
-      }
-
-      adButtonContainer.innerHTML = adButton;
+      adButtonContainer.innerHTML = `<button style="padding:6px 10px;font-size:0.75rem;border-radius:6px;border:1px solid var(--primary);background:rgba(124,77,255,0.2);color:var(--primary);cursor:pointer;transition:all 0.15s;white-space:nowrap" onclick="openVotePurchase()">💳 투표권 구매</button>`;
     }
   } else {
     container.style.display = "none"; // 로그인 전에는 숨김
