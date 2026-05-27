@@ -357,6 +357,22 @@ async function showPostDetail(fandom, postId) {
   detailPage.style.display = "flex";
   detailPage.scrollTop = 0;
 
+  // ★ 이전 게시글 내용 즉시 초기화 (다른 게시글 클릭 시 이전 내용 잔류 방지)
+  document.getElementById("postDetailTitle").textContent = "";
+  document.getElementById("postDetailMeta").innerHTML = "";
+  document.getElementById("postDetailEngagement").innerHTML = "";
+  document.getElementById("postDetailManagement").innerHTML = "";
+  document.getElementById("postDetailComments").innerHTML = "";
+  const prevImg = document.getElementById("postDetailImageEl");
+  if (prevImg) prevImg.remove();
+  // 로딩 스피너 (Firebase 응답 대기 중 표시)
+  document.getElementById("postDetailContent").innerHTML = `
+    <div style="text-align:center;padding:40px 0;color:var(--muted)">
+      <div class="spinner" style="display:inline-block;margin-bottom:12px"></div>
+      <div style="font-size:0.9rem">게시물을 불러오는 중...</div>
+    </div>
+  `;
+
   try {
     // 게시물 데이터 로드
     const snap = await db.ref(`community/${fandom}/${postId}`).once("value");
@@ -382,13 +398,9 @@ async function showPostDetail(fandom, postId) {
     `;
     document.getElementById("postDetailMeta").innerHTML = metaHTML;
 
-    // 내용 설정
+    // 내용 설정 (스피너 대체)
     const contentEl = document.getElementById("postDetailContent");
     contentEl.textContent = post.content;
-
-    // 이전 게시글 이미지 요소 제거 (다른 게시글 볼 때 이미지 잔류 방지)
-    const existingImageEl = document.getElementById("postDetailImageEl");
-    if (existingImageEl) existingImageEl.remove();
 
     // 이미지 표시 (있으면)
     if (post.imageUrl) {
