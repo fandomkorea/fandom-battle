@@ -1,4 +1,163 @@
-﻿// ── 투표 완료 모달 ──
+﻿// ── 투표권 구매 모달 ──
+const VOTE_PACKAGES = [
+  { id: 'pack_s',  votes: 5,  price: 500,   label: '소형',  emoji: '🌱', color: '#4d9eff', desc: '가볍게 시작!',       perVote: '100원/개' },
+  { id: 'pack_m',  votes: 12, price: 1000,  label: '중형',  emoji: '⭐', color: '#7c4dff', desc: '가장 인기!',         perVote: '약 83원/개' },
+  { id: 'pack_l',  votes: 40, price: 3000,  label: '대형',  emoji: '🔥', color: '#ff4d8d', desc: '열혈 팬을 위해!',    perVote: '75원/개' },
+];
+
+function showVotePurchaseModal() {
+  const existing = document.getElementById("votePurchaseModal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "votePurchaseModal";
+  modal.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.75); display: flex; align-items: center;
+    justify-content: center; z-index: 10000; backdrop-filter: blur(6px);
+    padding: 16px; box-sizing: border-box;
+  `;
+
+  const packagesHtml = VOTE_PACKAGES.map((pkg, i) => `
+    <div style="
+      background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border: 1.5px solid ${pkg.color}44;
+      border-radius: 16px; padding: 20px 16px; text-align: center;
+      transition: all 0.2s; cursor: pointer; position: relative;
+      ${i === 1 ? `box-shadow: 0 0 0 2px ${pkg.color}; border-color: ${pkg.color};` : ''}
+    "
+    onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px ${pkg.color}44'"
+    onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='${i===1?`0 0 0 2px ${pkg.color}`:'none'}'"
+    onclick="purchaseVotePackage('${pkg.id}')">
+      ${i === 1 ? `<div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:${pkg.color};color:#fff;font-size:0.7rem;font-weight:800;padding:3px 12px;border-radius:20px;white-space:nowrap">✨ 인기</div>` : ''}
+      <div style="font-size:2rem;margin-bottom:8px">${pkg.emoji}</div>
+      <div style="font-size:1rem;font-weight:800;color:#fff;margin-bottom:4px">${pkg.label}</div>
+      <div style="font-size:2rem;font-weight:900;color:${pkg.color};line-height:1.1">${pkg.votes}<span style="font-size:1rem;font-weight:600">개</span></div>
+      <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin:4px 0 12px">${pkg.perVote}</div>
+      <div style="background:${pkg.color};color:#fff;border-radius:10px;padding:8px 0;font-weight:800;font-size:0.95rem">
+        ${pkg.price.toLocaleString()}원
+      </div>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);margin-top:6px">${pkg.desc}</div>
+    </div>
+  `).join('');
+
+  modal.innerHTML = `
+    <div style="
+      background: linear-gradient(160deg, rgba(18,12,40,0.99) 0%, rgba(28,18,55,0.99) 100%);
+      border: 1.5px solid rgba(124,77,255,0.35);
+      border-radius: 24px; padding: 32px 24px 28px;
+      max-width: 440px; width: 100%;
+      box-shadow: 0 24px 80px rgba(124,77,255,0.3), inset 0 1px 0 rgba(255,255,255,0.07);
+      animation: modalSlideIn 0.3s ease-out;
+    ">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:2.8rem;margin-bottom:8px">💳</div>
+        <h2 style="
+          font-size:1.4rem;font-weight:800;margin:0 0 6px;
+          background:linear-gradient(135deg,#ff4d8d,#7c4dff);
+          -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+        ">투표권 구매</h2>
+        <p style="color:rgba(255,255,255,0.5);font-size:0.85rem;margin:0">
+          무료 투표 외에 추가로 투표할 수 있어요 💜
+        </p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+        ${packagesHtml}
+      </div>
+
+      <div style="
+        background:rgba(255,255,255,0.04);border-radius:12px;
+        padding:12px 14px;margin-bottom:20px;
+        display:flex;gap:8px;align-items:center
+      ">
+        <span style="font-size:1.1rem">🔒</span>
+        <span style="font-size:0.78rem;color:rgba(255,255,255,0.45);line-height:1.5">
+          토스페이먼츠로 안전하게 결제돼요.<br>결제 후 즉시 투표권이 지급됩니다.
+        </span>
+      </div>
+
+      <button onclick="document.getElementById('votePurchaseModal').remove()" style="
+        width:100%;padding:13px;background:rgba(255,255,255,0.07);
+        border:1px solid rgba(255,255,255,0.1);border-radius:12px;
+        color:rgba(255,255,255,0.5);font-size:0.9rem;cursor:pointer;
+        font-family:inherit;transition:all 0.15s
+      " onmouseover="this.style.background='rgba(255,255,255,0.12)'"
+         onmouseout="this.style.background='rgba(255,255,255,0.07)'">
+        닫기
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+function purchaseVotePackage(packageId) {
+  // TODO: 토스페이먼츠 연동 후 실제 결제 연결 예정
+  const pkg = VOTE_PACKAGES.find(p => p.id === packageId);
+  if (!pkg) return;
+
+  const modal = document.getElementById("votePurchaseModal");
+  if (modal) modal.remove();
+
+  showComingSoonModal(pkg);
+}
+
+function showComingSoonModal(pkg) {
+  const existing = document.getElementById("comingSoonModal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "comingSoonModal";
+  modal.style.cssText = `
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.75);display:flex;align-items:center;
+    justify-content:center;z-index:10001;backdrop-filter:blur(6px);
+    padding:16px;box-sizing:border-box;
+  `;
+
+  modal.innerHTML = `
+    <div style="
+      background:linear-gradient(160deg,rgba(18,12,40,0.99),rgba(28,18,55,0.99));
+      border:1.5px solid rgba(255,193,7,0.4);border-radius:24px;
+      padding:40px 28px;max-width:360px;width:100%;text-align:center;
+      box-shadow:0 24px 80px rgba(255,193,7,0.2);
+      animation:modalSlideIn 0.3s ease-out;
+    ">
+      <div style="font-size:3.5rem;margin-bottom:16px">🛠️</div>
+      <h2 style="
+        font-size:1.4rem;font-weight:800;margin:0 0 10px;
+        background:linear-gradient(135deg,#ffc107,#ff9800);
+        -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+      ">결제 준비 중이에요!</h2>
+      <p style="color:rgba(255,255,255,0.6);font-size:0.9rem;line-height:1.7;margin:0 0 8px">
+        <strong style="color:#ffc107">${pkg.emoji} ${pkg.label} (${pkg.votes}개 / ${pkg.price.toLocaleString()}원)</strong><br>
+        곧 결제 기능이 오픈돼요!<br>
+        조금만 기다려주세요 🙏
+      </p>
+      <p style="color:rgba(255,255,255,0.35);font-size:0.78rem;margin:0 0 24px">
+        오픈 시 알림을 받고 싶으시다면<br>사이트를 즐겨찾기 해두세요 ⭐
+      </p>
+      <button id="comingSoonClose" style="
+        width:100%;padding:13px;
+        background:linear-gradient(135deg,#ffc107,#ff9800);
+        border:none;border-radius:12px;color:#1a1a1a;
+        font-weight:800;font-size:0.95rem;cursor:pointer;font-family:inherit;
+        transition:all 0.2s
+      " onmouseover="this.style.transform='translateY(-2px)'"
+         onmouseout="this.style.transform='translateY(0)'">
+        확인했어요!
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  document.getElementById("comingSoonClose").onclick = () => modal.remove();
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+// ── 투표 완료 모달 ──
 function showVoteCompleteModal(type, group, emoji, param3, param4) {
   const existing = document.getElementById("voteCompleteModal");
   if (existing) existing.remove();

@@ -303,8 +303,7 @@ function openVotePurchase() {
     showVoteLoginModal(null);
     return;
   }
-  // TODO: 토스페이먼츠 결제 연동 예정
-  showToast("💳 투표권 구매 기능이 곧 오픈돼요! 조금만 기다려주세요 🙏");
+  showVotePurchaseModal();
 }
 
 // ── 투표 후 상태 복원 (페이지 로드 시) ──
