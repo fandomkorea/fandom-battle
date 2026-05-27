@@ -15,10 +15,23 @@ function isTrending(group) {
 }
 
 function listenRankings() {
+  // ★ 캐시에서 즉시 렌더링 (새로고침 시 스켈레톤 제거 + 랭킹 즉시 표시)
+  const cached = localStorage.getItem('rankings_cache');
+  if (cached) {
+    try {
+      allRankingsData = JSON.parse(cached);
+      const skeletonEl = document.getElementById("skeletonLoader");
+      if (skeletonEl) skeletonEl.remove();
+      renderRankings(allRankingsData);
+    } catch (e) { /* 캐시 파싱 실패 시 무시, Firebase에서 정상 로드 */ }
+  }
+
   db.ref("rankings").on("value", snap => {
     allRankingsData = snap.val() || {};
+    // ★ 랭킹 캐시 업데이트 (다음 새로고침 시 즉시 표시용)
+    localStorage.setItem('rankings_cache', JSON.stringify(allRankingsData));
 
-    // 첫 로드 시 스켈레톤 제거
+    // 첫 로드 시 스켈레톤 제거 (캐시 없는 첫 방문자용)
     if (!lastRankingData) {
       const skeletonEl = document.getElementById("skeletonLoader");
       if (skeletonEl) skeletonEl.remove();
