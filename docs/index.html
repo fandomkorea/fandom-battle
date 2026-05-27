@@ -206,11 +206,11 @@
   </div>
 
   <!-- 글쓰기 & 새로고침 버튼 -->
-  <div style="margin-bottom:24px;display:flex;gap:12px">
-    <button onclick="openPostCreateModal()" style="flex:1;padding:14px 20px;background:linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.85) 100%);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:1rem;cursor:pointer;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0 8px 20px rgba(124,77,255,0.3);font-family:inherit" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px rgba(124,77,255,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 20px rgba(124,77,255,0.3)'">
+  <div id="communityWriteArea" style="margin-bottom:24px;display:flex;gap:12px">
+    <button id="communityWriteBtn" onclick="openPostCreateModal()" style="flex:1;padding:14px 20px;background:linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.85) 100%);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:1rem;cursor:pointer;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0 8px 20px rgba(124,77,255,0.3);font-family:inherit" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px rgba(124,77,255,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 20px rgba(124,77,255,0.3)'">
       ✍️ 글 쓰기
     </button>
-    <button onclick="refreshCommunityPosts()" style="padding:14px 18px;background:rgba(124,77,255,0.2);border:1.5px solid rgba(124,77,255,0.4);border-radius:12px;color:var(--primary);font-weight:700;font-size:1.1rem;cursor:pointer;transition:all 0.3s;font-family:inherit" onmouseover="this.style.backgroundColor='rgba(124,77,255,0.3)';this.style.transform='rotate(180deg)'" onmouseout="this.style.backgroundColor='rgba(124,77,255,0.2)';this.style.transform='rotate(0deg)'">
+    <button id="communityRefreshBtn" onclick="refreshCommunityPosts()" style="padding:14px 18px;background:rgba(124,77,255,0.2);border:1.5px solid rgba(124,77,255,0.4);border-radius:12px;color:var(--primary);font-weight:700;font-size:1.1rem;cursor:pointer;transition:all 0.3s;font-family:inherit" onmouseover="this.style.backgroundColor='rgba(124,77,255,0.3)';this.style.transform='rotate(180deg)'" onmouseout="this.style.backgroundColor='rgba(124,77,255,0.2)';this.style.transform='rotate(0deg)'">
       🔄
     </button>
   </div>

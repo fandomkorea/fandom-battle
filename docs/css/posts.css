@@ -563,39 +563,75 @@
 
     /* ── 모바일 최적화 ── */
     @media (max-width: 480px) {
+      /* 헤더 영역 압축 */
       .community-header {
-        padding: 18px;
-        margin-bottom: 16px;
-        border-radius: 12px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        border-radius: 10px;
       }
       .community-title {
-        font-size: 1.15rem;
-        margin-bottom: 16px;
-      }
-      .community-fandom-label {
-        font-size: 0.8rem;
+        font-size: 0.95rem;
         margin-bottom: 8px;
       }
+      .community-fandom-label {
+        font-size: 0.75rem;
+        margin-bottom: 5px;
+      }
       .community-fandom-dropdown {
-        padding: 12px 14px;
-        font-size: 0.95rem;
+        padding: 8px 10px;
+        font-size: 0.875rem;
         border-radius: 8px;
-        margin-bottom: 12px;
+        margin-bottom: 6px;
+        border-width: 1.5px;
       }
       .community-new-post-btn {
-        padding: 14px;
-        font-size: 0.95rem;
+        padding: 9px;
+        font-size: 0.875rem;
         border-radius: 8px;
       }
-      .post-item { padding: 14px; gap: 8px; }
-      .post-title { font-size: 1rem; }
-      .post-meta { font-size: 0.8rem; gap: 8px; flex-wrap: wrap; }
-      .post-content { font-size: 0.9rem; line-height: 1.5; max-height: 100px; }
-      .post-image { max-height: 250px; }
-      .post-actions { grid-template-columns: repeat(2, 1fr); gap: 6px; flex-wrap: wrap; }
-      .post-action-btn { font-size: 0.8rem; padding: 10px 8px; min-height: 44px; }
-      #postCreateModal > div { max-width: 95%; max-height: 80vh; padding: 16px; border-radius: 12px; }
-      #postCreateModal { padding: 12px !important; padding-bottom: 12px !important; }
+      /* 게시글 목록 간격 압축 */
+      .community-posts-section {
+        gap: 0;
+        margin-top: 4px;
+      }
+      .post-list-compact {
+        padding: 9px 10px;
+        gap: 3px;
+      }
+      .post-list-title {
+        font-size: 0.875rem;
+      }
+      .post-meta-row-mobile {
+        font-size: 0.72rem;
+        gap: 3px;
+      }
+      .post-list-meta {
+        font-size: 0.72rem;
+      }
+      /* 게시글 상세 */
+      .post-item { padding: 12px; gap: 6px; }
+      .post-title { font-size: 0.95rem; }
+      .post-meta { font-size: 0.75rem; gap: 6px; flex-wrap: wrap; }
+      .post-content { font-size: 0.875rem; line-height: 1.5; }
+      .post-image { max-height: 220px; }
+      .post-actions { grid-template-columns: repeat(2, 1fr); gap: 5px; }
+      .post-action-btn { font-size: 0.78rem !important; padding: 7px 6px !important; min-height: 36px; gap: 4px !important; }
+      /* 상세 페이지 */
+      .post-detail-info h1 { font-size: 1.1rem; margin-bottom: 5px; }
+      .post-detail-meta { font-size: 0.75rem; gap: 8px; }
+      .post-detail-content { padding: 10px 10px; font-size: 0.9rem; margin-bottom: 12px; }
+      .post-detail-actions { padding: 8px 0; margin-bottom: 10px; gap: 6px; }
+      .post-detail-comments { margin-top: 12px; }
+      /* 글쓰기/새로고침 버튼 */
+      #communityWriteArea { margin-bottom: 10px !important; gap: 8px !important; }
+      #communityWriteBtn { padding: 9px 12px !important; font-size: 0.875rem !important; border-radius: 9px !important; }
+      #communityRefreshBtn { padding: 9px 12px !important; font-size: 0.95rem !important; border-radius: 9px !important; }
+      /* 정렬 버튼 */
+      #sortButtonGroup { margin-bottom: 10px !important; gap: 6px !important; }
+      #sortButtonGroup button { padding: 8px 6px !important; font-size: 0.8rem !important; min-width: 0 !important; border-radius: 8px !important; }
+      /* 모달 */
+      #postCreateModal > div { max-width: 95%; max-height: 85vh; padding: 14px; border-radius: 12px; }
+      #postCreateModal { padding: 10px !important; }
     }
 
     @media (max-width: 768px) {
