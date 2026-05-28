@@ -539,8 +539,8 @@
     }
 
     .post-detail-content {
-      min-height: 80px;
-      padding: 14px 12px;
+      min-height: 160px;
+      padding: 20px 16px;
       background: rgba(124,77,255,0.06);
       border-left: 3px solid rgba(124,77,255,0.3);
       border-radius: 8px;
@@ -663,8 +663,8 @@
         border-bottom: 2px solid rgba(124,77,255,0.3);
       }
       .post-detail-content {
-        min-height: 70px;
-        padding: 12px 10px;
+        min-height: 140px;
+        padding: 16px 14px;
       }
       .post-detail-header {
         padding: 10px 12px;
