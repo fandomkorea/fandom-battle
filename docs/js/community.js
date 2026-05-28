@@ -2361,22 +2361,8 @@ async function loadAllFandomPosts(forceRefresh = false) {
     </div>
   `;
 
-  // 로드할 팬덤 목록 결정 (랭킹 상위 15개 + 내 팬덤)
-  const myFav = currentUserFav || localStorage.getItem('my_fav_group');
-  let fandomsToLoad;
-
-  if (allRankingsData && Object.keys(allRankingsData).length > 0) {
-    fandomsToLoad = Object.entries(allRankingsData)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 15)
-      .map(([name]) => name);
-  } else {
-    fandomsToLoad = ALL_GROUPS.slice(0, 15);
-  }
-
-  if (myFav && !fandomsToLoad.includes(myFav)) {
-    fandomsToLoad.push(myFav);
-  }
+  // 전체 팬덤 게시글 탐색 (ALL_GROUPS 전체)
+  const fandomsToLoad = [...ALL_GROUPS];
 
   try {
     // ★ limitToLast(50): 팬덤당 최신 50개만 로드하여 읽기 비용 절감
@@ -2532,13 +2518,8 @@ async function loadMyPosts() {
     </div>
   `;
 
-  // 모든 팬덤에서 내 글 수집
-  const fandomsToLoad = allRankingsData
-    ? Object.entries(allRankingsData).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([n]) => n)
-    : ALL_GROUPS.slice(0, 20);
-
-  const myFav = currentUserFav || localStorage.getItem('my_fav_group');
-  if (myFav && !fandomsToLoad.includes(myFav)) fandomsToLoad.push(myFav);
+  // 전체 팬덤에서 내 글 수집 (ALL_GROUPS 전체)
+  const fandomsToLoad = [...ALL_GROUPS];
 
   try {
     const snapshots = await Promise.all(
