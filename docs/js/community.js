@@ -237,14 +237,11 @@ function syncSortButtonStyles(mode) {
   });
 }
 
-// ── FAB 글쓰기 버튼 위임: 현재 글쓰기 버튼과 동일한 동작 수행 ──
+// 현재 탭에 맞는 글쓰기 액션을 추적
+let currentFabWriteAction = openPostCreateModal;
+
 function fabWrite() {
-  const wb = document.getElementById('communityWriteBtn');
-  if (wb && wb.onclick) {
-    wb.onclick();
-  } else {
-    openPostCreateModal();
-  }
+  currentFabWriteAction();
 }
 
 // ── 날짜 그룹 구분선 삽입 (최신순 + 내 팬덤 탭에서만) ──
@@ -2209,25 +2206,24 @@ function selectFandomTab(tabId) {
 
   renderFandomTabBar();
 
-  const writeBtn = document.getElementById("communityWriteBtn");
   const pageTitle = document.querySelector("header h1");
 
   if (tabId === 'all') {
     currentFeedMode = 'all';
-    if (writeBtn) writeBtn.onclick = () => openPostCreateModalForAll();
+    currentFabWriteAction = openPostCreateModalForAll;
     if (pageTitle) pageTitle.textContent = '🌍 전체 피드';
     loadAllFandomPosts();
   } else if (tabId === 'myPosts') {
     currentFeedMode = 'all';
-    if (writeBtn) writeBtn.onclick = () => openPostCreateModalForAll();
+    currentFabWriteAction = openPostCreateModalForAll;
     if (pageTitle) pageTitle.textContent = '✏️ 내가 쓴 글';
     loadMyPosts();
   } else {
     currentFeedMode = 'my';
+    currentFabWriteAction = openPostCreateModal;
     // hidden select 값 업데이트 (programmatic = change 이벤트 미발생)
     const select = document.getElementById("communityFandomSelect");
     if (select) select.value = tabId;
-    if (writeBtn) writeBtn.onclick = () => openPostCreateModal();
     const meta = GROUP_META[tabId];
     if (pageTitle && meta) pageTitle.textContent = `${meta.emoji} ${tabId} 커뮤니티`;
     loadCommunityPosts();

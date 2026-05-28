@@ -223,16 +223,6 @@
     </div>
   </div>
 
-  <!-- 글쓰기 & 새로고침 버튼 -->
-  <div id="communityWriteArea" style="margin-bottom:24px;display:flex;gap:12px">
-    <button id="communityWriteBtn" onclick="openPostCreateModal()" style="flex:1;padding:14px 20px;background:linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.85) 100%);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:1rem;cursor:pointer;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0 8px 20px rgba(124,77,255,0.3);font-family:inherit" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px rgba(124,77,255,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 20px rgba(124,77,255,0.3)'">
-      ✍️ 글 쓰기
-    </button>
-    <button id="communityRefreshBtn" onclick="refreshCommunityPosts()" style="padding:14px 18px;background:rgba(124,77,255,0.2);border:1.5px solid rgba(124,77,255,0.4);border-radius:12px;color:var(--primary);font-weight:700;font-size:1.1rem;cursor:pointer;transition:all 0.3s;font-family:inherit" onmouseover="this.style.backgroundColor='rgba(124,77,255,0.3)';this.style.transform='rotate(180deg)'" onmouseout="this.style.backgroundColor='rgba(124,77,255,0.2)';this.style.transform='rotate(0deg)'">
-      🔄
-    </button>
-  </div>
-
   <!-- 정렬 필터 버튼 그룹 -->
   <div id="sortButtonGroup" style="margin-bottom:20px;display:flex;gap:10px;flex-wrap:wrap">
     <button class="sort-btn active" data-sort="latest" onclick="changeSortMode('latest')" style="flex:1;min-width:100px;padding:12px 14px;background:linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,200,255,0.15) 100%);border:1.5px solid rgba(124,77,255,0.6);border-radius:10px;color:var(--text);font-family:inherit;font-weight:600;font-size:0.9rem;cursor:pointer;transition:all 0.2s;outline:none;box-shadow:0 0 15px rgba(124,77,255,0.25)" onmouseover="this.style.borderColor='rgba(124,77,255,0.6)';this.style.background='linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,200,255,0.15) 100%)';this.style.boxShadow='inset 0 1px 3px rgba(0,0,0,0.15),0 0 10px rgba(124,77,255,0.2)'" onmouseout="if(!this.classList.contains('active')){this.style.background='linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%)';this.style.borderColor='rgba(124,77,255,0.3)';this.style.boxShadow='inset 0 1px 2px rgba(0,0,0,0.1)'}">📅 최신순</button>
@@ -435,7 +425,7 @@
 <script src="js/voting.js?v=20260609"></script>
 <script src="js/ranking.js?v=20260609"></script>
 <script src="js/utils.js?v=20260603"></script>
-<script src="js/community.js?v=20260605"></script>
+<script src="js/community.js?v=20260609"></script>
 </body>
 </html>
 
