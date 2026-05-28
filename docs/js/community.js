@@ -2101,7 +2101,7 @@ function renderFandomTabBar() {
   const finderMeta = isFinderActive ? (GROUP_META[currentOtherFandom] || {}) : null;
   const finderLabel = isFinderActive
     ? `${finderMeta.emoji || ''} ${currentOtherFandom}`
-    : '🌐 둘러보기';
+    : '타팬덤 커뮤니티';
 
   const tabs = [
     {
