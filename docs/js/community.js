@@ -722,7 +722,7 @@ function loadDetailComments(fandom, postId) {
             <div style="flex:1;min-width:0">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
                 <span style="font-weight:700;color:var(--text);font-size:0.95rem">${escHtml(comment.authorName)}</span>
-                ${isCommentAuthor ? `<span style="background:linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,150,255,0.2) 100%);color:var(--primary);font-size:0.7rem;padding:2px 6px;border-radius:4px;font-weight:600">작성자</span>` : ''}
+                ${isCommentAuthor ? `<span style="background:linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,150,255,0.2) 100%);color:var(--primary);font-size:0.7rem;padding:2px 6px;border-radius:4px;font-weight:600">내가 쓴 댓글</span>` : ''}
               </div>
               <div style="font-size:0.75rem;color:var(--muted)">${timeStr}</div>
             </div>
