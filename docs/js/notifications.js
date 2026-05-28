@@ -1,6 +1,6 @@
 // ── FCM 댓글 알림 ──
 // VAPID 키: Firebase Console → 프로젝트 설정 → 클라우드 메시징 → 웹 구성 → 키 쌍 생성 후 교체
-const FCM_VAPID_KEY = 'REPLACE_WITH_YOUR_VAPID_KEY';
+const FCM_VAPID_KEY = 'BAdjTz1nT5N41tHh2xfBVceTjDx3_W3-nP_KApWgpjU-4UnKq-Rrmf2dtZL-qFK230OwU63KhSCqJRPG_JL6k4M';
 
 let fcmMessaging = null;
 
