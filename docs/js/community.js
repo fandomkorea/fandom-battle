@@ -144,8 +144,14 @@ function loadCommunityPosts() {
     if (currentOtherFandom && currentOtherFandom === selectedFandom) {
       const meta = GROUP_META[selectedFandom] || {};
       const banner = document.createElement('div');
-      banner.style.cssText = 'margin-bottom:14px;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-size:0.8rem;color:var(--muted);display:flex;align-items:center;justify-content:space-between;gap:8px';
-      banner.innerHTML = `<span>👀 <strong style="color:var(--text)">${escHtml(meta.emoji || '')} ${escHtml(selectedFandom)}</strong> 커뮤니티 구경 중 · 좋아요 가능, 댓글은 내 팬덤에서만</span><button onclick="openFandomFinderModal()" style="flex-shrink:0;padding:5px 10px;background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:6px;color:var(--primary);font-size:0.75rem;font-weight:600;font-family:inherit;cursor:pointer">변경</button>`;
+      banner.style.cssText = 'margin-bottom:14px;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px';
+      banner.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px">
+          <span style="font-weight:700;font-size:0.88rem;color:var(--text)">${escHtml(meta.emoji || '')} ${escHtml(selectedFandom)} 커뮤니티 구경 중</span>
+          <button onclick="openFandomFinderModal()" style="flex-shrink:0;padding:4px 10px;background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:6px;color:var(--primary);font-size:0.75rem;font-weight:600;font-family:inherit;cursor:pointer">변경</button>
+        </div>
+        <div style="font-size:0.75rem;color:var(--muted)">👀 좋아요 가능 · 댓글은 내 팬덤에서만</div>
+      `;
       postsList.insertBefore(banner, postsList.firstChild);
     }
 
