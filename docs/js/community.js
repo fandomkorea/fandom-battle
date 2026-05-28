@@ -2161,6 +2161,13 @@ function selectFandomTab(tabId) {
   }
 
   currentSelectedTab = tabId;
+
+  // 타팬덤이 아닌 탭으로 이동하면 타팬덤 세션 초기화
+  if (tabId !== currentOtherFandom) {
+    currentOtherFandom = null;
+    sessionStorage.removeItem('other_fandom');
+  }
+
   renderFandomTabBar();
 
   const writeBtn = document.getElementById("communityWriteBtn");
@@ -2285,6 +2292,7 @@ function closeFandomFinderModal() {
 function pickOtherFandom(fandom) {
   closeFandomFinderModal();
   currentOtherFandom = fandom;
+  sessionStorage.setItem('other_fandom', fandom); // 새로고침 후 복원용
   selectFandomTab(fandom);
 }
 

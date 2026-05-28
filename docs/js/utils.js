@@ -721,6 +721,18 @@ function showCommunityPage() {
     select.value = favToUse;
   }
 
+  // ── 타팬덤 세션 복원 (새로고침 시) ──
+  const savedOtherFandom = sessionStorage.getItem('other_fandom');
+  if (savedOtherFandom && GROUP_META && GROUP_META[savedOtherFandom]) {
+    if (typeof currentOtherFandom !== 'undefined') currentOtherFandom = savedOtherFandom;
+    currentSelectedTab = savedOtherFandom;
+    currentFeedMode = 'my';
+    select.value = savedOtherFandom;
+    if (typeof renderFandomTabBar === 'function') renderFandomTabBar();
+    if (typeof loadCommunityPosts === 'function') loadCommunityPosts();
+    return;
+  }
+
   // ── 팬덤 탭 바 초기화 ──
   // 이미 전체 피드를 보고 있었다면 유지, 아니면 내 팬덤 탭으로 기본 선택
   if (typeof currentSelectedTab === 'undefined' || currentSelectedTab === null) {
