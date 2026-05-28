@@ -589,20 +589,29 @@ async function showPostDetail(fandom, postId) {
     postDetailListeners.likes = { ref: likesRef, callback: likesCallback };
 
     // 댓글 섹션 설정
+    const canCommentHere = isLoggedIn && !!currentUser?.primaryFandom && currentUser.primaryFandom === fandom;
+    const myFavMeta = currentUser?.primaryFandom ? (GROUP_META[currentUser.primaryFandom] || {}) : null;
+    const commentInputHtml = (() => {
+      if (!isLoggedIn) return `<div style="text-align:center;padding:16px;background:linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,150,255,0.05) 100%);border:1px solid rgba(124,77,255,0.2);border-radius:12px;color:var(--muted);font-size:0.9rem"><span style="font-size:1rem">🔐</span> 댓글을 작성하려면 로그인해주세요</div>`;
+      if (canCommentHere) return `
+        <div style="background:linear-gradient(135deg,rgba(124,77,255,0.08) 0%,rgba(100,150,255,0.05) 100%);border:1.5px solid rgba(124,77,255,0.25);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px">
+          <textarea id="detail-comment-input-${postId}" placeholder="따뜻한 댓글을 남겨보세요..." style="width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.95rem;resize:none;min-height:90px;transition:all 0.2s" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" maxlength="500" oninput="document.getElementById('char-count-${postId}').textContent=this.value.length"></textarea>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:0.75rem;color:var(--muted)">최대 <span id="char-count-${postId}">0</span>/500자</span>
+            <button onclick="submitDetailComment('${escAttr(fandom)}','${escAttr(postId)}');event.stopPropagation()" style="padding:11px 24px;background:linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.85) 100%);border:none;border-radius:8px;color:#fff;font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 12px rgba(124,77,255,0.35);font-size:0.9rem">💬 댓글 작성</button>
+          </div>
+        </div>`;
+      // 타팬덤 또는 팬덤 미설정
+      const msg = !currentUser?.primaryFandom
+        ? '💜 팬덤을 설정하면 댓글을 달 수 있어요'
+        : `${myFavMeta?.emoji || ''} <strong>${escHtml(currentUser.primaryFandom)}</strong> 커뮤니티에서만 댓글을 달 수 있어요`;
+      return `<div style="text-align:center;padding:14px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:var(--muted);font-size:0.85rem;line-height:1.6">👀 여긴 읽기 전용이에요<br><span style="font-size:0.8rem">${msg}</span></div>`;
+    })();
     const commentsHTML = `
       <div style="margin-top:12px">
         <h3 style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px;margin-top:4px"><span>💬</span> 댓글</h3>
         <div id="postDetailCommentsList" style="margin-bottom:20px"></div>
-
-        ${isLoggedIn ? `
-          <div style="background:linear-gradient(135deg,rgba(124,77,255,0.08) 0%,rgba(100,150,255,0.05) 100%);border:1.5px solid rgba(124,77,255,0.25);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px">
-            <textarea id="detail-comment-input-${postId}" placeholder="따뜻한 댓글을 남겨보세요..." style="width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.95rem;resize:none;min-height:90px;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(124,77,255,0.5)'" onmouseout="this.style.borderColor='var(--border)'" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" maxlength="500" oninput="document.getElementById('char-count-${postId}').textContent = this.value.length"></textarea>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:0.75rem;color:var(--muted)">최대 <span id="char-count-${postId}">0</span>/500자</span>
-              <button onclick="submitDetailComment('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()" style="padding:11px 24px;background:linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.85) 100%);border:none;border-radius:8px;color:#fff;font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0 4px 12px rgba(124,77,255,0.35);font-size:0.9rem;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 20px rgba(124,77,255,0.45)';this.style.background='linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.9) 100%)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(124,77,255,0.35)';this.style.background='linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.85) 100%)'">💬 댓글 작성</button>
-            </div>
-          </div>
-        ` : `<div style="text-align:center;padding:16px;background:linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,150,255,0.05) 100%);border:1px solid rgba(124,77,255,0.2);border-radius:12px;color:var(--muted);font-size:0.9rem"><span style="font-size:1rem">🔐</span> 댓글을 작성하려면 로그인해주세요</div>`}
+        ${commentInputHtml}
       </div>
     `;
     document.getElementById("postDetailComments").innerHTML = commentsHTML;
@@ -620,12 +629,15 @@ async function showPostDetail(fandom, postId) {
         <span id="stickyLikeHeart">🤍</span>
         <span id="stickyLikeCount">0</span>
       </button>
-      ${isLoggedIn ? `
+      ${canCommentHere ? `
       <div class="sticky-comment-bar" onclick="document.getElementById('stickyCommentInput-${escAttr(postId)}').focus()">
         <textarea id="stickyCommentInput-${escAttr(postId)}" placeholder="댓글 달기..." maxlength="500" rows="1"
           oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px';document.getElementById('stickySubmitBtn-${escAttr(postId)}').classList.toggle('visible',this.value.trim().length>0)"></textarea>
         <button class="sticky-comment-submit" id="stickySubmitBtn-${escAttr(postId)}"
           onclick="submitStickyComment('${escAttr(fandom)}', '${escAttr(postId)}')">게시</button>
+      </div>` : isLoggedIn ? `
+      <div class="sticky-comment-bar" style="cursor:default;justify-content:center;opacity:0.7">
+        <span style="color:var(--muted);font-size:0.82rem">👀 읽기 전용 · ${currentUser?.primaryFandom ? escHtml(currentUser.primaryFandom) + ' 커뮤니티에서 댓글 가능' : '팬덤 설정 후 댓글 가능'}</span>
       </div>` : `
       <div class="sticky-comment-bar" style="cursor:pointer;justify-content:center" onclick="showToast('로그인 후 댓글을 작성할 수 있어요')">
         <span style="color:var(--muted);font-size:0.88rem">🔐 로그인 후 댓글을 달 수 있어요</span>
@@ -808,6 +820,13 @@ async function loadReplies(fandom, postId, commentId) {
 // ── 답글 작성 ──
 async function submitReply(fandom, postId, commentId) {
   if (!isLoggedIn || !currentUser) { showToast("로그인이 필요합니다"); return; }
+  // ★ 타팬덤 답글 제한
+  if (!currentUser.primaryFandom) { showToast("💜 팬덤을 먼저 설정해주세요!"); return; }
+  if (fandom !== currentUser.primaryFandom) {
+    const myMeta = GROUP_META[currentUser.primaryFandom] || {};
+    showToast(`${myMeta.emoji || ''} ${currentUser.primaryFandom} 커뮤니티에서만 답글을 달 수 있어요`);
+    return;
+  }
   const textarea = document.getElementById(`reply-textarea-${commentId}`);
   const content = textarea?.value?.trim();
   if (!content) { showToast("답글 내용을 입력해주세요"); return; }
@@ -837,14 +856,24 @@ async function submitDetailComment(fandom, postId) {
     showToast("로그인이 필요합니다");
     return;
   }
+  // ★ 타팬덤 댓글 제한
+  if (!currentUser.primaryFandom) {
+    showToast("💜 팬덤을 먼저 설정해주세요!");
+    return;
+  }
+  if (fandom !== currentUser.primaryFandom) {
+    const myMeta = GROUP_META[currentUser.primaryFandom] || {};
+    showToast(`${myMeta.emoji || ''} ${currentUser.primaryFandom} 커뮤니티에서만 댓글을 달 수 있어요`);
+    return;
+  }
 
   const textarea = document.getElementById(`detail-comment-input-${postId}`);
   const content = textarea.value.trim();
+  if (!content) { showToast("댓글 내용을 입력해주세요"); return; }
 
-  if (!content) {
-    showToast("댓글 내용을 입력해주세요");
-    return;
-  }
+  // ★ 중복 제출 방지
+  const btn = document.querySelector(`button[onclick*="submitDetailComment('${fandom}','${postId}')"], button[onclick*='submitDetailComment("${fandom}","${postId}")']`);
+  if (btn) { btn.disabled = true; btn.textContent = "..."; }
 
   try {
     const commentId = db.ref().push().key;
@@ -856,19 +885,29 @@ async function submitDetailComment(fandom, postId) {
       isHidden: false
     });
     textarea.value = "";
-    showToast("댓글이 작성됐어요!");
-
-    // ── 알림 전송 (본인 게시글 댓글 제외) ──
+    // ★ 글자 수 카운터 리셋
+    const charCount = document.getElementById(`char-count-${postId}`);
+    if (charCount) charCount.textContent = "0";
+    showToast("댓글이 작성됐어요! 💬");
     sendCommentNotification(fandom, postId, content);
   } catch (e) {
     console.error("댓글 작성 실패:", e);
     showToast("댓글 작성에 실패했어요");
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "💬 댓글 작성"; }
   }
 }
 
 // ── 하단 sticky 바에서 댓글 작성 ──
 async function submitStickyComment(fandom, postId) {
   if (!isLoggedIn || !currentUser) { showToast("로그인이 필요합니다"); return; }
+  // ★ 타팬덤 댓글 제한
+  if (!currentUser.primaryFandom) { showToast("💜 팬덤을 먼저 설정해주세요!"); return; }
+  if (fandom !== currentUser.primaryFandom) {
+    const myMeta = GROUP_META[currentUser.primaryFandom] || {};
+    showToast(`${myMeta.emoji || ''} ${currentUser.primaryFandom} 커뮤니티에서만 댓글을 달 수 있어요`);
+    return;
+  }
   const textarea = document.getElementById(`stickyCommentInput-${postId}`);
   const content = textarea?.value?.trim();
   if (!content) { showToast("댓글 내용을 입력해주세요"); return; }
