@@ -176,6 +176,61 @@ function showFandomChangeSuccessModal(fandom, emoji) {
   });
 }
 
+// ── 타 팬덤 커뮤니티 글쓰기 시도 모달 ──
+function showWrongFandomModal(myFandom, selectedFandom) {
+  const existing = document.getElementById("wrongFandomModal");
+  if (existing) existing.remove();
+
+  const myMeta = GROUP_META[myFandom] || {};
+  const selectedMeta = GROUP_META[selectedFandom] || {};
+
+  const modal = document.createElement("div");
+  modal.id = "wrongFandomModal";
+  modal.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(5px)`;
+
+  const content = document.createElement("div");
+  content.style.cssText = `background:linear-gradient(135deg,rgba(18,12,36,0.99) 0%,rgba(26,16,46,0.99) 100%);border:1.5px solid rgba(255,99,99,0.3);border-radius:20px;padding:32px 28px 28px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(255,77,77,0.12),inset 0 1px 0 rgba(255,255,255,0.07);animation:modalSlideIn 0.28s ease-out;text-align:center;position:relative`;
+
+  content.innerHTML = `
+    <div style="font-size:2.6rem;margin-bottom:14px">✍️</div>
+    <h2 style="font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:8px">글쓰기 권한 없음</h2>
+    <p style="color:var(--muted);font-size:0.85rem;line-height:1.7;margin-bottom:20px">
+      <strong style="color:rgba(255,255,255,0.8)">${escHtml(selectedMeta.emoji || '')} ${escHtml(selectedFandom)}</strong> 커뮤니티는<br>읽기만 가능해요.<br>
+      게시글은 내 팬덤 커뮤니티에서만 쓸 수 있어요.
+    </p>
+    <div style="background:rgba(124,77,255,0.08);border:1px solid rgba(124,77,255,0.22);border-radius:12px;padding:13px 16px;margin-bottom:24px;display:flex;align-items:center;gap:12px;text-align:left">
+      <span style="font-size:1.6rem;flex-shrink:0">${escHtml(myMeta.emoji || '💜')}</span>
+      <div style="min-width:0">
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:2px">내 팬덤 커뮤니티</div>
+        <div style="font-size:0.9rem;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(myFandom)}</div>
+      </div>
+      <span style="margin-left:auto;font-size:0.7rem;color:var(--primary);font-weight:700;white-space:nowrap;flex-shrink:0">여기서만 ✍️</span>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button id="wrongFandomClose" style="flex:1;padding:12px 10px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(255,255,255,0.5);font-weight:600;font-size:0.85rem;cursor:pointer;font-family:inherit;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">닫기</button>
+      <button id="wrongFandomGoMy" style="flex:1.5;padding:12px 10px;background:linear-gradient(135deg,var(--primary) 0%,rgba(100,55,215,0.9) 100%);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(124,77,255,0.35);transition:all 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">내 커뮤니티로 이동</button>
+    </div>
+  `;
+
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+
+  const close = () => {
+    document.removeEventListener("keydown", handleEsc);
+    modal.remove();
+  };
+
+  document.getElementById("wrongFandomClose").addEventListener("click", close);
+  document.getElementById("wrongFandomGoMy").addEventListener("click", () => {
+    close();
+    if (typeof selectFandomTab === 'function') selectFandomTab(myFandom);
+  });
+
+  modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+  const handleEsc = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", handleEsc);
+}
+
 // ── 팬덤 변경 (24시간 + 48시간 투표 제약) ──
 async function changePrimaryFandom(newFandom) {
   if (!isLoggedIn || !currentUser) {
@@ -278,7 +333,7 @@ function canWritePost(selectedFandom) {
 
   // 자신의 팬덤이 아니면 작성 불가
   if (selectedFandom !== currentUser.primaryFandom) {
-    showToast(`❌ ${currentUser.primaryFandom} 커뮤니티에서만 게시글을 작성할 수 있어요!`);
+    showWrongFandomModal(currentUser.primaryFandom, selectedFandom);
     return false;
   }
 
