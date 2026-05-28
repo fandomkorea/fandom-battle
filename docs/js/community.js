@@ -1,4 +1,12 @@
-﻿// ── 커뮤니티 게시물 새로고침 ──
+﻿// 게시글/댓글의 authorUid가 현재 사용자면 최신 닉네임 반환 (배치 업데이트 없이 즉시 반영)
+function resolveAuthorNickname(item) {
+  if (isLoggedIn && currentUser && item.authorUid === currentUser.uid) {
+    return currentUser.customNickname || item.authorName || item.authorNickname || '알 수 없음';
+  }
+  return item.authorNickname || item.authorName || '알 수 없음';
+}
+
+// ── 커뮤니티 게시물 새로고침 ──
 function refreshCommunityPosts() {
   if (currentFeedMode === 'all') {
     showToast("🔄 전체 피드를 새로고침 중...");
@@ -440,7 +448,7 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
       </div>
       ${previewHtml}
       <div class="post-meta-row-mobile">
-        <span class="post-list-meta">👤 <span id="author-${postId}">${escHtml(post.authorNickname || post.authorName || '알 수 없음')}</span></span>
+        <span class="post-list-meta">👤 <span id="author-${postId}">${escHtml(resolveAuthorNickname(post))}</span></span>
         <span class="post-list-meta-divider">·</span>
         <span class="post-list-meta">📅 ${timeStr}</span>
         <span class="post-list-meta-divider">·</span>
@@ -530,7 +538,7 @@ async function showPostDetail(fandom, postId) {
 
     // 메타 정보 설정
     const metaHTML = `
-      <span class="post-author">👤 ${escHtml(post.authorNickname || post.authorName || '알 수 없음')}</span>
+      <span class="post-author">👤 ${escHtml(resolveAuthorNickname(post))}</span>
       <span class="post-date">📅 ${timeStr}</span>
     `;
     document.getElementById("postDetailMeta").innerHTML = metaHTML;
@@ -740,7 +748,7 @@ function loadDetailComments(fandom, postId) {
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px">
             <div style="flex:1;min-width:0">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-                <span style="font-weight:700;color:var(--text);font-size:0.95rem">${escHtml(comment.authorName)}</span>
+                <span style="font-weight:700;color:var(--text);font-size:0.95rem">${escHtml(resolveAuthorNickname(comment))}</span>
                 ${isCommentAuthor ? `<span style="background:linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,150,255,0.2) 100%);color:var(--primary);font-size:0.7rem;padding:2px 6px;border-radius:4px;font-weight:600">내가 쓴 댓글</span>` : ''}
               </div>
               <div style="font-size:0.75rem;color:var(--muted)">${timeStr}</div>
@@ -827,7 +835,7 @@ async function loadReplies(fandom, postId, commentId) {
     el.className = 'reply-item';
     el.innerHTML = `
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
-        <span style="font-weight:700;font-size:0.82rem;color:var(--primary)">↳ ${escHtml(reply.authorName || reply.authorNickname || '익명')}</span>
+        <span style="font-weight:700;font-size:0.82rem;color:var(--primary)">↳ ${escHtml(resolveAuthorNickname(reply))}</span>
         <span style="font-size:0.72rem;color:var(--muted)">${getRelativeTime(reply.timestamp)}</span>
       </div>
       <div style="color:var(--text);line-height:1.5;word-break:break-word">${escHtml(reply.content)}</div>
@@ -1115,7 +1123,7 @@ function showCommentsModal(fandom, postId) {
         commentEl.innerHTML = `
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
             <div>
-              <span style="font-weight:700;color:var(--text);font-size:0.9rem">${escHtml(comment.authorName)}</span>
+              <span style="font-weight:700;color:var(--text);font-size:0.9rem">${escHtml(resolveAuthorNickname(comment))}</span>
               <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${timeStr}</div>
             </div>
             ${isCommentAuthor ? `<div style="display:flex;gap:4px">
@@ -1840,7 +1848,7 @@ function loadComments(fandom, postId) {
       commentEl.style.cssText = "padding:8px;background:rgba(124,77,255,0.05);border-radius:6px;margin-bottom:8px;font-size:0.9rem";
       commentEl.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span style="font-weight:600;color:var(--text)">${escHtml(comment.authorName)}</span>
+          <span style="font-weight:600;color:var(--text)">${escHtml(resolveAuthorNickname(comment))}</span>
           <span style="font-size:0.75rem;color:var(--muted)">${timeStr}</span>
         </div>
         <div style="color:var(--text);margin-bottom:6px">${escHtml(comment.content)}</div>

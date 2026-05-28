@@ -274,8 +274,18 @@ function updateAuthUI() {
     // ★ 투표 정보 계산
     const freeVotes = getTodayFreeVoteCount();
     const availableVotes = (canUseFreeVote() ? 1 : 0) + pendingPaidVotes; // 사용 가능한 투표권
-    const voteInfo = `${nickname} · 투표권: ${availableVotes}개`;
-    document.getElementById("userDisplayName").textContent = voteInfo;
+    const nameEl = document.getElementById("userDisplayName");
+    nameEl.innerHTML = '';
+    const nickSpan = document.createElement('span');
+    nickSpan.textContent = nickname;
+    nickSpan.style.cssText = 'cursor:pointer;border-bottom:1px dashed rgba(124,77,255,0.45);color:var(--primary);flex-shrink:0';
+    nickSpan.title = '닉네임 변경';
+    nickSpan.onclick = () => showNicknameChangeModal();
+    const voteSpan = document.createElement('span');
+    voteSpan.textContent = ` · 투표권: ${availableVotes}개`;
+    voteSpan.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:0.75';
+    nameEl.appendChild(nickSpan);
+    nameEl.appendChild(voteSpan);
 
     // ★ 상단 구매 버튼 렌더링
     const adButtonContainer = document.getElementById("adButtonContainer");
@@ -355,7 +365,8 @@ function loadAuthUserData(callback) {
       currentUserFav = data.preferences?.primaryFandom || null; // ← Firebase에서 읽은 팬덤을 전역 변수에도 설정
       // ★ localStorage 캐시 업데이트 (새로고침 시 즉시 로드를 위해)
       if (currentUserFav) localStorage.setItem('my_fav_group', currentUserFav);
-      currentUser.lastFandomChangeTime = data.lastFandomChangeTime || 0; // 마지막 팬덤 변경 시간
+      currentUser.lastFandomChangeTime = data.lastFandomChangeTime || 0;
+      currentUser.lastNicknameChangeTime = data.lastNicknameChangeTime || 0;
 
       // ★ 투표 스트릭 데이터 로드
       currentUser.votingStreak = data.votingStreak || 0;
@@ -368,5 +379,102 @@ function loadAuthUserData(callback) {
     console.error("Failed to load user data:", err);
     if (callback) callback();
   });
+}
+
+// ── 닉네임 변경 모달 ──
+function showNicknameChangeModal() {
+  if (!isLoggedIn || !currentUser) { showToast("로그인이 필요해요"); return; }
+
+  const existing = document.getElementById('nicknameChangeModal');
+  if (existing) existing.remove();
+
+  const COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
+  const lastChange = currentUser.lastNicknameChangeTime || 0;
+  const cooldownRemaining = (lastChange + COOLDOWN_MS) - Date.now();
+  const onCooldown = cooldownRemaining > 0;
+  const currentNick = currentUser.customNickname || '';
+
+  const modal = document.createElement('div');
+  modal.id = 'nicknameChangeModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(5px)';
+
+  const cooldownInfoHtml = onCooldown
+    ? `<div style="background:rgba(255,193,7,0.07);border:1px solid rgba(255,193,7,0.22);border-radius:10px;padding:11px 14px;margin-bottom:16px;font-size:0.8rem;color:rgba(255,193,7,0.9);line-height:1.5">⏳ 닉네임 변경은 30일마다 1회 가능해요<br>다음 변경 가능일: ${_formatDate(lastChange + COOLDOWN_MS)}</div>`
+    : `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:11px 14px;margin-bottom:16px;font-size:0.8rem;color:var(--muted);line-height:1.5">ℹ️ 변경 후 30일간 재변경 불가 · 2~12자</div>`;
+
+  modal.innerHTML = `
+    <div style="background:linear-gradient(135deg,rgba(18,12,36,0.99) 0%,rgba(26,16,46,0.99) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:20px;padding:32px 24px 24px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(124,77,255,0.22);animation:modalSlideIn 0.28s ease-out;position:relative">
+      <button id="nickModalClose" style="position:absolute;top:12px;right:13px;background:none;border:none;color:rgba(255,255,255,0.28);font-size:1.2rem;cursor:pointer;padding:6px 8px;border-radius:6px">✕</button>
+      <h2 style="font-size:1.15rem;font-weight:700;margin:0 0 20px;text-align:center;background:linear-gradient(135deg,var(--primary),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">✏️ 닉네임 변경</h2>
+      <div style="margin-bottom:14px">
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px">현재 닉네임</div>
+        <div id="nickCurrentDisplay" style="padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:10px;border:1px solid rgba(255,255,255,0.08);font-size:0.9rem;color:var(--text)"></div>
+      </div>
+      ${cooldownInfoHtml}
+      <div style="margin-bottom:20px">
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px">새 닉네임</div>
+        <input id="nicknameChangeInput" type="text" maxlength="12" placeholder="2~12자 입력" ${onCooldown ? 'disabled' : ''} style="width:100%;box-sizing:border-box;padding:12px 14px;background:rgba(255,255,255,${onCooldown ? '0.03' : '0.07'});border-radius:10px;border:1.5px solid rgba(124,77,255,${onCooldown ? '0.1' : '0.3'});color:${onCooldown ? 'rgba(255,255,255,0.3)' : 'var(--text)'};font-size:0.92rem;font-family:inherit;outline:none" />
+        <div id="nicknameCharCount" style="text-align:right;font-size:0.72rem;color:var(--muted);margin-top:4px">0 / 12</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button id="nickModalCancel" style="flex:1;padding:13px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(255,255,255,0.52);font-weight:600;font-size:0.88rem;cursor:pointer;font-family:inherit">취소</button>
+        <button id="nicknameChangeSubmitBtn" ${onCooldown ? 'disabled' : ''} style="flex:1.3;padding:13px;background:${onCooldown ? 'rgba(124,77,255,0.2)' : 'linear-gradient(135deg,var(--primary) 0%,rgba(100,55,215,0.9) 100%)'};border:none;border-radius:12px;color:${onCooldown ? 'rgba(255,255,255,0.3)' : '#fff'};font-weight:700;font-size:0.88rem;cursor:${onCooldown ? 'not-allowed' : 'pointer'};box-shadow:${onCooldown ? 'none' : '0 6px 16px rgba(124,77,255,0.38)'};font-family:inherit">변경하기</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  document.getElementById('nickCurrentDisplay').textContent = currentNick || '(닉네임 없음)';
+
+  const closeModal = () => {
+    document.removeEventListener('keydown', handleEsc);
+    modal.remove();
+  };
+  document.getElementById('nickModalClose').onclick = closeModal;
+  document.getElementById('nickModalCancel').onclick = closeModal;
+  document.getElementById('nicknameChangeSubmitBtn').onclick = submitNicknameChange;
+  const handleEsc = (e) => { if (e.key === 'Escape') closeModal(); };
+  document.addEventListener('keydown', handleEsc);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  const input = document.getElementById('nicknameChangeInput');
+  const counter = document.getElementById('nicknameCharCount');
+  if (input) {
+    input.addEventListener('input', () => { counter.textContent = `${input.value.length} / 12`; });
+    if (!onCooldown) setTimeout(() => input.focus(), 80);
+  }
+}
+
+function _formatDate(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+
+async function submitNicknameChange() {
+  const input = document.getElementById('nicknameChangeInput');
+  if (!input) return;
+  const newNickname = input.value.trim();
+  if (newNickname.length < 2) { showToast('닉네임은 2자 이상이어야 해요'); return; }
+  if (newNickname === currentUser.customNickname) { showToast('현재 닉네임과 동일해요'); return; }
+
+  const btn = document.getElementById('nicknameChangeSubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '변경 중...'; }
+
+  try {
+    const now = Date.now();
+    await db.ref(`users/${currentUser.uid}`).update({
+      nickname: newNickname,
+      lastNicknameChangeTime: now
+    });
+    currentUser.customNickname = newNickname;
+    currentUser.lastNicknameChangeTime = now;
+    updateAuthUI();
+    document.getElementById('nicknameChangeModal')?.remove();
+    showToast(`✅ 닉네임이 "${newNickname}"로 변경됐어요!`);
+  } catch (e) {
+    console.error('닉네임 변경 실패:', e);
+    showToast('닉네임 변경에 실패했어요. 다시 시도해주세요');
+    if (btn) { btn.disabled = false; btn.textContent = '변경하기'; }
+  }
 }
 
