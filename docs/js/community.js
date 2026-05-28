@@ -432,7 +432,7 @@ async function showPostDetail(fandom, postId) {
 
     // 메타 정보 설정
     const metaHTML = `
-      <span class="post-author">👤 ${escHtml(post.authorName)}</span>
+      <span class="post-author">👤 ${escHtml(post.authorNickname || post.authorName || '알 수 없음')}</span>
       <span class="post-date">📅 ${timeStr}</span>
     `;
     document.getElementById("postDetailMeta").innerHTML = metaHTML;
@@ -1129,12 +1129,15 @@ function openPostCreateModal() {
     return;
   }
 
-  // 팬덤 확인
-  const selectedFandom = document.getElementById("communityFandomSelect").value || currentUser.primaryFandom;
+  // ★ 팬덤 확인 (전체/내글 탭에서는 select.value가 "" → primaryFandom 사용)
+  const select = document.getElementById("communityFandomSelect");
+  const selectedFandom = select.value || currentUser.primaryFandom;
   if (!selectedFandom) {
     showToast("팬덤을 먼저 선택해주세요");
     return;
   }
+  // ★ select에 팬덤 반영 (submitPost에서 정확한 경로 읽기 위함)
+  if (!select.value) select.value = selectedFandom;
 
   // 팬덤 변경 후 24시간 제약 확인
   if (!canWritePost(selectedFandom)) {
@@ -1145,8 +1148,12 @@ function openPostCreateModal() {
   document.getElementById("postTemplate").value = "free";
   document.getElementById("postTitle").value = "";
   document.getElementById("postContent").value = "";
-  document.getElementById("postTitleCount").textContent = "0";
-  document.getElementById("postContentCount").textContent = "0";
+  const titleCountEl = document.getElementById("postTitleCount");
+  const contentCountEl = document.getElementById("postContentCount");
+  titleCountEl.textContent = "0";
+  titleCountEl.style.color = "";
+  contentCountEl.textContent = "0";
+  contentCountEl.style.color = "";
   document.getElementById("scheduleTemplate").style.display = "none";
 
   // ★ 이미지 초기화 (이전 게시글의 이미지가 남지 않도록)
@@ -1157,12 +1164,18 @@ function openPostCreateModal() {
   // 팬덤 표시
   document.getElementById("postCreateFandom").textContent = selectedFandom;
 
-  // 글자 수 카운터 oninput 핸들러 연결
+  // ★ 글자 수 카운터 + 경고 색상
   document.getElementById("postTitle").oninput = () => {
-    document.getElementById("postTitleCount").textContent = document.getElementById("postTitle").value.length;
+    const len = document.getElementById("postTitle").value.length;
+    const el = document.getElementById("postTitleCount");
+    el.textContent = len;
+    el.style.color = len >= 90 ? '#ff6464' : len >= 70 ? '#ffb450' : '';
   };
   document.getElementById("postContent").oninput = () => {
-    document.getElementById("postContentCount").textContent = document.getElementById("postContent").value.length;
+    const len = document.getElementById("postContent").value.length;
+    const el = document.getElementById("postContentCount");
+    el.textContent = len;
+    el.style.color = len >= 1800 ? '#ff6464' : len >= 1500 ? '#ffb450' : '';
   };
 
   // 모달 표시
@@ -1399,6 +1412,9 @@ async function submitPost() {
       showToast("✅ 게시물이 작성되었어요!");
     }
     closePostCreateModal();
+
+    // ★ 내 팬덤 탭으로 이동하여 새 글 즉시 반영
+    selectFandomTab(selectedFandom);
   } catch (error) {
     showToast("게시물 작성 실패: " + error.message);
     console.error(error);

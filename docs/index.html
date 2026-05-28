@@ -288,7 +288,7 @@
         <span style="font-size:1.8rem">✍️</span>
         <h2 style="font-size:1.4rem;font-weight:900;background:linear-gradient(135deg,var(--text) 0%,rgba(200,200,255,0.9) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0">새 글 쓰기</h2>
       </div>
-      <button onclick="closePostCreateModal()" style="background:none;border:none;color:var(--muted);font-size:1.8rem;cursor:pointer;padding:4px 8px;border-radius:6px;transition:all 0.2s;opacity:0.7" onmouseover="this.style.opacity='1';this.style.backgroundColor='rgba(124,77,255,0.15)'" onmouseout="this.style.opacity='0.7';this.style.backgroundColor='transparent'">✕</button>
+      <button onclick="confirmAndClosePostModal()" style="background:none;border:none;color:var(--muted);font-size:1.8rem;cursor:pointer;padding:4px 8px;border-radius:6px;transition:all 0.2s;opacity:0.7" onmouseover="this.style.opacity='1';this.style.backgroundColor='rgba(124,77,255,0.15)'" onmouseout="this.style.opacity='0.7';this.style.backgroundColor='transparent'">✕</button>
     </div>
 
     <!-- 콘텐츠 영역 -->
@@ -334,13 +334,13 @@
 
       <div style="margin-bottom:20px">
         <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(124,77,255,0.9);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">📌 제목</label>
-        <input type="text" id="postTitle" placeholder="게시물 제목을 입력해주세요" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(20,20,30,0.6) 0%,rgba(30,20,50,0.6) 100%);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.95rem;transition:all 0.2s;outline:none" maxlength="100" onmouseover="this.style.borderColor='rgba(124,77,255,0.4)';this.style.boxShadow='0 0 12px rgba(124,77,255,0.15)'" onmouseout="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'">
+        <input type="text" id="postTitle" placeholder="게시물 제목을 입력해주세요" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(20,20,30,0.6) 0%,rgba(30,20,50,0.6) 100%);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.95rem;transition:all 0.2s;outline:none" maxlength="100" onmouseover="this.style.borderColor='rgba(124,77,255,0.4)';this.style.boxShadow='0 0 12px rgba(124,77,255,0.15)'" onmouseout="if(document.activeElement!==this){this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'}" onfocus="this.style.borderColor='rgba(124,77,255,0.7)';this.style.boxShadow='0 0 0 3px rgba(124,77,255,0.18)'" onblur="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'">
         <div style="font-size:0.7rem;color:rgba(124,77,255,0.7);margin-top:6px;text-align:right"><span id="postTitleCount">0</span>/100</div>
       </div>
 
       <div style="margin-bottom:20px">
         <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(124,77,255,0.9);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">📝 내용</label>
-        <textarea id="postContent" placeholder="게시물 내용을 입력해주세요" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(20,20,30,0.6) 0%,rgba(30,20,50,0.6) 100%);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.95rem;resize:vertical;min-height:160px;transition:all 0.2s;outline:none" maxlength="2000" onmouseover="this.style.borderColor='rgba(124,77,255,0.4)';this.style.boxShadow='0 0 12px rgba(124,77,255,0.15)'" onmouseout="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'"></textarea>
+        <textarea id="postContent" placeholder="게시물 내용을 입력해주세요" style="width:100%;padding:12px 14px;background:linear-gradient(135deg,rgba(20,20,30,0.6) 0%,rgba(30,20,50,0.6) 100%);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.95rem;resize:vertical;min-height:160px;transition:all 0.2s;outline:none" maxlength="2000" onmouseover="this.style.borderColor='rgba(124,77,255,0.4)';this.style.boxShadow='0 0 12px rgba(124,77,255,0.15)'" onmouseout="if(document.activeElement!==this){this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'}" onfocus="this.style.borderColor='rgba(124,77,255,0.7)';this.style.boxShadow='0 0 0 3px rgba(124,77,255,0.18)'" onblur="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'"></textarea>
         <div style="font-size:0.7rem;color:rgba(124,77,255,0.7);margin-top:6px;text-align:right"><span id="postContentCount">0</span>/2000</div>
       </div>
 
@@ -357,7 +357,7 @@
       </div>
 
       <div style="display:flex;gap:10px;margin-top:24px">
-        <button onclick="closePostCreateModal()" style="flex:1;padding:14px 20px;background:transparent;border:1.5px solid rgba(124,77,255,0.3);border-radius:10px;color:var(--text);font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.3s;font-size:0.95rem" onmouseover="this.style.backgroundColor='rgba(124,77,255,0.1)';this.style.borderColor='rgba(124,77,255,0.5)'" onmouseout="this.style.backgroundColor='transparent';this.style.borderColor='rgba(124,77,255,0.3)'">취소</button>
+        <button onclick="confirmAndClosePostModal()" style="flex:1;padding:14px 20px;background:transparent;border:1.5px solid rgba(124,77,255,0.3);border-radius:10px;color:var(--text);font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.3s;font-size:0.95rem" onmouseover="this.style.backgroundColor='rgba(124,77,255,0.1)';this.style.borderColor='rgba(124,77,255,0.5)'" onmouseout="this.style.backgroundColor='transparent';this.style.borderColor='rgba(124,77,255,0.3)'">취소</button>
         <button id="submitPostBtn" onclick="submitPost()" style="flex:1;padding:14px 20px;background:linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.85) 100%);border:none;border-radius:10px;color:#fff;font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0 8px 20px rgba(124,77,255,0.3);font-size:0.95rem" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px rgba(124,77,255,0.4)';this.style.background='linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.9) 100%)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 20px rgba(124,77,255,0.3)';this.style.background='linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.85) 100%)'">✨ 작성하기</button>
       </div>
     </div>
@@ -432,7 +432,7 @@
 <script src="js/voting.js?v=20260609"></script>
 <script src="js/ranking.js?v=20260609"></script>
 <script src="js/utils.js?v=20260609"></script>
-<script src="js/community.js?v=20260610"></script>
+<script src="js/community.js?v=20260611"></script>
 </body>
 </html>
 
