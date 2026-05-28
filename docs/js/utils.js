@@ -428,6 +428,13 @@ function openFavPicker() {
       return displayName.toLowerCase().includes(searchLower);
     });
 
+    if (filtered.length === 0) {
+      return `<div style="text-align:center;padding:32px 20px;color:var(--muted)">
+        <div style="font-size:2rem;margin-bottom:8px">🔍</div>
+        <div style="font-size:0.9rem">검색 결과가 없어요</div>
+      </div>`;
+    }
+
     return filtered.map(g => {
       const meta = GROUP_META[g] || { emoji:"🌟" };
       const displayName = meta.kr ? `${meta.kr} (${g})` : g;
@@ -438,9 +445,18 @@ function openFavPicker() {
     }).join("");
   };
 
+  // 현재 내 팬덤 칩 (설정된 경우에만)
+  const currentFavHtml = myFav && GROUP_META[myFav]
+    ? `<div style="margin-bottom:12px;padding:9px 13px;background:rgba(124,77,255,0.1);border:1px solid rgba(124,77,255,0.28);border-radius:10px;font-size:0.82rem;color:var(--muted);display:flex;align-items:center;gap:8px">
+        <span>현재 최애</span>
+        <span style="font-weight:700;color:var(--text)">${GROUP_META[myFav].emoji} ${escHtml(myFav)}</span>
+      </div>`
+    : '';
+
   const initialGrid = renderGrid();
   overlay.innerHTML = `<div class="fav-picker-sheet">
     <div class="fav-picker-title">💜 내 최애 그룹은?<button class="fav-picker-close" onclick="closeFavPicker()">✕</button></div>
+    ${currentFavHtml}
     <input type="text" id="fandomSearchInput" placeholder="🔍 팬덤 검색... (예: NCT, 뉴진스)" style="
       width: 100%;
       padding: 10px 14px;
