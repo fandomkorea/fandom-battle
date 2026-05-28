@@ -2088,67 +2088,70 @@ window.addEventListener('popstate', (e) => {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // ── 팬덤 탭 바 렌더링 ──
+// 항상 4개 고정 탭: 전체 | 내꺼 | 팬덤찾기 | 내가쓴글
 function renderFandomTabBar() {
   const bar = document.getElementById("fandomTabBar");
   if (!bar) return;
 
   const myFav = currentUserFav || localStorage.getItem('my_fav_group');
+  const myFavMeta = myFav ? (GROUP_META[myFav] || {}) : null;
 
-  // 탭 배열: 🌍전체 → ⭐내팬덤(내꺼) → ✏️내 글 → [타팬덤 선택 시] → 🔍팬덤 찾기
+  // 팬덤찾기 탭: 선택된 타팬덤이 있으면 그 이름으로 활성 표시
+  const isFinderActive = !!currentOtherFandom && currentSelectedTab === currentOtherFandom;
+  const finderMeta = isFinderActive ? (GROUP_META[currentOtherFandom] || {}) : null;
+  const finderLabel = isFinderActive
+    ? `${finderMeta.emoji || ''} ${currentOtherFandom}`
+    : '🔍 팬덤찾기';
+
   const tabs = [
-    { id: 'all', label: '🌍 전체', color: '#7c4dff', isMy: false }
+    {
+      id: 'all',
+      label: '🌍 전체',
+      active: currentSelectedTab === 'all',
+    },
+    {
+      id: myFav || '__nofav__',
+      label: myFavMeta ? `${myFavMeta.emoji} ${myFav}` : '💜 팬덤설정',
+      sub: myFav ? '내꺼' : null,
+      active: !!myFav && currentSelectedTab === myFav,
+      dimmed: !myFav,
+    },
+    {
+      id: 'fandomFinder',
+      label: finderLabel,
+      active: isFinderActive,
+    },
+    {
+      id: 'myPosts',
+      label: '✏️ 내가쓴글',
+      active: currentSelectedTab === 'myPosts',
+    },
   ];
-  if (myFav && GROUP_META[myFav]) {
-    tabs.push({ id: myFav, label: `${GROUP_META[myFav].emoji} ${myFav}`, color: GROUP_META[myFav].color, isMy: true });
-  }
-  if (isLoggedIn) {
-    tabs.push({ id: 'myPosts', label: '✏️ 내 글', color: '#43a047', isMy: false });
-  }
-  // 팬덤 찾기로 선택한 타 팬덤 (내 팬덤이 아닐 때만)
-  if (currentOtherFandom && currentOtherFandom !== myFav && GROUP_META[currentOtherFandom]) {
-    const meta = GROUP_META[currentOtherFandom];
-    tabs.push({ id: currentOtherFandom, label: `${meta.emoji} ${currentOtherFandom}`, color: meta.color || '#7c4dff', isMy: false, isOther: true });
-  }
-  // 팬덤 찾기 버튼 (항상 마지막)
-  tabs.push({ id: 'fandomFinder', label: '🔍 팬덤 찾기', color: '#888', isMy: false, isFinder: true });
 
   bar.innerHTML = tabs.map(tab => {
-    const isActive = currentSelectedTab === tab.id;
-    let style = '';
-    if (tab.isFinder) {
-      // 찾기 버튼: 점선 테두리, 항상 같은 스타일
-      style = `border-style:dashed;border-color:rgba(255,255,255,0.25);color:rgba(255,255,255,0.55);font-size:0.78rem`;
-    } else if (isActive) {
-      style = `background:${tab.color};border-color:${tab.color};color:#fff;box-shadow:0 2px 10px ${hexToRgba(tab.color, 0.4)}`;
-    } else if (tab.isMy) {
-      style = `border-color:${hexToRgba(tab.color, 0.5)};color:${tab.color}`;
-    } else if (tab.isOther) {
-      style = `border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.7)`;
-    }
-    const myMark = tab.isMy ? ' <span style="font-size:0.65rem;opacity:0.9">내꺼</span>' : '';
-    // 타 팬덤 탭엔 X 버튼 (제거 가능)
-    const closeMark = tab.isOther
-      ? ` <span class="other-fandom-tab-close" data-fandom="${escAttr(tab.id)}" style="margin-left:4px;opacity:0.5;font-size:0.7rem;line-height:1">✕</span>`
+    const subHtml = tab.sub
+      ? `<span class="tab-sub">${escHtml(tab.sub)}</span>`
       : '';
-    return `<button class="fandom-tab${isActive ? ' active' : ''}" data-tabid="${escAttr(tab.id)}" style="${style}">${tab.label}${myMark}${closeMark}</button>`;
+    const dimAttr = tab.dimmed ? ' style="opacity:0.45"' : '';
+    return `<button class="fandom-tab${tab.active ? ' active' : ''}" data-tabid="${escAttr(tab.id)}"${dimAttr}>` +
+      `<span class="tab-label">${escHtml(tab.label)}</span>${subHtml}</button>`;
   }).join('');
 
   // 이벤트 바인딩
   bar.querySelectorAll('.fandom-tab').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      // X 버튼 클릭 시 타 팬덤 탭 제거
-      if (e.target.classList.contains('other-fandom-tab-close')) {
-        e.stopPropagation();
-        currentOtherFandom = null;
-        if (currentSelectedTab !== 'all' && currentSelectedTab !== 'myPosts' &&
-            currentSelectedTab !== (currentUserFav || localStorage.getItem('my_fav_group'))) {
-          selectFandomTab('all');
-        } else {
-          renderFandomTabBar();
-        }
+    btn.addEventListener('click', () => {
+      const tid = btn.dataset.tabid;
+      // 팬덤 미설정 탭 클릭 → 팬덤 선택 피커 오픈
+      if (tid === '__nofav__') {
+        if (typeof openFavPicker === 'function') openFavPicker();
         return;
       }
-      selectFandomTab(btn.dataset.tabid);
+      // 내가쓴글 비로그인 클릭 → 로그인 안내
+      if (tid === 'myPosts' && !isLoggedIn) {
+        showToast('💜 로그인 후 이용할 수 있어요');
+        return;
+      }
+      selectFandomTab(tid);
     });
   });
 }

@@ -736,43 +736,53 @@
     /* ── 팬덤 탭 바 ── */
     .fandom-tab-bar {
       display: flex;
-      gap: 7px;
-      overflow-x: auto;
-      white-space: nowrap;
-      padding: 2px 2px 10px 2px;
+      gap: 0;
+      overflow: hidden;
+      padding: 0;
       margin-bottom: 14px;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
+      border-bottom: 1px solid var(--border);
     }
-    .fandom-tab-bar::-webkit-scrollbar { display: none; }
 
     .fandom-tab {
-      display: inline-flex;
+      flex: 1;
+      min-width: 0;
+      display: flex;
       align-items: center;
-      padding: 7px 13px;
-      border-radius: 20px;
-      border: 1.5px solid rgba(124,77,255,0.22);
-      background: rgba(124,77,255,0.05);
+      justify-content: center;
+      flex-direction: column;
+      padding: 10px 4px;
+      border: none;
+      border-bottom: 3px solid transparent;
+      background: transparent;
       color: var(--muted);
       font-family: inherit;
-      font-size: 0.8rem;
+      font-size: 0.72rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.18s ease;
+      transition: all 0.15s;
+      overflow: hidden;
+      margin-bottom: -1px;
+    }
+    .fandom-tab .tab-label {
+      display: block;
       white-space: nowrap;
-      flex-shrink: 0;
-      letter-spacing: 0.1px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      padding: 0 2px;
     }
-    .fandom-tab:hover {
-      border-color: rgba(124,77,255,0.45);
-      background: rgba(124,77,255,0.1);
-      color: var(--text);
-      transform: translateY(-1px);
+    .fandom-tab .tab-sub {
+      display: block;
+      font-size: 0.58rem;
+      opacity: 0.65;
+      margin-top: 1px;
     }
+    .fandom-tab:hover { color: var(--primary); }
     .fandom-tab.active {
-      color: #fff;
+      color: var(--primary);
+      border-bottom-color: var(--primary);
       font-weight: 700;
-      transform: translateY(-1px);
+      background: rgba(124,77,255,0.04);
     }
 
     /* ── 팬덤 배지 (전체 피드, 제목 옆 인라인) ── */
@@ -821,8 +831,8 @@
     }
 
     @media (max-width: 480px) {
-      .fandom-tab { padding: 6px 11px; font-size: 0.75rem; }
-      .fandom-tab-bar { gap: 6px; margin-bottom: 10px; }
+      .fandom-tab { padding: 9px 2px; font-size: 0.68rem; }
+      .fandom-tab-bar { margin-bottom: 10px; }
       .fandom-badge { font-size: 0.68rem; padding: 2px 6px 2px 5px; }
       .load-more-feed-btn { padding: 12px 16px; font-size: 0.85rem; }
     }
