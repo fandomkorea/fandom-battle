@@ -779,8 +779,8 @@
       50% { box-shadow: 0 2px 12px rgba(255,87,34,0.7); }
     }
 
-    /* ── 게시글 썸네일 ── */
-    .post-list-compact { display: flex; align-items: center; gap: 12px; }
+    /* ── 게시글 썸네일 ── (모바일 포함 항상 row 유지) */
+    .post-list-compact { display: flex; align-items: center; gap: 12px; flex-direction: row; }
     .post-list-left { flex: 1; min-width: 0; }
     .post-thumbnail-wrap {
       flex-shrink: 0; width: 64px; height: 64px;

@@ -310,8 +310,9 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
   const timeStr = getRelativeTime(post.timestamp);
   const postNumber = index + 1; // 1부터 시작하는 순번
 
-  // 좋아요/조회수 초기값 (post 데이터에서 직접 읽기 — DOM 삽입 전 Firebase 재쿼리 불필요)
+  // 좋아요/댓글/조회수 초기값 (post 데이터에서 직접 읽기 — DOM 삽입 전 Firebase 재쿼리 불필요)
   const likeCount = Object.keys(post.likes || {}).length;
+  const commentCount = Object.values(post.comments || {}).filter(c => !c.isHidden).length;
   const isHot = likeCount >= 5; // 좋아요 5개 이상 HOT
 
   const postEl = document.createElement("div");
@@ -341,7 +342,7 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
         ${isHot ? '<span class="hot-badge">🔥 HOT</span>' : ''}
         <div class="post-list-title">${escHtml(post.title)}</div>
         <div class="post-list-indicators">
-          <span class="post-comment-badge">💬 <span id="comment-count-${postId}">0</span></span>
+          <span class="post-comment-badge">💬 <span id="comment-count-${postId}">${commentCount}</span></span>
           ${hasImage ? `<span class="post-image-badge">📷</span>` : ''}
         </div>
       </div>
@@ -358,8 +359,7 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
     ${post.imageUrl ? `<div class="post-thumbnail-wrap"><img src="${escAttr(post.imageUrl)}" class="post-thumbnail-img" loading="lazy" onerror="this.parentElement.style.display='none'" alt="썸네일"></div>` : ''}
   `;
 
-  // 댓글 개수 업데이트 (댓글은 post 데이터에 포함되지 않으므로 별도 쿼리)
-  updateCommentCount(fandom, postId);
+  // 댓글 개수: post 스냅샷에서 직접 초기화 (DOM 삽입 전 호출 시 null 반환 방지)
 
   return postEl;
 }
