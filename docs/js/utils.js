@@ -488,15 +488,22 @@ function openFavPicker() {
 
   // ★ 자동 포커스 제거 — 모바일에서 키보드가 자동으로 올라와 결과를 가리는 문제 방지
 
-  // ★ visualViewport: 키보드 높이만큼 시트를 자동으로 줄여 결과가 항상 보이도록
-  const updateSheetHeight = () => {
+  // ★ visualViewport: 키보드가 올라오면 overlay 자체를 visual viewport 크기에 맞게 이동
+  // (overlay가 layout viewport 기준 inset:0 이라 키보드 뒤로 숨는 문제 해결)
+  const updateLayout = () => {
     if (!document.getElementById("favPicker")) return;
-    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    sheet.style.maxHeight = Math.floor(vh * 0.85) + 'px';
+    const vv = window.visualViewport;
+    if (vv) {
+      overlay.style.top = vv.offsetTop + 'px';
+      overlay.style.height = vv.height + 'px';
+      overlay.style.bottom = 'auto'; // inset:0 의 bottom 충돌 방지
+      sheet.style.maxHeight = Math.floor(vv.height * 0.85) + 'px';
+    }
   };
-  updateSheetHeight();
+  updateLayout();
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', updateSheetHeight);
+    window.visualViewport.addEventListener('resize', updateLayout);
+    window.visualViewport.addEventListener('scroll', updateLayout);
   }
 
   // 모바일 뒤로가기 처리: 모달 열릴 때 history에 entry 추가

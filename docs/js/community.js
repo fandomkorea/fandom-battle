@@ -2252,15 +2252,20 @@ function openFandomFinderModal() {
   // ★ 자동 포커스 제거 — 모바일에서 키보드가 자동으로 올라와 결과를 가리는 문제 방지
   // (사용자가 직접 검색창을 탭하면 키보드 올라옴)
 
-  // ★ visualViewport: 키보드가 올라올 때 모달 높이를 실시간으로 줄여 결과가 보이도록
-  const updateSheetHeight = () => {
+  // ★ visualViewport: 키보드가 올라오면 overlay 자체를 visual viewport 크기에 맞게 이동
+  const updateLayout = () => {
     if (!document.getElementById("fandomFinderModal")) return;
-    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    sheet.style.maxHeight = Math.floor(vh * 0.85) + 'px';
+    const vv = window.visualViewport;
+    if (vv) {
+      overlay.style.top = vv.offsetTop + 'px';
+      overlay.style.height = vv.height + 'px';
+      sheet.style.maxHeight = Math.floor(vv.height * 0.85) + 'px';
+    }
   };
-  updateSheetHeight();
+  updateLayout();
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', updateSheetHeight);
+    window.visualViewport.addEventListener('resize', updateLayout);
+    window.visualViewport.addEventListener('scroll', updateLayout);
   }
 
   // ESC 닫기
