@@ -109,7 +109,14 @@ function loadCommunityPosts() {
     const posts = snap.val() || {};
 
     if (Object.keys(posts).length === 0) {
-      postsList.innerHTML = `
+      const isOther = currentOtherFandom && currentOtherFandom === selectedFandom;
+      postsList.innerHTML = isOther ? `
+        <div class="community-empty">
+          <div class="community-empty-icon">🌐</div>
+          <div class="community-empty-text">이 팬덤은 아직 게시물이 없어요</div>
+          <button onclick="openFandomFinderModal()" style="margin-top:14px;padding:10px 20px;background:linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.8) 100%);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:0.9rem;font-family:inherit;cursor:pointer">다른 팬덤 찾기 →</button>
+        </div>
+      ` : `
         <div class="community-empty">
           <div class="community-empty-icon">✨</div>
           <div class="community-empty-text">아직 게시물이 없어요<br>첫 번째 게시물을 작성해보세요!</div>
@@ -132,6 +139,15 @@ function loadCommunityPosts() {
         visibleIndex++;
       }
     });
+
+    // 타팬덤 구경 중 배너
+    if (currentOtherFandom && currentOtherFandom === selectedFandom) {
+      const meta = GROUP_META[selectedFandom] || {};
+      const banner = document.createElement('div');
+      banner.style.cssText = 'margin-bottom:14px;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-size:0.8rem;color:var(--muted);display:flex;align-items:center;justify-content:space-between;gap:8px';
+      banner.innerHTML = `<span>👀 <strong style="color:var(--text)">${escHtml(meta.emoji || '')} ${escHtml(selectedFandom)}</strong> 커뮤니티 구경 중 · 좋아요 가능, 댓글은 내 팬덤에서만</span><button onclick="openFandomFinderModal()" style="flex-shrink:0;padding:5px 10px;background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:6px;color:var(--primary);font-size:0.75rem;font-weight:600;font-family:inherit;cursor:pointer">변경</button>`;
+      postsList.insertBefore(banner, postsList.firstChild);
+    }
 
     // 드롭다운 값 초기화 및 정렬 적용
     const sortDropdown = document.getElementById("sortDropdown");
@@ -599,10 +615,10 @@ async function showPostDetail(fandom, postId) {
           </div>
         </div>`;
       // 타팬덤 또는 팬덤 미설정
-      const msg = !currentUser?.primaryFandom
-        ? '💜 팬덤을 설정하면 댓글을 달 수 있어요'
-        : `${myFavMeta?.emoji || ''} <strong>${escHtml(currentUser.primaryFandom)}</strong> 커뮤니티에서만 댓글을 달 수 있어요`;
-      return `<div style="text-align:center;padding:14px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:var(--muted);font-size:0.85rem;line-height:1.6">👀 여긴 읽기 전용이에요<br><span style="font-size:0.8rem">${msg}</span></div>`;
+      if (!currentUser?.primaryFandom) {
+        return `<div style="text-align:center;padding:14px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:var(--muted);font-size:0.85rem;line-height:1.6">👀 여긴 읽기 전용이에요<br><span style="font-size:0.8rem">💜 팬덤을 설정하면 댓글을 달 수 있어요</span></div>`;
+      }
+      return `<div onclick="goToMyFandomFromDetail()" style="text-align:center;padding:14px 16px;background:rgba(124,77,255,0.06);border:1px solid rgba(124,77,255,0.2);border-radius:12px;color:var(--muted);font-size:0.85rem;line-height:1.6;cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='rgba(124,77,255,0.12)'" onmouseout="this.style.background='rgba(124,77,255,0.06)'">👀 여긴 읽기 전용이에요<br><span style="font-size:0.82rem;color:var(--primary);font-weight:700">${myFavMeta?.emoji || ''} ${escHtml(currentUser.primaryFandom)} 커뮤니티에서 댓글 달기 →</span></div>`;
     })();
     const commentsHTML = `
       <div style="margin-top:12px">
@@ -633,8 +649,8 @@ async function showPostDetail(fandom, postId) {
         <button class="sticky-comment-submit" id="stickySubmitBtn-${escAttr(postId)}"
           onclick="submitStickyComment('${escAttr(fandom)}', '${escAttr(postId)}')">게시</button>
       </div>` : isLoggedIn ? `
-      <div class="sticky-comment-bar" style="cursor:default;justify-content:center;opacity:0.7">
-        <span style="color:var(--muted);font-size:0.82rem">👀 읽기 전용 · ${currentUser?.primaryFandom ? escHtml(currentUser.primaryFandom) + ' 커뮤니티에서 댓글 가능' : '팬덤 설정 후 댓글 가능'}</span>
+      <div class="sticky-comment-bar" style="cursor:pointer;justify-content:center" onclick="goToMyFandomFromDetail()">
+        <span style="color:var(--muted);font-size:0.82rem">👀 읽기 전용 · ${currentUser?.primaryFandom ? `<strong style="color:var(--primary)">${escHtml(currentUser.primaryFandom)} 커뮤니티에서 댓글 달기 →</strong>` : '팬덤 설정 후 댓글 가능'}</span>
       </div>` : `
       <div class="sticky-comment-bar" style="cursor:pointer;justify-content:center" onclick="showToast('로그인 후 댓글을 작성할 수 있어요')">
         <span style="color:var(--muted);font-size:0.88rem">🔐 로그인 후 댓글을 달 수 있어요</span>
@@ -2333,6 +2349,14 @@ function pickOtherFandom(fandom) {
   currentOtherFandom = fandom;
   sessionStorage.setItem('other_fandom', fandom); // 새로고침 후 복원용
   selectFandomTab(fandom);
+}
+
+// ── 타팬덤 상세에서 내 팬덤 커뮤니티로 이동 ──
+function goToMyFandomFromDetail() {
+  const myFav = currentUserFav;
+  if (!myFav) return;
+  closePostDetail();
+  setTimeout(() => selectFandomTab(myFav), 80);
 }
 
 // ── 전체 피드 마지막 업데이트 시각 표시 ──
