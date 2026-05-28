@@ -2224,15 +2224,16 @@ function openFandomFinderModal() {
     }).join('');
   };
 
-  overlay.innerHTML = `<div class="fav-picker-sheet" style="border-radius:20px 20px 0 0;max-height:80vh;overflow:hidden;display:flex;flex-direction:column">
+  overlay.innerHTML = `<div class="fav-picker-sheet" id="fandomFinderSheet" style="border-radius:20px 20px 0 0;max-height:80vh;overflow:hidden;display:flex;flex-direction:column">
     <div class="fav-picker-title" style="flex-shrink:0">
       🔍 어떤 팬덤 커뮤니티를 볼까요?
       <button class="fav-picker-close" onclick="closeFandomFinderModal()">✕</button>
     </div>
     <div style="flex-shrink:0;padding:0 16px 12px">
-      <input type="text" id="fandomFinderSearch" placeholder="팬덤 검색... (예: NCT, 뉴진스, aespa)" style="
+      <input type="text" id="fandomFinderSearch" placeholder="팬덤 검색... (예: NCT, 뉴진스, aespa)"
+        inputmode="search" autocomplete="off" style="
         width:100%;padding:10px 14px;border:1.5px solid rgba(124,77,255,0.3);border-radius:10px;
-        background:rgba(124,77,255,0.08);color:var(--text);font-family:inherit;font-size:0.9rem;
+        background:rgba(124,77,255,0.08);color:var(--text);font-family:inherit;font-size:1rem;
         outline:none;transition:all 0.2s;box-sizing:border-box" />
     </div>
     <div class="fav-picker-grid" id="fandomFinderGrid" style="flex:1;overflow-y:auto;padding:0 16px 24px">${renderGrid()}</div>
@@ -2243,10 +2244,24 @@ function openFandomFinderModal() {
   // 검색 이벤트
   const input = document.getElementById("fandomFinderSearch");
   const grid = document.getElementById("fandomFinderGrid");
+  const sheet = document.getElementById("fandomFinderSheet");
   input.addEventListener("input", (e) => {
     grid.innerHTML = renderGrid(e.target.value);
   });
-  setTimeout(() => input.focus(), 120);
+
+  // ★ 자동 포커스 제거 — 모바일에서 키보드가 자동으로 올라와 결과를 가리는 문제 방지
+  // (사용자가 직접 검색창을 탭하면 키보드 올라옴)
+
+  // ★ visualViewport: 키보드가 올라올 때 모달 높이를 실시간으로 줄여 결과가 보이도록
+  const updateSheetHeight = () => {
+    if (!document.getElementById("fandomFinderModal")) return;
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    sheet.style.maxHeight = Math.floor(vh * 0.85) + 'px';
+  };
+  updateSheetHeight();
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', updateSheetHeight);
+  }
 
   // ESC 닫기
   const handleEsc = (e) => { if (e.key === "Escape") { closeFandomFinderModal(); document.removeEventListener("keydown", handleEsc); } };
@@ -2260,6 +2275,7 @@ function openFandomFinderModal() {
 
 function closeFandomFinderModal() {
   document.getElementById("fandomFinderModal")?.remove();
+  // visualViewport 리스너는 updateSheetHeight 내부에서 모달 존재 여부를 확인하므로 자동 비활성화
 }
 
 function pickOtherFandom(fandom) {

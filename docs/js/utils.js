@@ -454,41 +454,50 @@ function openFavPicker() {
     : '';
 
   const initialGrid = renderGrid();
-  overlay.innerHTML = `<div class="fav-picker-sheet">
-    <div class="fav-picker-title">💜 내 최애 그룹은?<button class="fav-picker-close" onclick="closeFavPicker()">✕</button></div>
-    ${currentFavHtml}
-    <input type="text" id="fandomSearchInput" placeholder="🔍 팬덤 검색... (예: NCT, 뉴진스)" style="
-      width: 100%;
-      padding: 10px 14px;
-      margin-bottom: 14px;
-      border: 1.5px solid rgba(124,77,255,0.3);
-      border-radius: 10px;
-      background: rgba(124,77,255,0.08);
-      color: var(--text);
-      font-family: inherit;
-      font-size: 0.9rem;
-      outline: none;
-      transition: all 0.2s;
-      box-sizing: border-box;
-    " />
-    <div class="fav-picker-grid" id="fandomGrid">${initialGrid}</div>
+  overlay.innerHTML = `<div class="fav-picker-sheet" id="favPickerSheet" style="display:flex;flex-direction:column;overflow:hidden">
+    <div class="fav-picker-title" style="flex-shrink:0">💜 내 최애 그룹은?<button class="fav-picker-close" onclick="closeFavPicker()">✕</button></div>
+    <div style="flex-shrink:0;padding:0 0 14px">
+      ${currentFavHtml}
+      <input type="text" id="fandomSearchInput" placeholder="🔍 팬덤 검색... (예: NCT, 뉴진스)"
+        inputmode="search" autocomplete="off" style="
+        width: 100%;
+        padding: 10px 14px;
+        border: 1.5px solid rgba(124,77,255,0.3);
+        border-radius: 10px;
+        background: rgba(124,77,255,0.08);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 1rem;
+        outline: none;
+        transition: all 0.2s;
+        box-sizing: border-box;
+      " />
+    </div>
+    <div class="fav-picker-grid" id="fandomGrid" style="flex:1;overflow-y:auto">${initialGrid}</div>
   </div>`;
   document.body.appendChild(overlay);
 
   // 검색 입력 이벤트
   const searchInput = document.getElementById("fandomSearchInput");
   const gridContainer = document.getElementById("fandomGrid");
+  const sheet = document.getElementById("favPickerSheet");
 
   searchInput.addEventListener("input", (e) => {
-    const query = e.target.value;
-    gridContainer.innerHTML = renderGrid(query);
-
-    // 검색어 입력 중 포커스 유지
-    searchInput.focus();
+    gridContainer.innerHTML = renderGrid(e.target.value);
   });
 
-  // 자동 포커스
-  setTimeout(() => searchInput.focus(), 100);
+  // ★ 자동 포커스 제거 — 모바일에서 키보드가 자동으로 올라와 결과를 가리는 문제 방지
+
+  // ★ visualViewport: 키보드 높이만큼 시트를 자동으로 줄여 결과가 항상 보이도록
+  const updateSheetHeight = () => {
+    if (!document.getElementById("favPicker")) return;
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    sheet.style.maxHeight = Math.floor(vh * 0.85) + 'px';
+  };
+  updateSheetHeight();
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', updateSheetHeight);
+  }
 
   // 모바일 뒤로가기 처리: 모달 열릴 때 history에 entry 추가
   window.history.pushState({ modal: "favPicker" }, null, null);
