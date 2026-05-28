@@ -365,16 +365,7 @@ function updateFavBar() {
   // 버튼 상태 결정 (★ 최애팬덤 빠른 투표 버튼)
   let rightButton = '';
   if (isLoggedIn && fav) {
-    const canVote = canUseFreeVote() || canUsePaidVotes();
-
-    // ★ 투표권이 있으면 활성화 버튼
-    if (canVote) {
-      rightButton = `<button class="fav-bar-ad-btn show ready" onclick="voteForGroup('${escAttr(fav)}')">🎁 ${escHtml(shortName)}에 빠른 투표하기</button>`;
-    }
-    // ★ 투표권이 없으면 구매 유도
-    else {
-      rightButton = `<button class="fav-bar-ad-btn" onclick="openVotePurchase()" style="opacity:0.8">💳 투표권 구매하기</button>`;
-    }
+    rightButton = `<button class="fav-bar-ad-btn show ready" onclick="voteForGroup('${escAttr(fav)}')">🎁 ${escHtml(shortName)}에 빠른 투표하기</button>`;
   }
 
   // 레이아웃: [팀 변경] | [버튼]

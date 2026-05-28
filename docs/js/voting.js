@@ -213,8 +213,7 @@ async function voteForGroup(group) {
 
   // ★ 무료 투표 이미 사용, 투표권 없는 경우
   if (!canUseFreeVote() && !canUsePaidVotes()) {
-    showToast(`💳 오늘 무료 투표를 사용했어요! 투표권을 구매하면 더 투표할 수 있어요 🎁`);
-    updateFavBar();
+    showNoVotesBuyModal();
     return;
   }
 

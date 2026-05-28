@@ -1,4 +1,49 @@
-﻿// ── 투표권 구매 모달 ──
+﻿// ── 투표권 없을 때 구매 유도 모달 ──
+function showNoVotesBuyModal() {
+  const existing = document.getElementById("noVotesBuyModal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "noVotesBuyModal";
+  modal.style.cssText = `
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.75);display:flex;align-items:center;
+    justify-content:center;z-index:10000;backdrop-filter:blur(6px);
+    padding:16px;box-sizing:border-box;
+  `;
+  modal.innerHTML = `
+    <div style="
+      background:linear-gradient(160deg,rgba(18,12,40,0.99) 0%,rgba(28,18,55,0.99) 100%);
+      border:1.5px solid rgba(124,77,255,0.35);border-radius:24px;
+      padding:32px 24px 24px;max-width:360px;width:100%;text-align:center;
+      box-shadow:0 24px 80px rgba(124,77,255,0.3),inset 0 1px 0 rgba(255,255,255,0.07);
+      animation:modalSlideIn 0.3s ease-out;
+    ">
+      <div style="font-size:3rem;margin-bottom:12px">🗳️</div>
+      <h2 style="margin:0 0 10px;font-size:1.25rem;font-weight:900;color:#fff">투표권이 없어요!</h2>
+      <p style="margin:0 0 24px;font-size:0.9rem;color:rgba(255,255,255,0.6);line-height:1.6">
+        오늘 무료 투표를 이미 사용했어요.<br>
+        투표권을 구매하면 최애를 더 많이 응원할 수 있어요!
+      </p>
+      <button onclick="document.getElementById('noVotesBuyModal').remove();showVotePurchaseModal()" style="
+        width:100%;padding:14px;margin-bottom:10px;
+        background:linear-gradient(135deg,#ff4d8d,#7c4dff);
+        border:none;border-radius:14px;color:#fff;
+        font-weight:900;font-size:1rem;cursor:pointer;
+        box-shadow:0 4px 16px rgba(124,77,255,0.4);font-family:inherit;
+      ">💳 투표권 구매하러 가기</button>
+      <button onclick="document.getElementById('noVotesBuyModal').remove()" style="
+        width:100%;padding:12px;background:transparent;
+        border:1px solid rgba(255,255,255,0.15);border-radius:14px;
+        color:rgba(255,255,255,0.5);font-size:0.9rem;cursor:pointer;font-family:inherit;
+      ">닫기</button>
+    </div>
+  `;
+  modal.addEventListener("click", e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+// ── 투표권 구매 모달 ──
 const VOTE_PACKAGES = [
   { id: 'pack_s',  votes: 5,  price: 500,   label: '소형',  emoji: '🌱', color: '#4d9eff', desc: '가볍게 시작!',       perVote: '100원/개' },
   { id: 'pack_m',  votes: 12, price: 1000,  label: '중형',  emoji: '⭐', color: '#7c4dff', desc: '가장 인기!',         perVote: '약 83원/개' },
