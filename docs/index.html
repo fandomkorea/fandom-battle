@@ -44,7 +44,7 @@
   <link rel="stylesheet" href="css/ranking.css?v=20260609" />
   <link rel="stylesheet" href="css/fandom.css?v=20260609" />
   <link rel="stylesheet" href="css/modals.css?v=20260609" />
-  <link rel="stylesheet" href="css/posts.css?v=20260531" />
+  <link rel="stylesheet" href="css/posts.css?v=20260529" />
   <link rel="stylesheet" href="css/main.css?v=20260609" />
 
 </head>
@@ -53,7 +53,6 @@
 <header>
   <h1>⚔️ 팬덤배틀</h1>
   <div id="liveBadge" class="live-badge"><span class="live-dot"></span> <span id="liveBadgeText">LIVE 투표 중</span></div>
-  <div id="favChipArea"></div>
   <button id="quickAccessBtn" class="quick-access-btn" onclick="scrollToMyTeam()" style="display:none">
     <span class="quick-access-emoji" id="quickAccessEmoji"></span>
     <span id="quickAccessText"></span>
@@ -119,8 +118,14 @@
 
   <!-- 오늘 투표권 상태 배너 (항상 표시) -->
 
-  <!-- 투표 완료 상태 - 투표인증하기 버튼 -->
-  <button id="myVotedBar" style="display:none;width:100%;margin-bottom:12px;padding:12px 14px;background:#000;border:1px solid #000;border-radius:var(--radius);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.15s" onclick="shareToX()">𝕏 투표인증하기</button>
+  <!-- 투표 완료 상태 카드 -->
+  <div id="myVotedBar" style="display:none;margin-bottom:12px;background:#0a0a0a;border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius);color:#fff;overflow:hidden">
+    <div style="padding:12px 14px 10px">
+      <div id="myVotedMsg" style="font-weight:700;font-size:0.85rem;margin-bottom:4px;line-height:1.4"></div>
+      <div id="myVotedSub" style="font-size:0.75rem;color:rgba(255,255,255,0.65);line-height:1.5"></div>
+    </div>
+    <button onclick="shareToX()" style="display:block;width:100%;padding:10px 14px;background:rgba(255,255,255,0.06);border:none;border-top:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);font-weight:700;font-size:0.8rem;cursor:pointer;text-align:center;font-family:inherit;letter-spacing:0.3px">𝕏 투표인증하기</button>
+  </div>
 
   <!-- 실시간 팬덤 파워 랭킹 + 투표 -->
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
@@ -229,6 +234,9 @@
     <button class="sort-btn" data-sort="popular" onclick="changeSortMode('popular')" style="flex:1;min-width:100px;padding:12px 14px;background:linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:10px;color:var(--text);font-family:inherit;font-weight:600;font-size:0.9rem;cursor:pointer;transition:all 0.2s;outline:none;box-shadow:inset 0 1px 2px rgba(0,0,0,0.1)" onmouseover="this.style.borderColor='rgba(124,77,255,0.6)';this.style.background='linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,200,255,0.15) 100%)';this.style.boxShadow='inset 0 1px 3px rgba(0,0,0,0.15),0 0 10px rgba(124,77,255,0.2)'" onmouseout="if(!this.classList.contains('active')){this.style.background='linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%)';this.style.borderColor='rgba(124,77,255,0.3)';this.style.boxShadow='inset 0 1px 2px rgba(0,0,0,0.1)'}">⭐ 인기순</button>
     <button class="sort-btn" data-sort="best" onclick="changeSortMode('best')" style="flex:1;min-width:100px;padding:12px 14px;background:linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:10px;color:var(--text);font-family:inherit;font-weight:600;font-size:0.9rem;cursor:pointer;transition:all 0.2s;outline:none;box-shadow:inset 0 1px 2px rgba(0,0,0,0.1)" onmouseover="this.style.borderColor='rgba(124,77,255,0.6)';this.style.background='linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,200,255,0.15) 100%)';this.style.boxShadow='inset 0 1px 3px rgba(0,0,0,0.15),0 0 10px rgba(124,77,255,0.2)'" onmouseout="if(!this.classList.contains('active')){this.style.background='linear-gradient(135deg,rgba(124,77,255,0.1) 0%,rgba(100,200,255,0.08) 100%)';this.style.borderColor='rgba(124,77,255,0.3)';this.style.boxShadow='inset 0 1px 2px rgba(0,0,0,0.1)'}">🏆 베스트</button>
   </div>
+
+  <!-- 전체 피드 마지막 업데이트 시각 -->
+  <div id="allFeedLastUpdate" style="display:none;text-align:right;font-size:0.72rem;color:rgba(255,255,255,0.38);margin-top:-14px;margin-bottom:14px"></div>
 
   <!-- 게시물 리스트 (깔끔함) -->
   <div class="community-posts-section" id="communityPostsList">
@@ -422,10 +430,10 @@
 <script src="js/auth.js?v=20260609"></script>
 <script src="js/fandom.js?v=20260602"></script>
 <script src="js/voting-modals.js?v=20260609"></script>
-<script src="js/voting.js?v=20260609"></script>
+<script src="js/voting.js?v=20260529"></script>
 <script src="js/ranking.js?v=20260609"></script>
 <script src="js/utils.js?v=20260611"></script>
-<script src="js/community.js?v=20260611"></script>
+<script src="js/community.js?v=20260529"></script>
 </body>
 </html>
 

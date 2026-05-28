@@ -2331,6 +2331,17 @@ function pickOtherFandom(fandom) {
   selectFandomTab(fandom);
 }
 
+// ── 전체 피드 마지막 업데이트 시각 표시 ──
+function updateAllFeedTimestamp() {
+  const el = document.getElementById("allFeedLastUpdate");
+  if (!el) return;
+  if (_allFeedLastLoadedAt === 0) { el.style.display = 'none'; return; }
+  const diffMin = Math.floor((Date.now() - _allFeedLastLoadedAt) / 60000);
+  const label = diffMin < 1 ? '방금 전' : `${diffMin}분 전`;
+  el.textContent = `업데이트: ${label}`;
+  el.style.display = 'block';
+}
+
 // ── 전체 피드 로드 (상위 팬덤 게시글 병렬 수집) ──
 async function loadAllFandomPosts(forceRefresh = false) {
   const postsList = document.getElementById("communityPostsList");
@@ -2341,6 +2352,7 @@ async function loadAllFandomPosts(forceRefresh = false) {
       allFeedPosts.length > 0 &&
       postsList.querySelector('.fandom-badge')) {
     syncSortButtonStyles(currentSortMode);
+    updateAllFeedTimestamp();
     return;
   }
 
@@ -2415,6 +2427,7 @@ async function loadAllFandomPosts(forceRefresh = false) {
 
     // ★ 캐시 타임스탬프 기록
     _allFeedLastLoadedAt = Date.now();
+    updateAllFeedTimestamp();
     syncSortButtonStyles(currentSortMode);
 
   } catch (e) {

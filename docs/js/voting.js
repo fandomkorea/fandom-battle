@@ -277,7 +277,7 @@ function showMyVotedBar(group) {
   }
 
   msgEl.textContent = msg;
-  subEl.textContent = sub;
+  subEl.innerHTML = sub;
 
   // 팬덤 선택 바 업데이트 (광고 버튼 상태 포함)
   updateFavBar();
