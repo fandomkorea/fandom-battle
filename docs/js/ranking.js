@@ -135,21 +135,14 @@ function renderBanner(winner, cycleNumber) {
   const bannerEl = document.getElementById("communityBanner");
   const winnerNameEl = document.getElementById("bannerWinnerName");
   const votePeriodEl = document.getElementById("bannerVotePeriod");
+  const subtitleEl = document.getElementById("bannerSubtitle");
 
   if (!bannerEl) return;
 
-  // 투표 기간 계산 (배너가 표시되는 주기 = 투표 결과 주기 - 1)
-  const votingCycleNumber = Math.floor(cycleNumber / 2);
-  const votingStartTime = BANNER_CONFIG.baseDate + (votingCycleNumber * BANNER_CONFIG.cycleLength);
-  const votingEndTime = votingStartTime + BANNER_CONFIG.cycleLength - 1;
-
-  // 날짜 포맷팅 (YYYY-MM-DD)
-  const startDate = new Date(votingStartTime).toISOString().slice(0, 10);
-  const endDate = new Date(votingEndTime).toISOString().slice(0, 10);
-
   bannerEl.style.display = "block";
   winnerNameEl.textContent = `${winner.emoji} ${winner.fandom}`;
-  votePeriodEl.textContent = `${startDate} ~ ${endDate} 투표 결과`;
+  votePeriodEl.textContent = "투표에서 1등한 팬덤이 커뮤니티 배너의 주인공이 됩니다 ✨";
+  if (subtitleEl) subtitleEl.textContent = "지금 투표하고 다음 1등의 주인공이 되어보세요 💪";
 }
 
 function hideBanner() {
