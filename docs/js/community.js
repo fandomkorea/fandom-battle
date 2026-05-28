@@ -310,11 +310,14 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
   const timeStr = getRelativeTime(post.timestamp);
   const postNumber = index + 1; // 1부터 시작하는 순번
 
+  // 좋아요/조회수 초기값 (post 데이터에서 직접 읽기 — DOM 삽입 전 Firebase 재쿼리 불필요)
+  const likeCount = Object.keys(post.likes || {}).length;
+
   const postEl = document.createElement("div");
   postEl.className = "post-item post-list-compact";
   postEl.setAttribute("data-timestamp", post.timestamp || 0);
   postEl.setAttribute("data-postid", postId);
-  postEl.setAttribute("data-likes", post.likes || 0);
+  postEl.setAttribute("data-likes", likeCount);
   postEl.setAttribute("data-views", post.views || 0);
   postEl.setAttribute("onclick", `showPostDetail('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()`);
   postEl.style.cursor = "pointer";
@@ -341,27 +344,19 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
         </div>
       </div>
       <div class="post-meta-row-mobile">
-        <span class="post-list-meta">👤 <span id="author-${postId}">${escHtml(post.authorName)}</span></span>
+        <span class="post-list-meta">👤 <span id="author-${postId}">${escHtml(post.authorNickname || post.authorName || '알 수 없음')}</span></span>
         <span class="post-list-meta-divider">·</span>
         <span class="post-list-meta">📅 ${timeStr}</span>
         <span class="post-list-meta-divider">·</span>
         <span class="post-list-meta">👁️ <span id="view-count-${postId}">${post.views || 0}</span></span>
         <span class="post-list-meta-divider">·</span>
-        <span class="post-list-meta">❤️ <span id="like-count-${postId}">0</span></span>
+        <span class="post-list-meta">❤️ <span id="like-count-${postId}">${likeCount}</span></span>
       </div>
     </div>
   `;
 
-  // 배지는 게시물 목록에서 표시하지 않음 (간결성)
-
-  // 좋아요 리스너 설정 (포스트 리스트용)
-  loadLikesForPostList(fandom, postId);
-
-  // 댓글 개수 업데이트
+  // 댓글 개수 업데이트 (댓글은 post 데이터에 포함되지 않으므로 별도 쿼리)
   updateCommentCount(fandom, postId);
-
-  // 조회수 리스너 설정 (포스트 리스트용)
-  loadViewsForPostList(fandom, postId);
 
   return postEl;
 }
