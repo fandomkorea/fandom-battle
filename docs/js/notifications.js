@@ -76,12 +76,14 @@ async function enableNotifications() {
   }
 }
 
-function dismissNotificationPrompt() {
+window.dismissNotificationPrompt = function dismissNotificationPrompt() {
   localStorage.setItem('notif_prompt_shown', '1');
   document.getElementById('notifPromptModal')?.remove();
-}
+};
 
-function showNotificationPromptModal() {
+window.enableNotifications = enableNotifications;
+
+window.showNotificationPromptModal = function showNotificationPromptModal() {
   if (document.getElementById('notifPromptModal')) return;
   if (!('Notification' in window)) return;
   if (Notification.permission !== 'default') return;
@@ -141,4 +143,4 @@ function showNotificationPromptModal() {
   `;
 
   document.body.appendChild(modal);
-}
+};
