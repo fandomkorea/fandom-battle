@@ -651,6 +651,8 @@ function showVotePage() {
   }
   // ★ FAB 숨김 (투표 탭에서는 불필요)
   document.getElementById('communityFAB')?.style.setProperty('display', 'none');
+  // 투표권 구매 버튼 복원
+  document.getElementById('adButtonContainer')?.style.removeProperty('display');
 }
 
 function showCommunityPage() {
@@ -658,6 +660,8 @@ function showCommunityPage() {
   loadLastSortMode();
   // ★ FAB 표시 (커뮤니티 탭 진입 시)
   document.getElementById('communityFAB')?.style.setProperty('display', 'flex');
+  // 투표권 구매 버튼 숨김 (커뮤니티 탭과 무관)
+  document.getElementById('adButtonContainer')?.style.setProperty('display', 'none');
 
   const votePage = document.getElementById("votePage");
   const communityPage = document.getElementById("communityPage");
@@ -669,13 +673,18 @@ function showCommunityPage() {
   if (communityPage) communityPage.classList.add("show");
   if (communityHeaderInfo) communityHeaderInfo.style.display = "none"; // 커뮤니티 헤더 숨기기
 
-  // 상단 제목 업데이트 (현재 탭에 따라)
+  // 상단 제목 업데이트 (현재 선택된 탭 기준)
   if (pageTitle) {
     if (typeof currentFeedMode !== 'undefined' && currentFeedMode === 'all') {
-      pageTitle.textContent = '🌍 전체 피드';
-    } else if (currentUserFav && GROUP_META[currentUserFav]) {
-      const meta = GROUP_META[currentUserFav];
-      pageTitle.textContent = `${meta.emoji} ${currentUserFav} 커뮤니티`;
+      pageTitle.textContent = currentSelectedTab === 'myPosts' ? '✏️ 내가 쓴 글' : '🌍 전체 피드';
+    } else {
+      const activeFandom = (typeof currentSelectedTab !== 'undefined' && currentSelectedTab && GROUP_META[currentSelectedTab])
+        ? currentSelectedTab
+        : currentUserFav;
+      if (activeFandom && GROUP_META[activeFandom]) {
+        const meta = GROUP_META[activeFandom];
+        pageTitle.textContent = `${meta.emoji} ${activeFandom} 커뮤니티`;
+      }
     }
   }
 
