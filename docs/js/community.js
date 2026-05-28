@@ -2,7 +2,8 @@
 function refreshCommunityPosts() {
   if (currentFeedMode === 'all') {
     showToast("🔄 전체 피드를 새로고침 중...");
-    loadAllFandomPosts();
+    // ★ forceRefresh=true: 캐시 무시하고 최신 데이터 강제 로드
+    loadAllFandomPosts(true);
     return;
   }
   const selectedFandom = document.getElementById("communityFandomSelect").value;
@@ -29,6 +30,9 @@ let currentSelectedTab = null; // 선택된 탭: 팬덤명 | 'all'
 let allFeedPosts = []; // 전체 피드 로드된 포스트 전체 배열
 let allFeedDisplayed = 0; // 현재 화면에 표시된 수
 const ALL_FEED_PAGE_SIZE = 20; // 한 번에 표시할 게시글 수
+let _allFeedLoadId = 0; // 레이스 컨디션 방지용 로드 ID (비동기 중첩 무시)
+let _allFeedLastLoadedAt = 0; // 마지막 전체 피드 로드 시각 (ms)
+const ALL_FEED_CACHE_TTL = 5 * 60 * 1000; // 5분 이내 재로드 스킵
 
 // ── 게시글 이미지 URL 및 public_id 저장소 ──
 let postImageUrl = null;
@@ -133,6 +137,7 @@ function loadCommunityPosts() {
       sortDropdown.value = currentSortMode;
     }
     sortCommunityPosts(currentSortMode);
+    syncSortButtonStyles(currentSortMode);
   }, error => {
     // ★ 권한 없음 (auth 미완료) → 스피너 유지, auth 완료 후 auth.js에서 자동 재시도
     console.log("커뮤니티 로드 대기 (auth 완료 후 재시도):", error.code);
@@ -202,9 +207,21 @@ function changeSortMode(mode) {
   }
 
   // 버튼 active 상태 업데이트
-  const buttons = document.querySelectorAll('.sort-btn');
-  buttons.forEach(btn => {
-    if (btn.dataset.sort === mode) {
+  syncSortButtonStyles(mode);
+
+  // Firebase에 저장
+  if (isLoggedIn && currentUser && db) {
+    db.ref(`users/${currentUser.uid}/preferences/lastSortMode`).set(mode).catch(e => {
+      console.error("정렬 모드 저장 실패:", e);
+    });
+  }
+}
+
+// ── 정렬 버튼 active 스타일 동기화 (공통 헬퍼) ──
+function syncSortButtonStyles(mode) {
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    const isActive = btn.dataset.sort === mode;
+    if (isActive) {
       btn.classList.add('active');
       btn.style.background = 'linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,200,255,0.15) 100%)';
       btn.style.borderColor = 'rgba(124,77,255,0.6)';
@@ -216,13 +233,6 @@ function changeSortMode(mode) {
       btn.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.1)';
     }
   });
-
-  // Firebase에 저장
-  if (isLoggedIn && currentUser && db) {
-    db.ref(`users/${currentUser.uid}/preferences/lastSortMode`).set(mode).catch(e => {
-      console.error("정렬 모드 저장 실패:", e);
-    });
-  }
 }
 
 // Firebase에서 마지막 정렬 모드 로드
@@ -2083,7 +2093,21 @@ function selectFandomTab(tabId) {
 }
 
 // ── 전체 피드 로드 (상위 팬덤 게시글 병렬 수집) ──
-async function loadAllFandomPosts() {
+async function loadAllFandomPosts(forceRefresh = false) {
+  const postsList = document.getElementById("communityPostsList");
+
+  // ★ 캐시 유효성 검사: forceRefresh가 아니고, 5분 이내에 로드된 적 있고, 현재 전체피드가 표시 중이면 스킵
+  if (!forceRefresh && _allFeedLastLoadedAt > 0 &&
+      Date.now() - _allFeedLastLoadedAt < ALL_FEED_CACHE_TTL &&
+      allFeedPosts.length > 0 &&
+      postsList.querySelector('.fandom-badge')) {
+    syncSortButtonStyles(currentSortMode);
+    return;
+  }
+
+  // ★ 레이스 컨디션 방지: 각 호출마다 고유 ID 부여, 응답 시 최신 호출인지 확인
+  const loadId = ++_allFeedLoadId;
+
   // 기존 리스너 해제
   clearPostListListeners();
   if (currentCommunityListener) {
@@ -2091,7 +2115,6 @@ async function loadAllFandomPosts() {
     currentCommunityListener = null;
   }
 
-  const postsList = document.getElementById("communityPostsList");
   postsList.innerHTML = `
     <div class="community-empty">
       <div class="spinner" style="display:inline-block;margin-bottom:12px"></div>
@@ -2117,10 +2140,18 @@ async function loadAllFandomPosts() {
   }
 
   try {
-    // 모든 팬덤 게시글 병렬 로드
+    // ★ limitToLast(50): 팬덤당 최신 50개만 로드하여 읽기 비용 절감
     const snapshots = await Promise.all(
-      fandomsToLoad.map(fandom => db.ref(`community/${fandom}`).once("value"))
+      fandomsToLoad.map(fandom =>
+        db.ref(`community/${fandom}`)
+          .orderByChild('timestamp')
+          .limitToLast(50)
+          .once("value")
+      )
     );
+
+    // ★ 더 새로운 loadAllFandomPosts 호출이 시작됐으면 이 결과 무시
+    if (loadId !== _allFeedLoadId) return;
 
     // 전체 게시글 수집
     let allPosts = [];
@@ -2156,6 +2187,10 @@ async function loadAllFandomPosts() {
 
     postsList.innerHTML = "";
     renderMoreFeedPosts(); // 첫 20개 표시
+
+    // ★ 캐시 타임스탬프 기록
+    _allFeedLastLoadedAt = Date.now();
+    syncSortButtonStyles(currentSortMode);
 
   } catch (e) {
     console.error("전체 피드 로드 실패:", e);
