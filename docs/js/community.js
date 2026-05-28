@@ -392,7 +392,9 @@ async function showPostDetail(fandom, postId) {
   document.getElementById("votePage").classList.add("hidden");
   const detailPage = document.getElementById("postDetailPage");
   detailPage.style.display = "flex";
-  detailPage.scrollTop = 0;
+  // 스크롤은 내부 컨테이너에서 발생하므로 컨테이너를 최상단으로
+  const detailContainer = detailPage.querySelector('.post-detail-container');
+  if (detailContainer) detailContainer.scrollTop = 0;
 
   // ★ 이전 게시글 내용 즉시 초기화 (다른 게시글 클릭 시 이전 내용 잔류 방지)
   document.getElementById("postDetailTitle").textContent = "";
@@ -487,14 +489,21 @@ async function showPostDetail(fandom, postId) {
       // 내가 좋아요 했는지 시각적으로 표시
       const likeBtn = document.getElementById("postDetailLikeBtn");
       const likeHeart = document.getElementById("postDetailLikeHeart");
+      const hasLiked = isLoggedIn && currentUser && !!likes[currentUser.uid];
       if (likeBtn && isLoggedIn && currentUser) {
-        const hasLiked = !!likes[currentUser.uid];
         likeBtn.style.background = hasLiked
           ? 'linear-gradient(135deg,rgba(255,80,80,0.35) 0%,rgba(255,120,120,0.25) 100%)'
           : 'linear-gradient(135deg,rgba(255,100,100,0.1) 0%,rgba(255,140,140,0.05) 100%)';
         likeBtn.style.borderColor = hasLiked ? 'rgba(255,80,80,0.6)' : 'rgba(255,100,100,0.2)';
         if (likeHeart) likeHeart.textContent = hasLiked ? '❤️' : '🤍';
       }
+      // sticky 바 좋아요 동기화
+      const stickyHeart = document.getElementById("stickyLikeHeart");
+      const stickyCount = document.getElementById("stickyLikeCount");
+      const stickyBtn = document.getElementById("stickyLikeBtn");
+      if (stickyHeart) stickyHeart.textContent = hasLiked ? '❤️' : '🤍';
+      if (stickyCount) stickyCount.textContent = likeCount;
+      if (stickyBtn) stickyBtn.classList.toggle('liked', hasLiked);
     };
     const likesRef = db.ref(`community/${fandom}/${postId}/likes`);
     likesRef.on("value", likesCallback);
@@ -504,7 +513,7 @@ async function showPostDetail(fandom, postId) {
     const commentsHTML = `
       <div style="margin-top:12px">
         <h3 style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px;margin-top:4px"><span>💬</span> 댓글</h3>
-        <div id="postDetailCommentsList" style="margin-bottom:20px;max-height:350px;overflow-y:auto"></div>
+        <div id="postDetailCommentsList" style="margin-bottom:20px"></div>
 
         ${isLoggedIn ? `
           <div style="background:linear-gradient(135deg,rgba(124,77,255,0.08) 0%,rgba(100,150,255,0.05) 100%);border:1.5px solid rgba(124,77,255,0.25);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px">
@@ -522,6 +531,29 @@ async function showPostDetail(fandom, postId) {
     // 댓글 로드
     loadDetailComments(fandom, postId);
 
+    // ── 하단 sticky 바 주입 ──
+    document.getElementById("postStickyBar")?.remove();
+    const stickyBar = document.createElement('div');
+    stickyBar.className = 'post-detail-sticky-bottom';
+    stickyBar.id = 'postStickyBar';
+    stickyBar.innerHTML = `
+      <button class="sticky-like-btn" id="stickyLikeBtn" onclick="toggleLike('${escAttr(fandom)}', '${escAttr(postId)}')">
+        <span id="stickyLikeHeart">🤍</span>
+        <span id="stickyLikeCount">0</span>
+      </button>
+      ${isLoggedIn ? `
+      <div class="sticky-comment-bar" onclick="document.getElementById('stickyCommentInput-${escAttr(postId)}').focus()">
+        <textarea id="stickyCommentInput-${escAttr(postId)}" placeholder="댓글 달기..." maxlength="500" rows="1"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px';document.getElementById('stickySubmitBtn-${escAttr(postId)}').classList.toggle('visible',this.value.trim().length>0)"></textarea>
+        <button class="sticky-comment-submit" id="stickySubmitBtn-${escAttr(postId)}"
+          onclick="submitStickyComment('${escAttr(fandom)}', '${escAttr(postId)}')">게시</button>
+      </div>` : `
+      <div class="sticky-comment-bar" style="cursor:pointer;justify-content:center" onclick="showToast('로그인 후 댓글을 작성할 수 있어요')">
+        <span style="color:var(--muted);font-size:0.88rem">🔐 로그인 후 댓글을 달 수 있어요</span>
+      </div>`}
+    `;
+    document.getElementById("postDetailPage").appendChild(stickyBar);
+
   } catch (e) {
     console.error("게시물 로드 실패:", e);
     showToast("게시물을 불러올 수 없어요");
@@ -532,6 +564,9 @@ async function showPostDetail(fandom, postId) {
 function closePostDetail() {
   // 페이지 숨김
   document.getElementById("postDetailPage").style.display = "none";
+
+  // sticky 바 제거
+  document.getElementById("postStickyBar")?.remove();
 
   // 커뮤니티 페이지 표시
   document.getElementById("communityPage").classList.remove("hidden");
@@ -741,6 +776,40 @@ async function submitDetailComment(fandom, postId) {
   } catch (e) {
     console.error("댓글 작성 실패:", e);
     showToast("댓글 작성에 실패했어요");
+  }
+}
+
+// ── 하단 sticky 바에서 댓글 작성 ──
+async function submitStickyComment(fandom, postId) {
+  if (!isLoggedIn || !currentUser) { showToast("로그인이 필요합니다"); return; }
+  const textarea = document.getElementById(`stickyCommentInput-${postId}`);
+  const content = textarea?.value?.trim();
+  if (!content) { showToast("댓글 내용을 입력해주세요"); return; }
+
+  const submitBtn = document.getElementById(`stickySubmitBtn-${postId}`);
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "..."; }
+
+  try {
+    const commentId = db.ref().push().key;
+    await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).set({
+      content,
+      authorUid: currentUser.uid,
+      authorName: currentUser.customNickname || currentUser.displayName || "익명",
+      timestamp: Date.now(),
+      isHidden: false
+    });
+    if (textarea) {
+      textarea.value = '';
+      textarea.style.height = '';
+    }
+    if (submitBtn) submitBtn.classList.remove('visible');
+    showToast("댓글이 작성됐어요! 💬");
+    sendCommentNotification(fandom, postId, content);
+  } catch (e) {
+    console.error("댓글 작성 실패:", e);
+    showToast("댓글 작성에 실패했어요");
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "게시"; }
   }
 }
 

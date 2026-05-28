@@ -465,7 +465,7 @@
       bottom: 0;
       background: var(--bg);
       z-index: 100;
-      overflow-y: auto;
+      overflow: hidden; /* ← 외부 스크롤 차단, 내부 컨테이너만 스크롤 */
       display: flex;
       flex-direction: column;
     }
@@ -501,11 +501,72 @@
     .post-detail-container {
       flex: 1;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch; /* iOS 모멘텀 스크롤 */
+      scroll-behavior: smooth;
       padding: 16px;
+      padding-bottom: 90px; /* sticky 바 높이만큼 여유 */
       max-width: 800px;
       margin: 0 auto;
       width: 100%;
     }
+
+    /* 하단 sticky 액션 바 */
+    .post-detail-sticky-bottom {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
+    }
+    .sticky-like-btn {
+      display: flex; align-items: center; gap: 5px;
+      background: rgba(255,100,100,0.08);
+      border: 1px solid rgba(255,100,100,0.2);
+      border-radius: 20px;
+      padding: 7px 14px;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 700;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .sticky-like-btn.liked {
+      background: rgba(255,80,80,0.25);
+      border-color: rgba(255,80,80,0.55);
+    }
+    .sticky-like-btn:hover { opacity: 0.8; }
+    .sticky-comment-bar {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(124,77,255,0.07);
+      border: 1px solid rgba(124,77,255,0.2);
+      border-radius: 20px;
+      padding: 8px 14px;
+      cursor: text;
+      min-width: 0;
+    }
+    .sticky-comment-bar textarea {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text); font-family: inherit; font-size: 0.88rem;
+      resize: none; height: 22px; line-height: 22px;
+      padding: 0; overflow: hidden;
+    }
+    .sticky-comment-bar textarea::placeholder { color: var(--muted); }
+    .sticky-comment-submit {
+      background: var(--primary); border: none; border-radius: 14px;
+      color: #fff; font-weight: 700; font-size: 0.82rem; font-family: inherit;
+      padding: 5px 12px; cursor: pointer; white-space: nowrap;
+      transition: all 0.2s; flex-shrink: 0; display: none;
+    }
+    .sticky-comment-submit.visible { display: block; }
 
     .post-detail-info {
       margin-bottom: 16px;
@@ -666,6 +727,7 @@
         min-height: 140px;
         padding: 16px 14px;
       }
+      .post-detail-container { padding-bottom: 80px; }
       .post-detail-header {
         padding: 10px 12px;
       }
