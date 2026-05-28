@@ -127,7 +127,7 @@ function loadCommunityPosts() {
     let visibleIndex = 0;
     sortedPosts.forEach(([postId, post]) => {
       if (!post.isHidden) {
-        const postEl = renderPost(selectedFandom, postId, post, visibleIndex);
+        const postEl = renderPost(selectedFandom, postId, post, visibleIndex, true);
         postsList.appendChild(postEl);
         visibleIndex++;
       }
