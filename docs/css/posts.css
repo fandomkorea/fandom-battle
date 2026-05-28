@@ -989,7 +989,7 @@
     /* ── 우하단 FAB 글쓰기 버튼 ── */
     #communityFAB {
       position: fixed;
-      bottom: 80px;
+      bottom: 134px;
       right: 20px;
       width: 52px;
       height: 52px;
@@ -1016,5 +1016,5 @@
       box-shadow: 0 3px 10px rgba(124,77,255,0.4);
     }
     @media (max-width: 480px) {
-      #communityFAB { width: 46px; height: 46px; font-size: 1.1rem; bottom: 74px; right: 14px; }
+      #communityFAB { width: 46px; height: 46px; font-size: 1.1rem; bottom: 120px; right: 14px; }
     }
