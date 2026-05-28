@@ -673,6 +673,14 @@ function showCommunityPage() {
   if (communityPage) communityPage.classList.add("show");
   if (communityHeaderInfo) communityHeaderInfo.style.display = "none"; // 커뮤니티 헤더 숨기기
 
+  // ── 전체 피드 / 내가 쓴 글 탭 세션 복원 (새로고침 시) ──
+  const savedFeedMode = sessionStorage.getItem('feedMode');
+  const savedTab = sessionStorage.getItem('selectedTab');
+  if (savedFeedMode === 'all' && savedTab) {
+    currentFeedMode = 'all';
+    currentSelectedTab = savedTab;
+  }
+
   // 상단 제목 업데이트 (현재 선택된 탭 기준)
   if (pageTitle) {
     if (typeof currentFeedMode !== 'undefined' && currentFeedMode === 'all') {
@@ -751,8 +759,11 @@ function showCommunityPage() {
 
   // 게시물 로드
   if (currentFeedMode === 'all') {
-    // 전체 피드 유지
-    if (typeof loadAllFandomPosts === 'function') loadAllFandomPosts();
+    if (currentSelectedTab === 'myPosts') {
+      if (typeof loadMyPosts === 'function') loadMyPosts();
+    } else {
+      if (typeof loadAllFandomPosts === 'function') loadAllFandomPosts();
+    }
   } else if (select.value) {
     currentSelectedTab = select.value;
     loadCommunityPosts();

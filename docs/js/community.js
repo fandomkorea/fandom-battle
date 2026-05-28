@@ -2228,6 +2228,10 @@ function selectFandomTab(tabId) {
     if (pageTitle && meta) pageTitle.textContent = `${meta.emoji} ${tabId} 커뮤니티`;
     loadCommunityPosts();
   }
+
+  // 현재 탭 상태 저장 (새로고침 후 복원용)
+  sessionStorage.setItem('feedMode', currentFeedMode);
+  sessionStorage.setItem('selectedTab', currentSelectedTab);
 }
 
 // ── 팬덤 찾기 모달 ──
