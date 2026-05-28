@@ -617,11 +617,15 @@ function showVotePage() {
   if (isLoggedIn && currentUser && db) {
     db.ref(`users/${currentUser.uid}`).update({ activePage: "vote" }).catch(() => {});
   }
+  // ★ FAB 숨김 (투표 탭에서는 불필요)
+  document.getElementById('communityFAB')?.style.setProperty('display', 'none');
 }
 
 function showCommunityPage() {
   // Firebase에서 마지막 정렬 모드 로드
   loadLastSortMode();
+  // ★ FAB 표시 (커뮤니티 탭 진입 시)
+  document.getElementById('communityFAB')?.style.setProperty('display', 'flex');
 
   const votePage = document.getElementById("votePage");
   const communityPage = document.getElementById("communityPage");

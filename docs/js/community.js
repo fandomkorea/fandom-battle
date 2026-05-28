@@ -33,6 +33,7 @@ const ALL_FEED_PAGE_SIZE = 20; // 한 번에 표시할 게시글 수
 let _allFeedLoadId = 0; // 레이스 컨디션 방지용 로드 ID (비동기 중첩 무시)
 let _allFeedLastLoadedAt = 0; // 마지막 전체 피드 로드 시각 (ms)
 const ALL_FEED_CACHE_TTL = 5 * 60 * 1000; // 5분 이내 재로드 스킵
+let _savedCommunityScrollY = 0; // 뒤로가기 스크롤 위치 복원용
 
 // ── 게시글 이미지 URL 및 public_id 저장소 ──
 let postImageUrl = null;
@@ -235,6 +236,46 @@ function syncSortButtonStyles(mode) {
   });
 }
 
+// ── FAB 글쓰기 버튼 위임: 현재 글쓰기 버튼과 동일한 동작 수행 ──
+function fabWrite() {
+  const wb = document.getElementById('communityWriteBtn');
+  if (wb && wb.onclick) {
+    wb.onclick();
+  } else {
+    openPostCreateModal();
+  }
+}
+
+// ── 날짜 그룹 구분선 삽입 (최신순 + 내 팬덤 탭에서만) ──
+function injectDateSeparators(postsList) {
+  const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
+  const yesterMid = new Date(todayMid); yesterMid.setDate(todayMid.getDate() - 1);
+  const weekAgo = new Date(todayMid); weekAgo.setDate(todayMid.getDate() - 7);
+
+  const labelMap = { '오늘': '📅 오늘', '어제': '📅 어제', '이번 주': '📅 이번 주', '이전': '📅 이전' };
+  let lastGroup = null;
+
+  Array.from(postsList.querySelectorAll('.post-item')).forEach(item => {
+    const ts = parseInt(item.getAttribute('data-timestamp') || 0);
+    const d = new Date(ts); d.setHours(0, 0, 0, 0);
+    const dTime = d.getTime();
+
+    let group;
+    if (dTime >= todayMid.getTime()) group = '오늘';
+    else if (dTime >= yesterMid.getTime()) group = '어제';
+    else if (dTime >= weekAgo.getTime()) group = '이번 주';
+    else group = '이전';
+
+    if (group !== lastGroup) {
+      const sep = document.createElement('div');
+      sep.className = 'date-separator';
+      sep.textContent = labelMap[group];
+      postsList.insertBefore(sep, item);
+      lastGroup = group;
+    }
+  });
+}
+
 // Firebase에서 마지막 정렬 모드 로드
 async function loadLastSortMode() {
   if (!isLoggedIn || !currentUser || !db) {
@@ -256,6 +297,8 @@ function sortCommunityPosts(mode) {
 
   // 게시물 재정렬
   const postsList = document.getElementById("communityPostsList");
+  // ★ 기존 날짜 구분선 먼저 제거 (정렬 후 재삽입)
+  postsList.querySelectorAll('.date-separator').forEach(s => s.remove());
   const posts = Array.from(document.querySelectorAll(".post-item"));
 
   posts.sort((a, b) => {
@@ -285,6 +328,11 @@ function sortCommunityPosts(mode) {
   posts.forEach(post => {
     postsList.appendChild(post);
   });
+
+  // ★ 최신순 + 내 팬덤 탭일 때만 날짜 구분선 재삽입
+  if (mode === 'latest' && currentFeedMode === 'my') {
+    injectDateSeparators(postsList);
+  }
 }
 
 // ── 상대 시간 계산 ──
@@ -336,6 +384,20 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
   // 사진 여부 확인
   const hasImage = post.imageUrl ? '📷' : '';
 
+  // ★ 본문 미리보기 (마크다운 기호 제거 후 1줄)
+  const previewText = post.content
+    ? post.content
+        .replace(/\*\*/g, '')
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        .replace(/^---\n?/m, '')
+        .replace(/\n/g, ' ')
+        .trim()
+        .substring(0, 70)
+    : '';
+  const previewHtml = previewText
+    ? `<div class="post-content-preview">${escHtml(previewText)}</div>`
+    : '';
+
   // 팬덤 배지 (전체 피드 모드에서만 표시)
   let fandomBadgeHtml = '';
   if (showFandomBadge) {
@@ -356,6 +418,7 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
           ${hasImage ? `<span class="post-image-badge">📷</span>` : ''}
         </div>
       </div>
+      ${previewHtml}
       <div class="post-meta-row-mobile">
         <span class="post-list-meta">👤 <span id="author-${postId}">${escHtml(post.authorNickname || post.authorName || '알 수 없음')}</span></span>
         <span class="post-list-meta-divider">·</span>
@@ -389,6 +452,11 @@ async function showPostDetail(fandom, postId) {
     });
     window.postDetailPopstateSetup = true;
   }
+
+  // ★ 뒤로가기 시 스크롤 복원을 위해 현재 위치 저장
+  _savedCommunityScrollY = window.scrollY;
+  // ★ FAB 숨김 (게시글 상세 위에 FAB가 보이지 않도록)
+  document.getElementById('communityFAB')?.style.setProperty('display', 'none');
 
   // History API로 URL 상태 저장
   window.history.pushState({
@@ -581,6 +649,14 @@ function closePostDetail() {
   // 커뮤니티 페이지 표시
   document.getElementById("communityPage").classList.remove("hidden");
   document.getElementById("communityPage").classList.add("show");
+
+  // ★ FAB 재표시
+  document.getElementById('communityFAB')?.style.setProperty('display', 'flex');
+
+  // ★ 스크롤 위치 복원 (렌더 완료 후 복원)
+  requestAnimationFrame(() => {
+    window.scrollTo(0, _savedCommunityScrollY);
+  });
 
   // 게시물 상세 페이지의 모든 Firebase 리스너 정리
   Object.values(postDetailListeners).forEach(listener => {
