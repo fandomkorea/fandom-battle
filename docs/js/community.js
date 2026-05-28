@@ -2096,12 +2096,12 @@ function renderFandomTabBar() {
   const myFav = currentUserFav || localStorage.getItem('my_fav_group');
   const myFavMeta = myFav ? (GROUP_META[myFav] || {}) : null;
 
-  // 팬덤찾기 탭: 선택된 타팬덤이 있으면 그 이름으로 활성 표시
+  // 둘러보기 탭: 선택된 타팬덤이 있으면 그 이름으로 활성 표시
   const isFinderActive = !!currentOtherFandom && currentSelectedTab === currentOtherFandom;
   const finderMeta = isFinderActive ? (GROUP_META[currentOtherFandom] || {}) : null;
   const finderLabel = isFinderActive
     ? `${finderMeta.emoji || ''} ${currentOtherFandom}`
-    : '🔍 팬덤찾기';
+    : '🌐 둘러보기';
 
   const tabs = [
     {
@@ -2112,7 +2112,6 @@ function renderFandomTabBar() {
     {
       id: myFav || '__nofav__',
       label: myFavMeta ? `${myFavMeta.emoji} ${myFav}` : '💜 팬덤설정',
-      sub: myFav ? '내꺼' : null,
       active: !!myFav && currentSelectedTab === myFav,
       dimmed: !myFav,
     },
@@ -2129,12 +2128,9 @@ function renderFandomTabBar() {
   ];
 
   bar.innerHTML = tabs.map(tab => {
-    const subHtml = tab.sub
-      ? `<span class="tab-sub">${escHtml(tab.sub)}</span>`
-      : '';
     const dimAttr = tab.dimmed ? ' style="opacity:0.45"' : '';
     return `<button class="fandom-tab${tab.active ? ' active' : ''}" data-tabid="${escAttr(tab.id)}"${dimAttr}>` +
-      `<span class="tab-label">${escHtml(tab.label)}</span>${subHtml}</button>`;
+      `<span class="tab-label">${escHtml(tab.label)}</span></button>`;
   }).join('');
 
   // 이벤트 바인딩
