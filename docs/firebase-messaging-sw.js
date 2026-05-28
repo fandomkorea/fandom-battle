@@ -14,7 +14,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const title = payload.notification?.title || '팬덤배틀';
+  const title = payload.notification?.title || '팬픽';
   const body  = payload.notification?.body  || '';
 
   self.registration.showNotification(title, {

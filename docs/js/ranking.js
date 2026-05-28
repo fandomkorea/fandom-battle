@@ -65,10 +65,10 @@ function listenRankings() {
 
 function updatePageTitle(data) {
   const sorted = Object.entries(data).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
-  if (!sorted.length) { document.title = "⚔️ 팬덤배틀 - 아이돌 팬덤 파워 월간 랭킹"; return; }
+  if (!sorted.length) { document.title = "🩷 팬픽 - 아이돌 팬덤 파워 월간 랭킹"; return; }
   const [leader] = sorted[0];
   const meta = GROUP_META[leader] || { emoji: "👑" };
-  document.title = `${meta.emoji} ${leader} 1위 · 팬덤배틀`;
+  document.title = `${meta.emoji} ${leader} 1위 · 팬픽`;
 }
 
 function toggleAllRankings() {

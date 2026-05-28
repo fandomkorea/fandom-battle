@@ -5,12 +5,12 @@ function getShareText() {
   const myGroup = cachedTodayFreeVote;
   const now = new Date();
   const monthStr = (now.getMonth() + 1) + "월";
-  const title = `🏆 ${monthStr} 팬덤 파워 랭킹 — 팬덤배틀`;
+  const title = `🏆 ${monthStr} 팬덤 파워 랭킹 — 팬픽`;
   const myTag = myGroup ? myGroup.replace(/\s/g, "") : "";
   const shareUrl = myGroup ? `${SITE_URL}?ref=${encodeURIComponent(myGroup)}` : SITE_URL;
   const text = myGroup
-    ? `나는 ${myGroup}에 투표했어! 100만원 포토카드 주인공을 만들자! #팬덤배틀 #${myTag} #팬덤파워랭킹`
-    : `${monthStr} 팬덤 파워 랭킹 진행 중! 100만원 포토카드 내 최애한테! #팬덤배틀 #팬덤파워랭킹`;
+    ? `나는 ${myGroup}에 투표했어! 100만원 포토카드 주인공을 만들자! #팬픽 #${myTag} #팬덤파워랭킹`
+    : `${monthStr} 팬덤 파워 랭킹 진행 중! 100만원 포토카드 내 최애한테! #팬픽 #팬덤파워랭킹`;
   return { title, text, url: shareUrl };
 }
 
@@ -53,7 +53,7 @@ function shareKakao() {
   // 실용적 방법: 카카오 오픈채팅 or 링크 공유
   // navigator.share가 있으면 카카오도 목록에 뜸
   if (navigator.share) {
-    navigator.share({ title: "팬덤배틀", text: text.replace(/#\S+/g, "").trim(), url });
+    navigator.share({ title: "팬픽", text: text.replace(/#\S+/g, "").trim(), url });
     return;
   }
   // 없으면 링크 복사
@@ -626,7 +626,7 @@ function showVotePage() {
 
   // 상단 제목을 원래대로 복원
   if (pageTitle) {
-    pageTitle.textContent = "⚔️ 팬덤배틀";
+    pageTitle.textContent = "🩷 팬픽";
   }
 
   // LIVE 배지 표시
