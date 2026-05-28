@@ -396,14 +396,16 @@ function showNicknameChangeModal() {
 
   const modal = document.createElement('div');
   modal.id = 'nicknameChangeModal';
-  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(5px)';
+  // overflow-y: auto + padding so content is always scrollable when keyboard covers buttons
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(5px);overflow-y:auto;padding:16px;box-sizing:border-box;scrollbar-width:none';
+  modal.style.height = '100%';
 
   const cooldownInfoHtml = onCooldown
     ? `<div style="background:rgba(255,193,7,0.07);border:1px solid rgba(255,193,7,0.22);border-radius:10px;padding:11px 14px;margin-bottom:16px;font-size:0.8rem;color:rgba(255,193,7,0.9);line-height:1.5">⏳ 닉네임 변경은 30일마다 1회 가능해요<br>다음 변경 가능일: ${_formatDate(lastChange + COOLDOWN_MS)}</div>`
     : `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:11px 14px;margin-bottom:16px;font-size:0.8rem;color:var(--muted);line-height:1.5">ℹ️ 변경 후 30일간 재변경 불가 · 2~12자</div>`;
 
   modal.innerHTML = `
-    <div style="background:linear-gradient(135deg,rgba(18,12,36,0.99) 0%,rgba(26,16,46,0.99) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:20px;padding:32px 24px 24px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(124,77,255,0.22);animation:modalSlideIn 0.28s ease-out;position:relative">
+    <div id="nickModalCard" style="background:linear-gradient(135deg,rgba(18,12,36,0.99) 0%,rgba(26,16,46,0.99) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:20px;padding:32px 24px 24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(124,77,255,0.22);animation:modalSlideIn 0.28s ease-out;position:relative;flex-shrink:0">
       <button id="nickModalClose" style="position:absolute;top:12px;right:13px;background:none;border:none;color:rgba(255,255,255,0.28);font-size:1.2rem;cursor:pointer;padding:6px 8px;border-radius:6px">✕</button>
       <h2 style="font-size:1.15rem;font-weight:700;margin:0 0 20px;text-align:center;background:linear-gradient(135deg,var(--primary),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">✏️ 닉네임 변경</h2>
       <div style="margin-bottom:14px">
@@ -426,10 +428,40 @@ function showNicknameChangeModal() {
   document.body.appendChild(modal);
   document.getElementById('nickCurrentDisplay').textContent = currentNick || '(닉네임 없음)';
 
+  // ── 키보드가 올라올 때 모달 높이를 시각적 뷰포트에 맞춰 조정 ──
+  const syncToViewport = () => {
+    const vp = window.visualViewport;
+    if (!vp) return;
+    modal.style.height = vp.height + 'px';
+    modal.style.top = vp.offsetTop + 'px';
+    // 키보드가 올라왔으면 상단 정렬로 전환해 버튼이 잘리지 않게
+    const keyboardUp = vp.height < window.innerHeight * 0.75;
+    modal.style.alignItems = keyboardUp ? 'flex-start' : 'center';
+  };
+  if (window.visualViewport) {
+    syncToViewport();
+    window.visualViewport.addEventListener('resize', syncToViewport);
+  }
+
+  // ── 뒤로가기 버튼으로 닫기 ──
+  history.pushState({ modal: 'nickname' }, '');
+  let _closedByBack = false;
+  const onPopstate = () => {
+    if (document.getElementById('nicknameChangeModal')) {
+      _closedByBack = true;
+      closeModal();
+    }
+  };
+  window.addEventListener('popstate', onPopstate);
+
   const closeModal = () => {
+    if (window.visualViewport) window.visualViewport.removeEventListener('resize', syncToViewport);
     document.removeEventListener('keydown', handleEsc);
+    window.removeEventListener('popstate', onPopstate);
+    if (!_closedByBack) history.back();
     modal.remove();
   };
+
   document.getElementById('nickModalClose').onclick = closeModal;
   document.getElementById('nickModalCancel').onclick = closeModal;
   document.getElementById('nicknameChangeSubmitBtn').onclick = submitNicknameChange;
@@ -441,6 +473,12 @@ function showNicknameChangeModal() {
   const counter = document.getElementById('nicknameCharCount');
   if (input) {
     input.addEventListener('input', () => { counter.textContent = `${input.value.length} / 12`; });
+    // 키보드가 완전히 올라온 뒤 버튼이 보이도록 스크롤
+    input.addEventListener('focus', () => {
+      setTimeout(() => {
+        document.getElementById('nicknameChangeSubmitBtn')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }, 350);
+    });
     if (!onCooldown) setTimeout(() => input.focus(), 80);
   }
 }
