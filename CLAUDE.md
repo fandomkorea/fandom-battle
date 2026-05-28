@@ -82,6 +82,49 @@ config.js → auth.js → fandom.js → voting-modals.js → voting.js → ranki
 
 ---
 
+## 배포 규칙 ⚠️ 반드시 지킬 것
+
+### 1. JS/CSS 파일 수정 시 버전 쿼리스트링 업데이트 필수
+
+GitHub Pages는 브라우저 캐시를 제어하는 헤더 설정이 불가능하다. 때문에 `?v=` 쿼리스트링으로 캐시를 무력화한다. **JS나 CSS 파일을 수정했다면, `docs/index.html`에서 해당 파일의 `?v=` 값을 반드시 올려야 한다.** 올리지 않으면 유저가 새로고침해도 수정 전 파일을 계속 보게 된다.
+
+```html
+<!-- 예시: community.js를 수정했다면 -->
+<script src="js/community.js?v=20260529d"></script>  <!-- 이전 -->
+<script src="js/community.js?v=20260529e"></script>  <!-- 수정 후 (알파벳 한 칸 올림) -->
+```
+
+버전 규칙: `YYYYMMDD` + 알파벳 suffix (`a`, `b`, `c`, ... 같은 날 여러 번 수정 시 올림)
+
+현재 버전 현황 (`docs/index.html` 기준):
+| 파일 | 현재 버전 |
+|---|---|
+| `css/posts.css` | v=20260529b |
+| `js/auth.js` | v=20260529g |
+| `js/voting-modals.js` | v=20260529d |
+| `js/voting.js` | v=20260529 |
+| `js/ranking.js` | v=20260529e |
+| `js/utils.js` | v=20260529b |
+| `js/community.js` | v=20260529e |
+
+> **주의**: 버전 현황 표는 실제 `index.html`과 다를 수 있으므로, 수정 전 반드시 `index.html`에서 직접 확인하고 올릴 것.
+
+### 2. 코드 수정 후 git push 필수
+
+작업 완료 후 반드시 GitHub에 푸시해야 GitHub Pages에 배포된다.
+
+```bash
+git add <수정한 파일들>
+git commit -m "커밋 메시지"
+git push
+```
+
+- 커밋 메시지는 한국어로 작성 (예: `feat(community): 댓글 수정 기능 추가`)
+- `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>` footer 항상 포함
+- push 없이 commit만 하면 GitHub Pages에 반영되지 않음
+
+---
+
 ## 중요 규칙 / 패턴
 
 ### Firebase 읽기 정책
