@@ -312,6 +312,7 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
 
   // 좋아요/조회수 초기값 (post 데이터에서 직접 읽기 — DOM 삽입 전 Firebase 재쿼리 불필요)
   const likeCount = Object.keys(post.likes || {}).length;
+  const isHot = likeCount >= 5; // 좋아요 5개 이상 HOT
 
   const postEl = document.createElement("div");
   postEl.className = "post-item post-list-compact";
@@ -337,6 +338,7 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
     <div class="post-list-left">
       <div class="post-title-row">
         ${fandomBadgeHtml}
+        ${isHot ? '<span class="hot-badge">🔥 HOT</span>' : ''}
         <div class="post-list-title">${escHtml(post.title)}</div>
         <div class="post-list-indicators">
           <span class="post-comment-badge">💬 <span id="comment-count-${postId}">0</span></span>
@@ -353,6 +355,7 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
         <span class="post-list-meta">❤️ <span id="like-count-${postId}">${likeCount}</span></span>
       </div>
     </div>
+    ${post.imageUrl ? `<div class="post-thumbnail-wrap"><img src="${escAttr(post.imageUrl)}" class="post-thumbnail-img" loading="lazy" onerror="this.parentElement.style.display='none'" alt="썸네일"></div>` : ''}
   `;
 
   // 댓글 개수 업데이트 (댓글은 post 데이터에 포함되지 않으므로 별도 쿼리)
@@ -595,14 +598,29 @@ function loadDetailComments(fandom, postId) {
             </div>` : ''}
           </div>
           <div style="color:var(--text);line-height:1.6;word-break:break-word;margin-bottom:8px">${escHtml(comment.content)}</div>
-          <div style="display:flex;justify-content:flex-end">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <button class="reply-toggle-btn" id="reply-toggle-${escAttr(commentId)}" onclick="toggleReplySection('${escAttr(fandom)}','${escAttr(postId)}','${escAttr(commentId)}'); event.stopPropagation()">
+              💬 답글 <span id="reply-count-${escAttr(commentId)}">0</span>개
+            </button>
             <button onclick="toggleCommentLike('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="display:flex;align-items:center;gap:4px;background:${hasLikedComment ? 'rgba(255,80,80,0.2)' : 'rgba(255,100,100,0.06)'};border:1px solid ${hasLikedComment ? 'rgba(255,80,80,0.45)' : 'rgba(255,100,100,0.15)'};border-radius:20px;padding:4px 10px;cursor:pointer;transition:all 0.2s;font-size:0.8rem" onmouseover="this.style.background='rgba(255,100,100,0.2)';this.style.borderColor='rgba(255,100,100,0.4)'" onmouseout="this.style.background='${hasLikedComment ? 'rgba(255,80,80,0.2)' : 'rgba(255,100,100,0.06)'}';this.style.borderColor='${hasLikedComment ? 'rgba(255,80,80,0.45)' : 'rgba(255,100,100,0.15)'}'">
               <span>${hasLikedComment ? '❤️' : '🤍'}</span>
               <span style="color:${hasLikedComment ? 'rgb(255,100,100)' : 'var(--muted)'}; font-weight:600">${commentLikeCount > 0 ? commentLikeCount : ''}</span>
             </button>
           </div>
+          <!-- 답글 섹션 (토글) -->
+          <div class="reply-section" id="reply-section-${escAttr(commentId)}" style="display:none">
+            <div id="reply-list-${escAttr(commentId)}"></div>
+            ${isLoggedIn ? `
+              <div class="reply-input-area" id="reply-input-area-${escAttr(commentId)}">
+                <textarea class="reply-textarea" id="reply-textarea-${escAttr(commentId)}" placeholder="답글을 입력해주세요..." maxlength="300"></textarea>
+                <button class="reply-submit-btn" onclick="submitReply('${escAttr(fandom)}','${escAttr(postId)}','${escAttr(commentId)}'); event.stopPropagation()">답글 작성</button>
+              </div>
+            ` : ''}
+          </div>
         `;
         commentsList.appendChild(commentEl);
+        // 답글 수 미리 로드
+        loadReplyCount(fandom, postId, commentId);
       });
     }
 
@@ -615,6 +633,80 @@ function loadDetailComments(fandom, postId) {
   const commentsRef = db.ref(`community/${fandom}/${postId}/comments`);
   commentsRef.on("value", commentsCallback);
   postDetailListeners.comments = { ref: commentsRef, callback: commentsCallback };
+}
+
+// ── 답글 수 로드 ──
+function loadReplyCount(fandom, postId, commentId) {
+  db.ref(`community/${fandom}/${postId}/comments/${commentId}/replies`).once("value", snap => {
+    const count = snap.exists() ? Object.keys(snap.val()).length : 0;
+    const el = document.getElementById(`reply-count-${commentId}`);
+    if (el) el.textContent = count;
+  });
+}
+
+// ── 답글 섹션 토글 ──
+function toggleReplySection(fandom, postId, commentId) {
+  const section = document.getElementById(`reply-section-${commentId}`);
+  if (!section) return;
+  const isOpen = section.style.display !== 'none';
+  section.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) loadReplies(fandom, postId, commentId);
+}
+
+// ── 답글 로드 ──
+async function loadReplies(fandom, postId, commentId) {
+  const listEl = document.getElementById(`reply-list-${commentId}`);
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:4px 0">로딩 중...</div>';
+
+  const snap = await db.ref(`community/${fandom}/${postId}/comments/${commentId}/replies`).once("value");
+  const replies = snap.val() || {};
+  const entries = Object.entries(replies).sort((a, b) => (a[1].timestamp || 0) - (b[1].timestamp || 0));
+
+  if (entries.length === 0) {
+    listEl.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:4px 0">아직 답글이 없어요</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  entries.forEach(([, reply]) => {
+    const el = document.createElement('div');
+    el.className = 'reply-item';
+    el.innerHTML = `
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+        <span style="font-weight:700;font-size:0.82rem;color:var(--primary)">↳ ${escHtml(reply.authorName || reply.authorNickname || '익명')}</span>
+        <span style="font-size:0.72rem;color:var(--muted)">${getRelativeTime(reply.timestamp)}</span>
+      </div>
+      <div style="color:var(--text);line-height:1.5;word-break:break-word">${escHtml(reply.content)}</div>
+    `;
+    listEl.appendChild(el);
+  });
+}
+
+// ── 답글 작성 ──
+async function submitReply(fandom, postId, commentId) {
+  if (!isLoggedIn || !currentUser) { showToast("로그인이 필요합니다"); return; }
+  const textarea = document.getElementById(`reply-textarea-${commentId}`);
+  const content = textarea?.value?.trim();
+  if (!content) { showToast("답글 내용을 입력해주세요"); return; }
+
+  try {
+    const replyId = db.ref().push().key;
+    await db.ref(`community/${fandom}/${postId}/comments/${commentId}/replies/${replyId}`).set({
+      content,
+      authorUid: currentUser.uid,
+      authorName: currentUser.customNickname || currentUser.displayName || '익명',
+      timestamp: Date.now()
+    });
+    textarea.value = '';
+    showToast("✅ 답글이 등록됐어요!");
+    loadReplies(fandom, postId, commentId);
+    loadReplyCount(fandom, postId, commentId);
+  } catch (e) {
+    console.error("답글 작성 실패:", e);
+    if (e.code === 'PERMISSION_DENIED') showToast("⚠️ Firebase 보안 규칙에서 replies 경로를 허용해주세요");
+    else showToast("답글 작성에 실패했어요");
+  }
 }
 
 // ── 상세 페이지에서 댓글 작성 ──
@@ -643,9 +735,124 @@ async function submitDetailComment(fandom, postId) {
     });
     textarea.value = "";
     showToast("댓글이 작성됐어요!");
+
+    // ── 알림 전송 (본인 게시글 댓글 제외) ──
+    sendCommentNotification(fandom, postId, content);
   } catch (e) {
     console.error("댓글 작성 실패:", e);
     showToast("댓글 작성에 실패했어요");
+  }
+}
+
+// ── 댓글 알림 전송 ──
+async function sendCommentNotification(fandom, postId, commentContent) {
+  if (!isLoggedIn || !currentUser) return;
+  try {
+    const postSnap = await db.ref(`community/${fandom}/${postId}`).once("value");
+    if (!postSnap.exists()) return;
+    const post = postSnap.val();
+    // 본인 게시글 댓글은 알림 생략
+    if (!post.authorUid || post.authorUid === currentUser.uid) return;
+
+    const notifId = db.ref().push().key;
+    await db.ref(`notifications/${post.authorUid}/${notifId}`).set({
+      type: 'comment',
+      fandom,
+      postId,
+      postTitle: post.title || '(제목 없음)',
+      fromNickname: currentUser.customNickname || currentUser.displayName || '익명',
+      preview: commentContent.substring(0, 50),
+      timestamp: Date.now(),
+      read: false
+    });
+  } catch (e) {
+    // 알림 전송 실패는 조용히 무시 (댓글은 이미 저장됨)
+    console.warn("알림 전송 실패:", e.code);
+  }
+}
+
+// ── 알림 로드 ──
+async function loadNotifications() {
+  if (!isLoggedIn || !currentUser || !db) return;
+  try {
+    const snap = await db.ref(`notifications/${currentUser.uid}`)
+      .orderByChild('timestamp').limitToLast(30).once("value");
+    const notifs = snap.val() || {};
+    const entries = Object.entries(notifs).sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
+    const unread = entries.filter(([, n]) => !n.read).length;
+
+    // 배지 업데이트
+    const badge = document.getElementById("notifBadge");
+    if (badge) {
+      badge.textContent = unread;
+      badge.style.display = unread > 0 ? 'inline-block' : 'none';
+    }
+
+    // 알림 목록 렌더링
+    const listEl = document.getElementById("notifList");
+    if (!listEl) return;
+    if (entries.length === 0) {
+      listEl.innerHTML = '<div class="notif-empty">알림이 없어요 🔕</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    entries.forEach(([notifId, notif]) => {
+      const el = document.createElement('div');
+      el.className = `notif-item${notif.read ? '' : ' unread'}`;
+      el.onclick = () => {
+        markNotifRead(notifId);
+        if (notif.fandom && notif.postId) {
+          closeNotifPanel();
+          showPostDetail(notif.fandom, notif.postId);
+        }
+      };
+      el.innerHTML = `
+        <div class="notif-item-text">
+          <b>${escHtml(notif.fromNickname)}</b>님이 <b>${escHtml(notif.postTitle)}</b>에 댓글을 남겼어요
+          ${notif.preview ? `<br><span style="color:var(--muted)">"${escHtml(notif.preview)}"</span>` : ''}
+        </div>
+        <div class="notif-item-time">${getRelativeTime(notif.timestamp)}</div>
+      `;
+      listEl.appendChild(el);
+    });
+  } catch (e) {
+    console.warn("알림 로드 실패:", e.code);
+  }
+}
+
+// ── 알림 패널 토글 ──
+function toggleNotifPanel() {
+  const panel = document.getElementById("notifPanel");
+  if (!panel) return;
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) loadNotifications();
+}
+function closeNotifPanel() {
+  document.getElementById("notifPanel")?.classList.remove('open');
+}
+
+// ── 개별 알림 읽음 처리 ──
+function markNotifRead(notifId) {
+  if (!isLoggedIn || !currentUser) return;
+  db.ref(`notifications/${currentUser.uid}/${notifId}/read`).set(true).catch(() => {});
+  loadNotifications();
+}
+
+// ── 전체 알림 읽음 처리 ──
+async function markAllNotifsRead() {
+  if (!isLoggedIn || !currentUser) return;
+  try {
+    const snap = await db.ref(`notifications/${currentUser.uid}`).once("value");
+    const notifs = snap.val() || {};
+    const updates = {};
+    Object.keys(notifs).forEach(id => { updates[`${id}/read`] = true; });
+    if (Object.keys(updates).length > 0) {
+      await db.ref(`notifications/${currentUser.uid}`).update(updates);
+    }
+    loadNotifications();
+    closeNotifPanel();
+  } catch (e) {
+    console.warn("읽음 처리 실패:", e.code);
   }
 }
 
@@ -1727,12 +1934,15 @@ function renderFandomTabBar() {
       .slice(0, 6);
   }
 
-  // 탭 배열: 🌍전체 → ⭐내팬덤 → 상위팬덤들
+  // 탭 배열: 🌍전체 → ⭐내팬덤 → 상위팬덤들 → (로그인 시) ✏️내 글
   const tabs = [
     { id: 'all', label: '🌍 전체', color: '#7c4dff', isMy: false }
   ];
   if (myFav && GROUP_META[myFav]) {
     tabs.push({ id: myFav, label: `${GROUP_META[myFav].emoji} ${myFav}`, color: GROUP_META[myFav].color, isMy: true });
+  }
+  if (isLoggedIn) {
+    tabs.push({ id: 'myPosts', label: '✏️ 내 글', color: '#43a047', isMy: false, isSpecial: true });
   }
   topFandoms.forEach(name => {
     const meta = GROUP_META[name] || {};
@@ -1770,6 +1980,11 @@ function selectFandomTab(tabId) {
     if (writeBtn) writeBtn.onclick = () => openPostCreateModalForAll();
     if (pageTitle) pageTitle.textContent = '🌍 전체 피드';
     loadAllFandomPosts();
+  } else if (tabId === 'myPosts') {
+    currentFeedMode = 'all';
+    if (writeBtn) writeBtn.onclick = () => openPostCreateModalForAll();
+    if (pageTitle) pageTitle.textContent = '✏️ 내가 쓴 글';
+    loadMyPosts();
   } else {
     currentFeedMode = 'my';
     // hidden select 값 업데이트 (programmatic = change 이벤트 미발생)
@@ -1935,5 +2150,102 @@ function openPostCreateModalForAll() {
   if (select) select.value = myFav;
   openPostCreateModal();
 }
+
+// ── 내가 쓴 글 로드 ──
+async function loadMyPosts() {
+  if (!isLoggedIn || !currentUser) {
+    document.getElementById("communityPostsList").innerHTML =
+      '<div class="community-empty"><div class="community-empty-icon">🔐</div><div class="community-empty-text">로그인 후 이용할 수 있어요</div></div>';
+    return;
+  }
+
+  clearPostListListeners();
+  if (currentCommunityListener) {
+    db.ref(currentCommunityListener).off("value");
+    currentCommunityListener = null;
+  }
+
+  const postsList = document.getElementById("communityPostsList");
+  postsList.innerHTML = `
+    <div class="community-empty">
+      <div class="spinner" style="display:inline-block;margin-bottom:12px"></div>
+      <div class="community-empty-text">내 글을 불러오는 중...</div>
+    </div>
+  `;
+
+  // 모든 팬덤에서 내 글 수집
+  const fandomsToLoad = allRankingsData
+    ? Object.entries(allRankingsData).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([n]) => n)
+    : ALL_GROUPS.slice(0, 20);
+
+  const myFav = currentUserFav || localStorage.getItem('my_fav_group');
+  if (myFav && !fandomsToLoad.includes(myFav)) fandomsToLoad.push(myFav);
+
+  try {
+    const snapshots = await Promise.all(
+      fandomsToLoad.map(fandom => db.ref(`community/${fandom}`).once("value"))
+    );
+
+    let myPosts = [];
+    snapshots.forEach((snap, i) => {
+      const fandom = fandomsToLoad[i];
+      const posts = snap.val() || {};
+      Object.entries(posts).forEach(([postId, post]) => {
+        if (!post.isHidden && post.authorUid === currentUser.uid) {
+          myPosts.push({ fandom, postId, post });
+        }
+      });
+    });
+
+    myPosts.sort((a, b) => (b.post.timestamp || 0) - (a.post.timestamp || 0));
+
+    postsList.innerHTML = '';
+    if (myPosts.length === 0) {
+      postsList.innerHTML = `
+        <div class="community-empty">
+          <div class="community-empty-icon">✏️</div>
+          <div class="community-empty-text">아직 작성한 글이 없어요<br>첫 번째 글을 써보세요!</div>
+        </div>
+      `;
+      return;
+    }
+
+    myPosts.forEach(({ fandom, postId, post }, i) => {
+      const postEl = renderPost(fandom, postId, post, i, true); // showFandomBadge=true
+      postsList.appendChild(postEl);
+    });
+  } catch (e) {
+    console.error("내 글 로드 실패:", e);
+    showToast("내 글을 불러올 수 없어요");
+  }
+}
+
+// ── 맨 위로 버튼 ──
+function scrollToTopPage() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // communityPage도 스크롤 초기화
+  const communityPage = document.getElementById("communityPage");
+  if (communityPage) communityPage.scrollTop = 0;
+}
+
+// 스크롤 이벤트 → 맨 위로 버튼 표시
+window.addEventListener('scroll', function () {
+  const btn = document.getElementById('scrollToTopBtn');
+  if (!btn) return;
+  if (window.scrollY > 300) {
+    btn.classList.add('visible');
+  } else {
+    btn.classList.remove('visible');
+  }
+}, { passive: true });
+
+// 알림 패널 외부 클릭 시 닫기
+document.addEventListener('click', function (e) {
+  const panel = document.getElementById('notifPanel');
+  const bellBtn = document.getElementById('notifBellBtn');
+  if (panel && bellBtn && !panel.contains(e.target) && !bellBtn.contains(e.target)) {
+    panel.classList.remove('open');
+  }
+});
 
 init();

@@ -37,15 +37,15 @@
 
 
   <!-- ★ v= 숫자만 바꾸면 모든 파일 캐시 갱신 -->
-  <link rel="stylesheet" href="css/base.css?v=20260604" />
-  <link rel="stylesheet" href="css/layout.css?v=20260604" />
-  <link rel="stylesheet" href="css/auth.css?v=20260604" />
-  <link rel="stylesheet" href="css/voting.css?v=20260604" />
-  <link rel="stylesheet" href="css/ranking.css?v=20260604" />
-  <link rel="stylesheet" href="css/fandom.css?v=20260604" />
-  <link rel="stylesheet" href="css/modals.css?v=20260604" />
-  <link rel="stylesheet" href="css/posts.css?v=20260604" />
-  <link rel="stylesheet" href="css/main.css?v=20260604" />
+  <link rel="stylesheet" href="css/base.css?v=20260607" />
+  <link rel="stylesheet" href="css/layout.css?v=20260607" />
+  <link rel="stylesheet" href="css/auth.css?v=20260607" />
+  <link rel="stylesheet" href="css/voting.css?v=20260607" />
+  <link rel="stylesheet" href="css/ranking.css?v=20260607" />
+  <link rel="stylesheet" href="css/fandom.css?v=20260607" />
+  <link rel="stylesheet" href="css/modals.css?v=20260607" />
+  <link rel="stylesheet" href="css/posts.css?v=20260607" />
+  <link rel="stylesheet" href="css/main.css?v=20260607" />
 
 </head>
 <body>
@@ -69,9 +69,27 @@
       <div id="userDisplayName" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1"></div>
       <div id="adButtonContainer" style="flex-shrink:0"></div>
     </div>
-    <button onclick="signOut()" style="white-space:nowrap;flex-shrink:0">로그아웃</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+      <!-- 알림 벨 -->
+      <div class="notif-bell-wrap">
+        <button class="notif-bell-btn" id="notifBellBtn" onclick="toggleNotifPanel()">
+          🔔 <span id="notifBadge" class="notif-badge" style="display:none">0</span>
+        </button>
+        <div class="notif-panel" id="notifPanel">
+          <div class="notif-panel-header">
+            <span>알림</span>
+            <button onclick="markAllNotifsRead()" style="background:none;border:none;color:var(--primary);font-size:0.75rem;cursor:pointer;font-weight:600">모두 읽음</button>
+          </div>
+          <div id="notifList"><div class="notif-empty">알림이 없어요</div></div>
+        </div>
+      </div>
+      <button onclick="signOut()" style="white-space:nowrap">로그아웃</button>
+    </div>
   </div>
 </div>
+
+<!-- 맨 위로 버튼 -->
+<button class="scroll-to-top-btn" id="scrollToTopBtn" onclick="scrollToTopPage()">↑</button>
 
 <!-- 네비게이션 탭 -->
 <nav id="mainNav">
@@ -407,14 +425,14 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=20260604"></script>
-<script src="js/auth.js?v=20260604"></script>
-<script src="js/fandom.js?v=20260604"></script>
-<script src="js/voting-modals.js?v=20260604"></script>
-<script src="js/voting.js?v=20260604"></script>
-<script src="js/ranking.js?v=20260604"></script>
-<script src="js/utils.js?v=20260604"></script>
-<script src="js/community.js?v=20260606"></script>
+<script src="js/config.js?v=20260607"></script>
+<script src="js/auth.js?v=20260607"></script>
+<script src="js/fandom.js?v=20260607"></script>
+<script src="js/voting-modals.js?v=20260607"></script>
+<script src="js/voting.js?v=20260607"></script>
+<script src="js/ranking.js?v=20260607"></script>
+<script src="js/utils.js?v=20260607"></script>
+<script src="js/community.js?v=20260607"></script>
 </body>
 </html>
 
