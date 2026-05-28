@@ -685,6 +685,7 @@ function init() {
     handleShareRef();
     restoreVotedState(); // 페이지 로드 시 투표 상태 복원
     setTimeout(showFavBar, 1500);
+    if (typeof initFCM === 'function') initFCM();
     if (isAdmin) {
       const pw = prompt("관리자 패스워드:");
       db.ref('admin_config/pw').once('value').then(snap => {
