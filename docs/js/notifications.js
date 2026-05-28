@@ -19,7 +19,7 @@ function initFCM() {
 }
 
 // auth.js loadUserVotes()에서 자동 호출됨
-async function loadNotifications() {
+async function loadFCMNotifications() {
   if (!isLoggedIn || !currentUser) return;
   if (!('Notification' in window)) return;
 
