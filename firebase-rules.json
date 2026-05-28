@@ -1,0 +1,106 @@
+{
+  "rules": {
+    "votes": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$date": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$uid": {
+          ".write": "$uid === auth.uid",
+          ".validate": "newData.hasChildren(['group', 'timestamp'])"
+        }
+      }
+    },
+    "rankings": {
+      ".read": true,
+      ".write": false
+    },
+    "users": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid",
+        "nickname": { ".validate": "newData.isString() && newData.val().length > 0" },
+        "fandom": { ".validate": "newData.isString()" },
+        "pendingPaidVotes": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000" }
+      }
+    },
+    "community": {
+      ".read": true,
+      ".write": "auth != null",
+      "$group": {
+        "$postId": {
+          ".write": "root.child('community').child($group).child($postId).child('authorUid').val() === auth.uid || !root.child('community').child($group).child($postId).exists()",
+          ".validate": "newData.hasChildren(['title', 'content', 'authorUid', 'timestamp'])",
+          "title": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100" },
+          "content": { ".validate": "newData.isString() && newData.val().length > 0" },
+          "authorUid": { ".validate": "newData.val() === auth.uid" },
+          "timestamp": { ".validate": "newData.isNumber()" },
+          "views": {
+            ".write": "auth != null"
+          },
+          "likes": {
+            "$uid": {
+              ".write": "$uid === auth.uid",
+              ".validate": "newData.val() === true"
+            }
+          },
+          "isHidden": {
+            ".write": "auth != null",
+            ".validate": "newData.isBoolean()"
+          },
+          "reportCount": {
+            ".write": "auth != null",
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "comments": {
+            "$commentId": {
+              ".write": "root.child('community').child($group).child($postId).child('comments').child($commentId).child('authorUid').val() === auth.uid || !root.child('community').child($group).child($postId).child('comments').child($commentId).exists()",
+              ".validate": "newData.hasChildren(['content', 'authorUid', 'timestamp'])",
+              "content": { ".validate": "newData.isString() && newData.val().length > 0" },
+              "authorUid": { ".validate": "newData.val() === auth.uid" },
+              "timestamp": { ".validate": "newData.isNumber()" },
+              "isHidden": { ".validate": "newData.isBoolean()" },
+              "likes": {
+                "$uid": {
+                  ".write": "$uid === auth.uid",
+                  ".validate": "newData.val() === true"
+                }
+              },
+              "replies": {
+                "$replyId": {
+                  ".write": "auth != null && (!data.exists() || data.child('authorUid').val() === auth.uid)",
+                  ".validate": "newData.hasChildren(['content', 'authorUid', 'timestamp'])"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "reports": {
+      ".read": false,
+      ".write": "auth != null"
+    },
+    "notifications": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "auth != null"
+      }
+    },
+    "group_records": {
+      ".read": true,
+      ".write": false
+    },
+    "monthly_history": {
+      ".read": true,
+      ".write": false
+    },
+    "prize_notice": {
+      ".read": true,
+      ".write": false
+    }
+  }
+}
