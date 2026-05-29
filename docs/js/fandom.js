@@ -607,3 +607,98 @@ function showVoteRestrictionModal(hoursLeft, minutesLeft, secondsLeft = 0) {
   };
 }
 
+// ── 그룹 추가 요청 모달 ──
+function showGroupRequestModal() {
+  const existing = document.getElementById("groupRequestModal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "groupRequestModal";
+  modal.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:20000;backdrop-filter:blur(5px);padding:16px;box-sizing:border-box`;
+  modal.onclick = (e) => { if (e.target === modal) closeGroupRequestModal(); };
+
+  modal.innerHTML = `
+    <div style="background:linear-gradient(180deg,rgba(18,12,36,0.99) 0%,rgba(26,16,46,0.99) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:20px;padding:0;width:100%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,0.5),0 0 40px rgba(124,77,255,0.1);overflow:hidden">
+      <div style="background:linear-gradient(135deg,rgba(124,77,255,0.2) 0%,rgba(100,200,255,0.12) 100%);padding:22px 24px;border-bottom:1px solid rgba(124,77,255,0.2);display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:1.4rem">🎤</span>
+          <h2 style="font-size:1.05rem;font-weight:800;color:var(--text);margin:0">아이돌 추가 요청</h2>
+        </div>
+        <button onclick="closeGroupRequestModal()" style="background:none;border:none;color:rgba(255,255,255,0.35);font-size:1.4rem;cursor:pointer;padding:4px 8px;border-radius:6px;transition:all 0.2s;line-height:1" onmouseover="this.style.color='rgba(255,255,255,0.7)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">✕</button>
+      </div>
+      <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+        <p style="font-size:0.82rem;color:var(--muted);margin:0;line-height:1.6;background:rgba(124,77,255,0.07);border:1px solid rgba(124,77,255,0.15);border-radius:10px;padding:12px 14px">
+          요청하신 내용은 관리자 검토 후 추가될 수 있어요.<br>승인까지 시간이 걸릴 수 있어요 💜
+        </p>
+        <div>
+          <label style="display:block;font-size:0.72rem;font-weight:700;color:rgba(124,77,255,0.85);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">🇰🇷 한글 이름</label>
+          <input id="reqKrName" type="text" maxlength="30" placeholder="예: 방탄소년단"
+            style="width:100%;padding:11px 14px;background:rgba(124,77,255,0.08);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.95rem;outline:none;transition:all 0.2s;box-sizing:border-box"
+            onfocus="this.style.borderColor='rgba(124,77,255,0.7)';this.style.boxShadow='0 0 0 3px rgba(124,77,255,0.15)'"
+            onblur="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.72rem;font-weight:700;color:rgba(124,77,255,0.85);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">🌐 영어 이름</label>
+          <input id="reqEnName" type="text" maxlength="50" placeholder="예: BTS"
+            style="width:100%;padding:11px 14px;background:rgba(124,77,255,0.08);border:1.5px solid rgba(124,77,255,0.2);border-radius:10px;color:var(--text);font-family:inherit;font-size:0.95rem;outline:none;transition:all 0.2s;box-sizing:border-box"
+            onfocus="this.style.borderColor='rgba(124,77,255,0.7)';this.style.boxShadow='0 0 0 3px rgba(124,77,255,0.15)'"
+            onblur="this.style.borderColor='rgba(124,77,255,0.2)';this.style.boxShadow='none'">
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button onclick="closeGroupRequestModal()" style="flex:1;padding:13px;background:transparent;border:1.5px solid rgba(255,255,255,0.12);border-radius:10px;color:rgba(255,255,255,0.45);font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.2s;font-size:0.9rem" onmouseover="this.style.borderColor='rgba(255,255,255,0.25)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.12)';this.style.color='rgba(255,255,255,0.45)'">취소</button>
+          <button id="submitGroupRequestBtn" onclick="submitGroupRequest()" style="flex:1.4;padding:13px;background:linear-gradient(135deg,var(--primary) 0%,rgba(100,55,215,0.9) 100%);border:none;border-radius:10px;color:#fff;font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.2s;font-size:0.9rem;box-shadow:0 6px 16px rgba(124,77,255,0.35)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 24px rgba(124,77,255,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 6px 16px rgba(124,77,255,0.35)'">요청하기</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const handleEsc = (e) => { if (e.key === "Escape") closeGroupRequestModal(); };
+  document.addEventListener("keydown", handleEsc);
+  modal._handleEsc = handleEsc;
+
+  setTimeout(() => document.getElementById("reqKrName")?.focus(), 100);
+}
+
+function closeGroupRequestModal() {
+  const modal = document.getElementById("groupRequestModal");
+  if (!modal) return;
+  if (modal._handleEsc) document.removeEventListener("keydown", modal._handleEsc);
+  modal.remove();
+}
+
+async function submitGroupRequest() {
+  if (!isLoggedIn || !currentUser) {
+    showToast("로그인이 필요합니다");
+    return;
+  }
+
+  const krName = document.getElementById("reqKrName")?.value.trim();
+  const enName = document.getElementById("reqEnName")?.value.trim();
+
+  if (!krName) { showToast("한글 이름을 입력해주세요"); document.getElementById("reqKrName")?.focus(); return; }
+  if (!enName) { showToast("영어 이름을 입력해주세요"); document.getElementById("reqEnName")?.focus(); return; }
+
+  const btn = document.getElementById("submitGroupRequestBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "요청 중..."; }
+
+  try {
+    await db.ref("group_requests").push({
+      krName,
+      enName,
+      requestedBy: currentUser.uid,
+      requestedByNickname: currentUser.customNickname || currentUser.displayName || "익명",
+      timestamp: Date.now(),
+      status: "pending"
+    });
+
+    closeGroupRequestModal();
+    showToast("✅ 요청이 접수됐어요! 검토 후 추가해드릴게요 💜");
+  } catch (e) {
+    console.error("그룹 요청 실패:", e);
+    showToast("요청 전송에 실패했어요. 다시 시도해주세요");
+    if (btn) { btn.disabled = false; btn.textContent = "요청하기"; }
+  }
+}
+

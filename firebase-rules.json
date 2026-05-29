@@ -92,6 +92,13 @@
         ".indexOn": ["timestamp"]
       }
     },
+    "group_requests": {
+      ".read": false,
+      ".write": "auth != null",
+      "$requestId": {
+        ".validate": "newData.hasChildren(['krName', 'enName', 'requestedBy', 'timestamp'])"
+      }
+    },
     "group_records": {
       ".read": true,
       ".write": false

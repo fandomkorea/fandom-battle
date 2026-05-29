@@ -465,6 +465,9 @@ function openFavPicker() {
       " />
     </div>
     <div class="fav-picker-grid" id="fandomGrid" style="flex:1;overflow-y:auto">${initialGrid}</div>
+    <div style="flex-shrink:0;padding:12px 16px;border-top:1px solid rgba(255,255,255,0.07);text-align:center">
+      <button onclick="showGroupRequestModal()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:0.8rem;font-family:inherit;cursor:pointer;padding:6px 12px;border-radius:8px;transition:all 0.2s;text-decoration:underline;text-underline-offset:3px" onmouseover="this.style.color='rgba(124,77,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">내 최애 아이돌이 목록에 없어요</button>
+    </div>
   </div>`;
   document.body.appendChild(overlay);
 
