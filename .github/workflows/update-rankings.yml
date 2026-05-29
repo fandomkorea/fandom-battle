@@ -20,8 +20,9 @@ jobs:
       - name: Firebase에서 랭킹 데이터 가져오기
         run: |
           mkdir -p docs/data
+          # App Check Enforce 환경: DB Secret으로 관리자 인증 (App Check 우회)
           HTTP_STATUS=$(curl -s -w "%{http_code}" -o docs/data/rankings.json \
-            "https://fandom-battle-92aa8-default-rtdb.firebaseio.com/rankings.json")
+            "https://fandom-battle-92aa8-default-rtdb.firebaseio.com/rankings.json?access_token=${{ secrets.FIREBASE_DB_SECRET }}")
           if [ "$HTTP_STATUS" != "200" ]; then
             echo "Firebase 요청 실패: HTTP $HTTP_STATUS"
             exit 1
