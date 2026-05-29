@@ -49,6 +49,9 @@ let currentOtherFandom = null; // 팬덤 찾기로 선택한 타 팬덤
 let postImageUrl = null;
 let postImagePublicId = null; // Cloudinary 이미지 삭제용
 
+// ── 현재 열린 게시글 최소 메타 캐시 (알림 전송 시 Firebase 재읽기 방지) ──
+let currentViewingPost = null;
+
 // ── 게시물 상세 모달 리스너 저장소 ──
 let postDetailListeners = {
   likes: null,
@@ -539,8 +542,15 @@ async function showPostDetail(fandom, postId) {
     const isAuthor = isLoggedIn && currentUser && post.authorUid === currentUser.uid;
     const timeStr = getRelativeTime(post.timestamp);
 
-    // 조회수 증가 (동시 접속 대비 transaction 사용)
-    await db.ref(`community/${fandom}/${postId}/views`).transaction(cur => (cur || 0) + 1);
+    // 현재 게시글 메타 캐시 (알림 전송 시 재읽기 방지)
+    currentViewingPost = { fandom, postId, authorUid: post.authorUid, title: post.title };
+
+    // 조회수 증가 — 세션 내 중복 카운트 방지
+    const viewedKey = `viewed_${postId}`;
+    if (!sessionStorage.getItem(viewedKey)) {
+      db.ref(`community/${fandom}/${postId}/views`).transaction(cur => (cur || 0) + 1).catch(() => {});
+      sessionStorage.setItem(viewedKey, '1');
+    }
 
     // 제목 설정
     document.getElementById("postDetailTitle").textContent = escHtml(post.title);
@@ -708,6 +718,9 @@ function closePostDetail() {
   requestAnimationFrame(() => {
     window.scrollTo(0, _savedCommunityScrollY);
   });
+
+  // 현재 게시글 캐시 초기화
+  currentViewingPost = null;
 
   // 게시물 상세 페이지의 모든 Firebase 리스너 정리
   Object.values(postDetailListeners).forEach(listener => {
@@ -1000,9 +1013,15 @@ async function submitStickyComment(fandom, postId) {
 async function sendCommentNotification(fandom, postId, commentContent) {
   if (!isLoggedIn || !currentUser) return;
   try {
-    const postSnap = await db.ref(`community/${fandom}/${postId}`).once("value");
-    if (!postSnap.exists()) return;
-    const post = postSnap.val();
+    // 캐시된 게시글 메타 우선 사용 (Firebase 읽기 절감)
+    let post;
+    if (currentViewingPost && currentViewingPost.fandom === fandom && currentViewingPost.postId === postId) {
+      post = currentViewingPost;
+    } else {
+      const postSnap = await db.ref(`community/${fandom}/${postId}`).once("value");
+      if (!postSnap.exists()) return;
+      post = postSnap.val();
+    }
     // 본인 게시글 댓글은 알림 생략
     if (!post.authorUid || post.authorUid === currentUser.uid) return;
 
@@ -1027,9 +1046,15 @@ async function sendCommentNotification(fandom, postId, commentContent) {
 async function sendLikeNotification(fandom, postId) {
   if (!isLoggedIn || !currentUser) return;
   try {
-    const postSnap = await db.ref(`community/${fandom}/${postId}`).once("value");
-    if (!postSnap.exists()) return;
-    const post = postSnap.val();
+    // 캐시된 게시글 메타 우선 사용 (Firebase 읽기 절감)
+    let post;
+    if (currentViewingPost && currentViewingPost.fandom === fandom && currentViewingPost.postId === postId) {
+      post = currentViewingPost;
+    } else {
+      const postSnap = await db.ref(`community/${fandom}/${postId}`).once("value");
+      if (!postSnap.exists()) return;
+      post = postSnap.val();
+    }
     if (!post.authorUid || post.authorUid === currentUser.uid) return;
     const notifId = db.ref().push().key;
     await db.ref(`notifications/${post.authorUid}/${notifId}`).set({
@@ -1904,129 +1929,6 @@ function loadLikes(fandom, postId) {
       likeCountEl.textContent = likeCount;
     }
   });
-}
-
-// ── 조회수 로드 ──
-function loadViews(fandom, postId) {
-  const viewsCallback = (snap) => {
-    const viewCount = snap.val() || 0;
-    const viewCountEl = document.getElementById(`view-count-${postId}`);
-    if (viewCountEl) {
-      viewCountEl.textContent = viewCount;
-    }
-  };
-
-  const viewsRef = db.ref(`community/${fandom}/${postId}/views`);
-  viewsRef.on("value", viewsCallback);
-  postDetailListeners.views = { ref: viewsRef, callback: viewsCallback };
-}
-
-// ── 포스트 리스트용 좋아요 로드 (리스너 추적) ──
-function loadLikesForPostList(fandom, postId) {
-  const likeCountEl = document.getElementById(`like-count-${postId}`);
-  if (!likeCountEl) return;
-
-  const likesCallback = (snap) => {
-    const likes = snap.val() || {};
-    const likeCount = Object.keys(likes).length;
-    if (likeCountEl) {
-      likeCountEl.textContent = likeCount;
-      // 인기순 정렬 기준 data-likes 속성도 실시간 업데이트
-      const postEl = likeCountEl.closest('.post-item');
-      if (postEl) postEl.setAttribute('data-likes', likeCount);
-    }
-  };
-
-  const likesRef = db.ref(`likes/${fandom}/${postId}`);
-  likesRef.once("value", likesCallback);
-}
-
-// ── 포스트 리스트용 조회수 로드 (리스너 추적) ──
-function loadViewsForPostList(fandom, postId) {
-  const viewCountEl = document.getElementById(`view-count-${postId}`);
-  if (!viewCountEl) return;
-
-  const viewsCallback = (snap) => {
-    const viewCount = snap.val() || 0;
-    if (viewCountEl) {
-      viewCountEl.textContent = viewCount;
-    }
-  };
-
-  const viewsRef = db.ref(`community/${fandom}/${postId}/views`);
-  viewsRef.once("value", viewsCallback);
-}
-
-// ── 댓글 로드 ──
-function loadComments(fandom, postId) {
-  const commentsList = document.getElementById(`comments-list-${postId}`);
-  if (!commentsList) return;
-
-  db.ref(`comments/${fandom}/${postId}`).on("value", snap => {
-    const comments = snap.val() || {};
-    commentsList.innerHTML = "";
-
-    Object.entries(comments).forEach(([commentId, comment]) => {
-      if (comment.isHidden) return;
-
-      const commentDate = new Date(comment.timestamp);
-      const timeStr = commentDate.toLocaleTimeString('ko-KR', {hour: '2-digit', minute:'2-digit'});
-      const isCommentAuthor = isLoggedIn && currentUser && comment.authorUid === currentUser.uid;
-
-      const commentEl = document.createElement("div");
-      commentEl.style.cssText = "padding:8px;background:rgba(124,77,255,0.05);border-radius:6px;margin-bottom:8px;font-size:0.9rem";
-      commentEl.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span style="font-weight:600;color:var(--text)">${escHtml(resolveAuthorNickname(comment))}</span>
-          <span style="font-size:0.75rem;color:var(--muted)">${timeStr}</span>
-        </div>
-        <div style="color:var(--text);margin-bottom:6px">${escHtml(comment.content)}</div>
-        ${isCommentAuthor ? `<div style="display:flex;gap:12px">
-          <button onclick="editComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}', '${escAttr(comment.content)}'); event.stopPropagation()" style="font-size:0.75rem;background:none;border:none;color:var(--blue);cursor:pointer;padding:0;text-decoration:underline">수정</button>
-          <button onclick="deleteComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="font-size:0.75rem;background:none;border:none;color:var(--pink);cursor:pointer;padding:0;text-decoration:underline">삭제</button>
-        </div>` : ''}
-      `;
-      commentsList.appendChild(commentEl);
-    });
-  });
-}
-
-// ── 댓글 작성 ──
-async function submitComment(fandom, postId) {
-  if (!isLoggedIn || !currentUser) {
-    showToast("로그인 후 댓글을 작성할 수 있습니다");
-    return;
-  }
-
-  const input = document.getElementById(`comment-input-${postId}`);
-  const content = input.value.trim();
-
-  if (!content) {
-    showToast("댓글 내용을 입력해주세요");
-    return;
-  }
-
-  try {
-    const commentId = db.ref().push().key;
-    await db.ref(`comments/${fandom}/${postId}/${commentId}`).set({
-      content,
-      authorUid: currentUser.uid,
-      authorName: currentUser.customNickname || currentUser.displayName || "익명",
-      timestamp: Date.now(),
-      isHidden: false
-    });
-    db.ref(`community/${fandom}/${postId}/commentsCount`).transaction(c => (c || 0) + 1).catch(() => {});
-    input.value = "";
-    showToast("💬 댓글이 등록되었어요!");
-
-    // 게시물 목록의 댓글 수 업데이트
-    setTimeout(() => {
-      updateCommentCount(fandom, postId);
-    }, 300);
-  } catch (error) {
-    showToast("댓글 작성 실패: " + error.message);
-    console.error(error);
-  }
 }
 
 // ── 댓글 삭제 ──

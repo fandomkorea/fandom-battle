@@ -664,6 +664,23 @@ async function proceedWithVote(group) {
 function init() {
   try {
     firebase.initializeApp(firebaseConfig);
+
+    // ── App Check (봇/스크래퍼 차단) ──
+    // localhost 개발 시 debug token 자동 활성화 (콘솔에 출력되는 토큰을 Firebase Console에 등록)
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    }
+    // ★ 아래 SITE_KEY를 실제 reCAPTCHA v3 사이트 키로 교체 후 Firebase Console에서 App Check 활성화 필요
+    // 발급: https://www.google.com/recaptcha/admin/create (reCAPTCHA v3 선택, 도메인 추가)
+    try {
+      firebase.appCheck().activate(
+        new firebase.appCheck.ReCaptchaV3Provider('REPLACE_WITH_RECAPTCHA_V3_SITE_KEY'),
+        true
+      );
+    } catch (e) {
+      console.warn('App Check 초기화 실패 (사이트 키 미설정):', e.message);
+    }
+
     db = firebase.database();
 
     // 최애팬덤 로드
