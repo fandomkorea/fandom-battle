@@ -20,6 +20,7 @@ function refreshCommunityPosts() {
     return;
   }
   showToast("🔄 게시물을 새로고침 중입니다...");
+  _invalidatePostListCache(selectedFandom); // ★ 캐시 무효화 후 Firebase 재로드
   loadCommunityPosts();
 }
 
@@ -85,9 +86,88 @@ function clearPostListListeners() {
   postListListeners = [];
 }
 
-// ── 커뮤니티 게시물 로드 (실시간 리스너) ──
+// ── 포스트 목록 localStorage 캐시 (3분 TTL) ──
+const _POSTS_CACHE_TTL = 3 * 60 * 1000;
+
+function _getCachedPostList(fandom) {
+  try {
+    const raw = localStorage.getItem(`posts_c_${fandom}`);
+    if (!raw) return null;
+    const { d, ts } = JSON.parse(raw);
+    if (Date.now() - ts > _POSTS_CACHE_TTL) return null;
+    return d;
+  } catch { return null; }
+}
+
+function _setCachedPostList(fandom, data) {
+  try {
+    localStorage.setItem(`posts_c_${fandom}`, JSON.stringify({ d: data, ts: Date.now() }));
+  } catch {}
+}
+
+function _invalidatePostListCache(fandom) {
+  try {
+    if (fandom) localStorage.removeItem(`posts_c_${fandom}`);
+    localStorage.removeItem('posts_c_all');
+  } catch {}
+}
+
+// ── 게시글 목록 DOM 렌더링 (캐시/Firebase 공통 사용) ──
+function _renderCommunityPostList(selectedFandom, posts) {
+  const postsList = document.getElementById("communityPostsList");
+  const isOther = currentOtherFandom && currentOtherFandom === selectedFandom;
+
+  if (Object.keys(posts).length === 0) {
+    postsList.innerHTML = isOther ? `
+      <div class="community-empty">
+        <div class="community-empty-icon">🌐</div>
+        <div class="community-empty-text">이 팬덤은 아직 게시물이 없어요</div>
+        <button onclick="openFandomFinderModal()" style="margin-top:14px;padding:10px 20px;background:linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.8) 100%);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:0.9rem;font-family:inherit;cursor:pointer">다른 팬덤 찾기 →</button>
+      </div>
+    ` : `
+      <div class="community-empty">
+        <div class="community-empty-icon">✨</div>
+        <div class="community-empty-text">아직 게시물이 없어요<br>첫 번째 게시물을 작성해보세요!</div>
+      </div>
+    `;
+    return;
+  }
+
+  const sortedPosts = Object.entries(posts).sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
+  postsList.innerHTML = "";
+  let visibleIndex = 0;
+  sortedPosts.forEach(([postId, post]) => {
+    if (!post.isHidden) {
+      const postEl = renderPost(selectedFandom, postId, post, visibleIndex, true);
+      postsList.appendChild(postEl);
+      visibleIndex++;
+    }
+  });
+
+  // 타팬덤 구경 중 배너
+  if (isOther) {
+    const meta = GROUP_META[selectedFandom] || {};
+    const banner = document.createElement('div');
+    banner.style.cssText = 'margin-bottom:14px;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px';
+    banner.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px">
+        <span style="font-weight:700;font-size:0.88rem;color:var(--text)">${escHtml(meta.emoji || '')} ${escHtml(selectedFandom)} 커뮤니티 구경 중</span>
+        <button onclick="openFandomFinderModal()" style="flex-shrink:0;padding:4px 10px;background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:6px;color:var(--primary);font-size:0.75rem;font-weight:600;font-family:inherit;cursor:pointer">변경</button>
+      </div>
+      <div style="font-size:0.75rem;color:var(--muted)">👀 좋아요 가능 · 댓글은 내 팬덤에서만</div>
+    `;
+    postsList.insertBefore(banner, postsList.firstChild);
+  }
+
+  const sortDropdown = document.getElementById("sortDropdown");
+  if (sortDropdown) sortDropdown.value = currentSortMode;
+  sortCommunityPosts(currentSortMode);
+  syncSortButtonStyles(currentSortMode);
+}
+
+// ── 커뮤니티 게시물 로드 (localStorage 캐시 → Firebase 폴백) ──
 function loadCommunityPosts() {
-  _allFeedIsRendered = false; // 단일 팬덤 로드 시 전체피드 플래그 초기화
+  _allFeedIsRendered = false;
   const selectedFandom = document.getElementById("communityFandomSelect").value;
   if (!selectedFandom) {
     document.getElementById("communityPostsList").innerHTML = `
@@ -99,13 +179,22 @@ function loadCommunityPosts() {
     return;
   }
 
-  // 기존 리스너 해제 (포스트 리스트 + 메인 리스너)
+  // 기존 리스너 해제
   clearPostListListeners();
   if (currentCommunityListener) {
     db.ref(currentCommunityListener).off("value");
   }
+  currentCommunityListener = `community/${selectedFandom}`;
 
-  // 로딩 상태 표시
+  // ★ 캐시 히트: Firebase 읽기 없이 즉시 렌더링
+  const cachedPosts = _getCachedPostList(selectedFandom);
+  if (cachedPosts) {
+    communityPostsLoaded = true;
+    _renderCommunityPostList(selectedFandom, cachedPosts);
+    return;
+  }
+
+  // 캐시 미스: 스피너 표시 후 Firebase 로드
   const postsList = document.getElementById("communityPostsList");
   postsList.innerHTML = `
     <div class="community-empty">
@@ -114,69 +203,14 @@ function loadCommunityPosts() {
     </div>
   `;
 
-  // 1회 읽기 (실시간 구독 제거 → 읽기 횟수 절감)
   communityPostsLoaded = false;
-  currentCommunityListener = `community/${selectedFandom}`;
   db.ref(currentCommunityListener).orderByChild('timestamp').limitToLast(30).once("value", snap => {
     communityPostsLoaded = true;
     const posts = snap.val() || {};
-
-    if (Object.keys(posts).length === 0) {
-      const isOther = currentOtherFandom && currentOtherFandom === selectedFandom;
-      postsList.innerHTML = isOther ? `
-        <div class="community-empty">
-          <div class="community-empty-icon">🌐</div>
-          <div class="community-empty-text">이 팬덤은 아직 게시물이 없어요</div>
-          <button onclick="openFandomFinderModal()" style="margin-top:14px;padding:10px 20px;background:linear-gradient(135deg,var(--primary) 0%,rgba(124,77,255,0.8) 100%);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:0.9rem;font-family:inherit;cursor:pointer">다른 팬덤 찾기 →</button>
-        </div>
-      ` : `
-        <div class="community-empty">
-          <div class="community-empty-icon">✨</div>
-          <div class="community-empty-text">아직 게시물이 없어요<br>첫 번째 게시물을 작성해보세요!</div>
-        </div>
-      `;
-      return;
-    }
-
-    // 최신순으로 정렬
-    const sortedPosts = Object.entries(posts)
-      .sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
-
-    postsList.innerHTML = "";
-
-    let visibleIndex = 0;
-    sortedPosts.forEach(([postId, post]) => {
-      if (!post.isHidden) {
-        const postEl = renderPost(selectedFandom, postId, post, visibleIndex, true);
-        postsList.appendChild(postEl);
-        visibleIndex++;
-      }
-    });
-
-    // 타팬덤 구경 중 배너
-    if (currentOtherFandom && currentOtherFandom === selectedFandom) {
-      const meta = GROUP_META[selectedFandom] || {};
-      const banner = document.createElement('div');
-      banner.style.cssText = 'margin-bottom:14px;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px';
-      banner.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px">
-          <span style="font-weight:700;font-size:0.88rem;color:var(--text)">${escHtml(meta.emoji || '')} ${escHtml(selectedFandom)} 커뮤니티 구경 중</span>
-          <button onclick="openFandomFinderModal()" style="flex-shrink:0;padding:4px 10px;background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:6px;color:var(--primary);font-size:0.75rem;font-weight:600;font-family:inherit;cursor:pointer">변경</button>
-        </div>
-        <div style="font-size:0.75rem;color:var(--muted)">👀 좋아요 가능 · 댓글은 내 팬덤에서만</div>
-      `;
-      postsList.insertBefore(banner, postsList.firstChild);
-    }
-
-    // 드롭다운 값 초기화 및 정렬 적용
-    const sortDropdown = document.getElementById("sortDropdown");
-    if (sortDropdown) {
-      sortDropdown.value = currentSortMode;
-    }
-    sortCommunityPosts(currentSortMode);
-    syncSortButtonStyles(currentSortMode);
+    _setCachedPostList(selectedFandom, posts); // ★ 캐시 저장
+    _renderCommunityPostList(selectedFandom, posts);
   }, error => {
-    // ★ 권한 없음 (auth 미완료) → 스피너 유지, auth 완료 후 auth.js에서 자동 재시도
+    // 권한 없음 (auth 미완료) → auth.js에서 자동 재시도
     console.log("커뮤니티 로드 대기 (auth 완료 후 재시도):", error.code);
   });
 }
@@ -1694,6 +1728,8 @@ async function submitPost() {
     }
     closePostCreateModal();
 
+    // ★ 새 글 작성 → 캐시 무효화 (다음 로드 시 Firebase 재요청)
+    _invalidatePostListCache(selectedFandom);
     // ★ 내 팬덤 탭으로 이동하여 새 글 즉시 반영
     selectFandomTab(selectedFandom);
   } catch (error) {
@@ -1798,6 +1834,7 @@ async function deletePost(fandom, postId, closeAfterDelete = false) {
     db.ref(`user_posts/${currentUser.uid}/${postId}`).remove().catch(() => {});
     db.ref(`likes/${fandom}/${postId}`).remove().catch(() => {});
     db.ref(`comments/${fandom}/${postId}`).remove().catch(() => {});
+    _invalidatePostListCache(fandom); // ★ 삭제 후 캐시 무효화
     showToast("✅ 게시물이 삭제되었어요");
     // 목록에서 즉시 제거
     document.querySelector(`[data-postid="${postId}"]`)?.remove();

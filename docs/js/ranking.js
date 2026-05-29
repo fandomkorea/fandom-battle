@@ -1,9 +1,9 @@
-﻿// ── 랭킹 실시간 리슨 ──
+﻿// ── 랭킹 CDN 폴링 (Firebase .on() 대신 정적 JSON 60초 폴링) ──
 let lastRankingData = null;
-let trendingData = {}; // 최근 투표 속도 추적
+let trendingData = {};
+let _rankingsPollTimer = null;
 
 function updateTrending() {
-  // 매 업데이트마다 trending 점수 감소 (최대 12초)
   Object.keys(trendingData).forEach(group => {
     trendingData[group]--;
     if (trendingData[group] <= 0) delete trendingData[group];
@@ -14,53 +14,88 @@ function isTrending(group) {
   return trendingData[group] && trendingData[group] > 5;
 }
 
+// CDN 정적 JSON → Firebase REST API 폴백 순서로 랭킹 데이터 가져오기
+async function _fetchRankingsData() {
+  try {
+    const res = await fetch('data/rankings.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    // 빈 객체({})면 GitHub Actions가 아직 미실행 → Firebase 폴백
+    if (data && Object.keys(data).length > 0) return data;
+    throw new Error('empty');
+  } catch (e) {
+    // CDN 실패 or 빈 데이터 → Firebase REST API 직접 읽기 (1회성 폴백)
+    const res = await fetch(
+      'https://fandom-battle-92aa8-default-rtdb.firebaseio.com/rankings.json',
+      { cache: 'no-cache' }
+    );
+    return (await res.json()) || {};
+  }
+}
+
+// 새 데이터 적용 (trending 감지, 렌더링, 캐시 저장)
+function _applyRankingsData(data) {
+  if (lastRankingData) {
+    Object.entries(data).forEach(([group, votes]) => {
+      const oldVotes = lastRankingData[group] || 0;
+      if (votes > oldVotes) {
+        const diff = votes - oldVotes;
+        trendingData[group] = Math.min(10, (trendingData[group] || 0) + diff);
+        for (let i = 0; i < diff; i++) {
+          setTimeout(() => addActivity(group), i * 200);
+        }
+      }
+    });
+  }
+  allRankingsData = data;
+  lastRankingData = { ...data };
+  localStorage.setItem('rankings_cache', JSON.stringify(data));
+  updateTrending();
+  updateTodayVoteDisplay();
+  renderRankings(data);
+  updatePageTitle(data);
+  showVoteGuideBanner();
+}
+
+// 투표 직후 즉시 로컬 반영 (다음 폴링 전 낙관적 업데이트)
+function localVoteUpdate(group) {
+  if (!allRankingsData) return;
+  allRankingsData[group] = (allRankingsData[group] || 0) + 1;
+  trendingData[group] = Math.min(10, (trendingData[group] || 0) + 1);
+  lastRankingData = { ...allRankingsData };
+  localStorage.setItem('rankings_cache', JSON.stringify(allRankingsData));
+  updateTrending();
+  renderRankings(allRankingsData);
+  updatePageTitle(allRankingsData);
+}
+
 function listenRankings() {
-  // ★ 캐시에서 즉시 렌더링 (새로고침 시 스켈레톤 제거 + 랭킹 즉시 표시)
+  // 1. 캐시 즉시 렌더 (스켈레톤 제거)
   const cached = localStorage.getItem('rankings_cache');
   if (cached) {
     try {
-      allRankingsData = JSON.parse(cached);
+      const data = JSON.parse(cached);
+      allRankingsData = data;
+      lastRankingData = { ...data };
       const skeletonEl = document.getElementById("skeletonLoader");
       if (skeletonEl) skeletonEl.remove();
-      renderRankings(allRankingsData);
-    } catch (e) { /* 캐시 파싱 실패 시 무시, Firebase에서 정상 로드 */ }
+      renderRankings(data);
+      showVoteGuideBanner();
+    } catch (e) { /* 파싱 실패 무시 */ }
   }
 
-  db.ref("rankings").on("value", snap => {
-    allRankingsData = snap.val() || {};
-    // ★ 랭킹 캐시 업데이트 (다음 새로고침 시 즉시 표시용)
-    localStorage.setItem('rankings_cache', JSON.stringify(allRankingsData));
+  // 2. CDN에서 최신 데이터 즉시 가져오기
+  _fetchRankingsData().then(data => {
+    const skeletonEl = document.getElementById("skeletonLoader");
+    if (skeletonEl) skeletonEl.remove();
+    _applyRankingsData(data);
+  }).catch(e => console.warn('[랭킹] 초기 로드 실패:', e.message));
 
-    // 첫 로드 시 스켈레톤 제거 (캐시 없는 첫 방문자용)
-    if (!lastRankingData) {
-      const skeletonEl = document.getElementById("skeletonLoader");
-      if (skeletonEl) skeletonEl.remove();
-    }
-
-    // 매번 투표 상태 확인해서 배너 표시/숨김
-    showVoteGuideBanner();
-
-    // 변화가 있는 그룹 감지해서 activity 추가
-    if (lastRankingData) {
-      Object.entries(allRankingsData).forEach(([group, votes]) => {
-        const oldVotes = lastRankingData[group] || 0;
-        if (votes > oldVotes) {
-          // 새로운 투표 있음
-          const diff = votes - oldVotes;
-          trendingData[group] = Math.min(10, (trendingData[group] || 0) + diff);
-          for (let i = 0; i < diff; i++) {
-            setTimeout(() => addActivity(group), i * 200);
-          }
-        }
-      });
-    }
-
-    lastRankingData = { ...allRankingsData };
-    updateTrending();
-    updateTodayVoteDisplay();
-    renderRankings(allRankingsData);
-    updatePageTitle(allRankingsData);
-  });
+  // 3. 60초마다 폴링 (Firebase .on() 실시간 연결 대체)
+  if (_rankingsPollTimer) clearInterval(_rankingsPollTimer);
+  _rankingsPollTimer = setInterval(() => {
+    _fetchRankingsData().then(_applyRankingsData).catch(() => {});
+  }, 60 * 1000);
 }
 
 function updatePageTitle(data) {

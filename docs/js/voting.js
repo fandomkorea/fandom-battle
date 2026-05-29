@@ -164,6 +164,8 @@ async function voteForGroup(group) {
 
       // Firebase에 투표 기록 (비동기)
       db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
+      // ★ 폴링 대기 없이 랭킹 즉시 반영 (낙관적 업데이트)
+      localVoteUpdate(group);
 
       renderMyVotingHistory();
       showMyVotedBar(group);
@@ -197,6 +199,8 @@ async function voteForGroup(group) {
 
       // Firebase에 투표 기록 (비동기)
       db.ref("rankings/" + group).transaction(cur => (cur || 0) + 1);
+      // ★ 폴링 대기 없이 랭킹 즉시 반영 (낙관적 업데이트)
+      localVoteUpdate(group);
 
       showVoteCompleteModal("paid", group, meta.emoji, pendingPaidVotes);
 

@@ -1,0 +1,51 @@
+name: 랭킹 데이터 자동 업데이트
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # 5분마다 실행
+  workflow_dispatch:          # 수동 실행 가능
+
+permissions:
+  contents: write
+
+jobs:
+  update-rankings:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Firebase에서 랭킹 데이터 가져오기
+        run: |
+          mkdir -p docs/data
+          HTTP_STATUS=$(curl -s -w "%{http_code}" -o docs/data/rankings.json \
+            "https://fandom-battle-92aa8-default-rtdb.firebaseio.com/rankings.json")
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "Firebase 요청 실패: HTTP $HTTP_STATUS"
+            exit 1
+          fi
+          # 유효한 JSON인지 확인 (null 반환 시 {} 로 대체)
+          python3 -c "
+          import json, sys
+          with open('docs/data/rankings.json', 'r') as f:
+              data = json.load(f)
+          if data is None:
+              with open('docs/data/rankings.json', 'w') as f:
+                  json.dump({}, f)
+          print('데이터 확인 완료:', len(data) if isinstance(data, dict) else 0, '개 그룹')
+          "
+          echo "랭킹 데이터 업데이트 완료"
+
+      - name: 변경사항 커밋 및 푸시
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/data/rankings.json
+          if git diff --staged --quiet; then
+            echo "랭킹 변경 없음, 스킵"
+          else
+            git commit -m "chore(data): 랭킹 자동 업데이트 $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
