@@ -18,6 +18,14 @@
   <meta name="twitter:image" content="https://fandomkorea.github.io/fandom-battle/og-image.png" />
   <meta name="google-adsense-account" content="ca-pub-3646356464963069">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🩷</text></svg>" />
+  <!-- PWA -->
+  <meta name="theme-color" content="#7c4dff" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="팬픽" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
 
@@ -53,6 +61,11 @@
     }
     .page-slide-in {
       animation: pageSlideIn 0.22s ease-out forwards;
+    }
+    /* ── 새 댓글 알림 슬라이드 다운 ── */
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-100%); }
+      to   { opacity: 1; transform: translateY(0); }
     }
   </style>
 
@@ -485,9 +498,20 @@
 <script src="js/fandom.js?v=20260602a"></script>
 <script src="js/voting-modals.js?v=20260609c"></script>
 <script src="js/voting.js?v=20260609c"></script>
-<script src="js/ranking.js?v=20260609b"></script>
+<script src="js/ranking.js?v=20260610a"></script>
 <script src="js/utils.js?v=20260529e"></script>
-<script src="js/community.js?v=20260609c"></script>
+<script src="js/community.js?v=20260610a"></script>
+
+<!-- ★ Service Worker 등록 (PWA 캐시 + 오프라인 지원) -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('[SW] 등록 완료:', reg.scope))
+        .catch(err => console.warn('[SW] 등록 실패:', err));
+    });
+  }
+</script>
 </body>
 </html>
 

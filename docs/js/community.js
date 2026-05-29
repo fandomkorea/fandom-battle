@@ -63,6 +63,10 @@ let postDetailListeners = {
 // ── 댓글 모달 리스너 저장소 ──
 let commentsModalListener = null;
 
+// ── 새 댓글 수 폴링 상태 ──
+let _commentCountPollTimer = null;
+let _displayedCommentCount = 0;
+
 // ── 댓글 수정 상태 저장소 ──
 let editCommentState = {
   fandom: null,
@@ -110,6 +114,60 @@ function _invalidatePostListCache(fandom) {
     if (fandom) localStorage.removeItem(`posts_c_${fandom}`);
     localStorage.removeItem('posts_c_all');
   } catch {}
+}
+
+// ── Cloudinary 목록 썸네일 URL 변환 (w_300,h_300 — 상세 페이지는 원본 사용) ──
+function _getThumbUrl(imageUrl) {
+  if (!imageUrl) return null;
+  if (imageUrl.includes('res.cloudinary.com') && imageUrl.includes('/upload/')) {
+    return imageUrl.replace('/upload/', '/upload/w_300,h_300,c_fill,q_60,f_auto/');
+  }
+  return imageUrl;
+}
+
+// ── 새 댓글 30초 폴링 ("새 댓글 N개 보기" 알림 버튼) ──
+function _startCommentCountPoll(fandom, postId, initialCount) {
+  _stopCommentCountPoll();
+  _displayedCommentCount = initialCount;
+  _commentCountPollTimer = setInterval(async () => {
+    try {
+      const snap = await db.ref(`community/${fandom}/${postId}/commentsCount`).once('value');
+      const latest = snap.val() || 0;
+      const diff = latest - _displayedCommentCount;
+      if (diff > 0) _showNewCommentNotice(fandom, postId, diff);
+    } catch {}
+  }, 30 * 1000);
+}
+
+function _stopCommentCountPoll() {
+  if (_commentCountPollTimer) { clearInterval(_commentCountPollTimer); _commentCountPollTimer = null; }
+  _hideNewCommentNotice();
+}
+
+function _showNewCommentNotice(fandom, postId, diff) {
+  let notice = document.getElementById('new-comment-notice');
+  if (!notice) {
+    notice = document.createElement('div');
+    notice.id = 'new-comment-notice';
+    notice.style.cssText = [
+      'position:sticky', 'top:0', 'z-index:200', 'text-align:center',
+      'padding:10px 16px', 'cursor:pointer', 'font-size:0.88rem', 'font-weight:700',
+      'color:#fff', 'backdrop-filter:blur(8px)',
+      'background:linear-gradient(135deg,rgba(124,77,255,0.92),rgba(100,150,255,0.92))',
+      'box-shadow:0 4px 16px rgba(124,77,255,0.4)',
+      'border-radius:0 0 14px 14px',
+      'animation:slideDown 0.25s ease-out'
+    ].join(';');
+    const container = document.querySelector('#postDetailPage .post-detail-container');
+    if (container) container.insertBefore(notice, container.firstChild);
+  }
+  notice.onclick = () => { loadDetailComments(fandom, postId); _hideNewCommentNotice(); };
+  notice.textContent = `💬 새 댓글 ${diff}개 보기 ↓`;
+}
+
+function _hideNewCommentNotice() {
+  const n = document.getElementById('new-comment-notice');
+  if (n) n.remove();
 }
 
 // ── 게시글 목록 DOM 렌더링 (캐시/Firebase 공통 사용) ──
@@ -492,7 +550,7 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
         <span class="post-list-meta">❤️ <span id="like-count-${postId}">${likeCount}</span></span>
       </div>
     </div>
-    ${post.imageUrl ? `<div class="post-thumbnail-wrap"><img src="${escAttr(post.imageUrl)}" class="post-thumbnail-img" loading="lazy" onerror="this.parentElement.style.display='none'" alt="썸네일"></div>` : ''}
+    ${post.imageUrl ? `<div class="post-thumbnail-wrap"><img src="${escAttr(_getThumbUrl(post.imageUrl))}" class="post-thumbnail-img" loading="lazy" onerror="this.parentElement.style.display='none'" alt="썸네일"></div>` : ''}
   `;
 
   // 댓글 개수: post 스냅샷에서 직접 초기화 (DOM 삽입 전 호출 시 null 반환 방지)
@@ -704,6 +762,8 @@ async function showPostDetail(fandom, postId) {
 
     // 댓글 로드
     loadDetailComments(fandom, postId);
+    // ★ 새 댓글 30초 폴링 (commentsCount 숫자 1개만 읽음 ≈ 50바이트)
+    _startCommentCountPoll(fandom, postId, post.commentsCount || 0);
 
     // ── 하단 sticky 바 주입 ──
     document.getElementById("postStickyBar")?.remove();
@@ -767,6 +827,9 @@ function closePostDetail() {
     }
   });
   postDetailListeners = { likes: null, comments: null, views: null };
+
+  // 새 댓글 폴링 정지
+  _stopCommentCountPoll();
 
   // 뒤로가기 시뮬레이션 (popstate 이벤트에서 호출된 경우 제외)
   if (!window.popstateActive) {
@@ -860,6 +923,8 @@ function loadDetailComments(fandom, postId) {
     // 댓글 수 업데이트
     const countEl = document.getElementById(`detail-comment-count-${postId}`);
     if (countEl) countEl.textContent = commentCount;
+    // ★ 폴링 기준값 갱신 (실제 렌더된 댓글 수로 동기화)
+    _displayedCommentCount = commentCount;
   };
 
   // ★ .once()로 1회만 로드 (실시간 구독 제거 → 댓글 작성/삭제/수정 후 수동 재로드)

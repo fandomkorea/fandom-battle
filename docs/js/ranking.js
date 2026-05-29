@@ -1,4 +1,10 @@
 ﻿// ── 랭킹 CDN 폴링 (Firebase .on() 대신 정적 JSON 60초 폴링) ──
+
+// ★ Cloudflare Workers URL (배포 후 입력. 빈 문자열 = rankings.json CDN만 사용)
+// 배포 방법: 저장소 루트의 cloudflare-worker.js 참고
+// 예: 'https://fandom-rankings.yourname.workers.dev'
+const CF_RANKINGS_WORKER_URL = '';
+
 let lastRankingData = null;
 let trendingData = {};
 let _rankingsPollTimer = null;
@@ -14,25 +20,31 @@ function isTrending(group) {
   return trendingData[group] && trendingData[group] > 5;
 }
 
-// CDN 정적 JSON → localStorage 캐시 폴백 순서로 랭킹 데이터 가져오기
-// ※ Firebase REST API 직접 호출 제거: App Check Enforce 시 401 반환되므로 사용 불가
+// 랭킹 데이터 가져오기: CF Workers(설정 시) → rankings.json CDN → localStorage 캐시
 async function _fetchRankingsData() {
-  try {
-    const res = await fetch('data/rankings.json', { cache: 'no-cache' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    // 유효한 데이터가 있으면 반환
-    if (data && Object.keys(data).length > 0) return data;
-    throw new Error('empty');
-  } catch (e) {
-    // CDN 실패 or 빈 데이터 → localStorage 캐시 사용 (Firebase REST API는 App Check로 차단됨)
-    const cached = localStorage.getItem('rankings_cache');
-    if (cached) {
+  const sources = CF_RANKINGS_WORKER_URL
+    ? [CF_RANKINGS_WORKER_URL, 'data/rankings.json']
+    : ['data/rankings.json'];
+
+  for (const url of sources) {
+    try {
+      const res = await fetch(url, { cache: 'no-cache' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data && Object.keys(data).length > 0) return data;
+    } catch (e) {
+      console.warn(`[랭킹] ${url} 실패:`, e.message);
+    }
+  }
+  // 모든 소스 실패 → localStorage 캐시 (App Check Enforce 시 REST API는 차단됨)
+  const cached = localStorage.getItem('rankings_cache');
+  if (cached) {
+    try {
       const data = JSON.parse(cached);
       if (data && Object.keys(data).length > 0) return data;
-    }
-    return null; // 캐시도 없으면 null (스켈레톤 유지)
+    } catch {}
   }
+  return null;
 }
 
 // 새 데이터 적용 (trending 감지, 렌더링, 캐시 저장)

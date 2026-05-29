@@ -1,0 +1,26 @@
+{
+  "name": "팬픽 - 팬덤 파워 월간 랭킹",
+  "short_name": "팬픽",
+  "description": "K-pop 팬덤 파워 랭킹! 내 최애 그룹에 투표하고 1위를 만들어봐 💜",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0d0d1a",
+  "theme_color": "#7c4dff",
+  "lang": "ko",
+  "orientation": "portrait-primary",
+  "categories": ["entertainment", "social"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "share_target": {
+    "action": ".",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  }
+}
