@@ -3,7 +3,7 @@
 // ★ Cloudflare Workers URL (배포 후 입력. 빈 문자열 = rankings.json CDN만 사용)
 // 배포 방법: 저장소 루트의 cloudflare-worker.js 참고
 // 예: 'https://fandom-rankings.yourname.workers.dev'
-const CF_RANKINGS_WORKER_URL = '';
+const CF_RANKINGS_WORKER_URL = 'https://fandom-rankings.coder-leebeegle2.workers.dev';
 
 let lastRankingData = null;
 let trendingData = {};
