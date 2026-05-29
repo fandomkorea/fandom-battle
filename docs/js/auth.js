@@ -242,6 +242,7 @@ async function loadUserVotes() {
     currentUser.votingStreak = data.votingStreak || 0;
     currentUser.lastVoteDate = data.lastVoteDate || null;
     currentUser.activePage = data.activePage || "vote";
+    currentUser.lastSortMode = data.preferences?.lastSortMode || null;
 
     updateFavBar();
     updateAuthUI();

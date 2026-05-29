@@ -30,41 +30,29 @@ async function loadTodayVotesFromFirebase() {
 }
 
 // ── 투표 스트릭 (연속 투표 일수) ──
+// loadUserVotes()에서 이미 users/{uid}를 읽었으므로 currentUser 캐시 활용 (Firebase 재읽기 없음)
 async function updateVotingStreak() {
-  if (!isLoggedIn || !currentUser || !db) return 0; // 비로그인: 스트릭 계산 안 함
+  if (!isLoggedIn || !currentUser || !db) return 0;
 
   const today = getTodayKey();
+  const lastVoteDate = currentUser.lastVoteDate;
+  const currentStreak = currentUser.votingStreak || 0;
+
+  if (lastVoteDate === today) return currentStreak;
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayKey = yesterday.toISOString().slice(0, 10);
+
+  const newStreak = lastVoteDate === yesterdayKey ? currentStreak + 1 : 1;
 
   try {
-    const snap = await db.ref(`users/${currentUser.uid}`).once("value");
-    const data = snap.val() || {};
-    const lastVoteDate = data.lastVoteDate;
-    const currentStreak = data.votingStreak || 0;
-
-    if (lastVoteDate === today) {
-      // 오늘 이미 투표함
-      return currentStreak;
-    }
-
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayKey = yesterday.toISOString().slice(0, 10);
-
-    let newStreak = 0;
-    if (lastVoteDate === yesterdayKey) {
-      // 어제 투표했음 → 스트릭 계속
-      newStreak = currentStreak + 1;
-    } else {
-      // 어제 투표 안함 → 스트릭 초기화
-      newStreak = 1;
-    }
-
-    // Firebase에 저장
     await db.ref(`users/${currentUser.uid}`).update({
       votingStreak: newStreak,
       lastVoteDate: today
     });
-
+    currentUser.votingStreak = newStreak;
+    currentUser.lastVoteDate = today;
     return newStreak;
   } catch (e) {
     console.error("투표 스트릭 업데이트 실패:", e);
@@ -122,13 +110,17 @@ function startBiweeklyCountdown() {
   _cdTimer = setInterval(update, 1000);
 }
 
-// ── 상품 공지 리슨 ──
+// ── 상품 공지 리슨 (.on() 제거 → .once() + 10분 폴링으로 비용 절감) ──
 function listenPrizeNotice() {
-  db.ref("prize_notice").on("value", snap => {
-    const notice = snap.val() || "";
-    const el = document.getElementById("prizeNotice");
-    if (el) el.textContent = notice ? "📢 " + notice : "";
-  });
+  function fetchNotice() {
+    db.ref("prize_notice").once("value", snap => {
+      const notice = snap.val() || "";
+      const el = document.getElementById("prizeNotice");
+      if (el) el.textContent = notice ? "📢 " + notice : "";
+    });
+  }
+  fetchNotice();
+  setInterval(fetchNotice, 10 * 60 * 1000);
 }
 
 // ── 투표 (그룹 선택) ──

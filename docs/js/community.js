@@ -343,20 +343,9 @@ function injectDateSeparators(postsList) {
   });
 }
 
-// Firebase에서 마지막 정렬 모드 로드
+// 마지막 정렬 모드 로드 (loadUserVotes에서 이미 읽은 currentUser 캐시 활용 — Firebase 재읽기 없음)
 async function loadLastSortMode() {
-  if (!isLoggedIn || !currentUser || !db) {
-    currentSortMode = "latest";
-    return;
-  }
-
-  try {
-    const snap = await db.ref(`users/${currentUser.uid}/preferences/lastSortMode`).once("value");
-    currentSortMode = snap.val() || "latest";
-  } catch (e) {
-    console.error("정렬 모드 로드 실패:", e);
-    currentSortMode = "latest";
-  }
+  currentSortMode = (isLoggedIn && currentUser?.lastSortMode) || "latest";
 }
 
 function sortCommunityPosts(mode) {
@@ -544,6 +533,10 @@ async function showPostDetail(fandom, postId) {
   document.getElementById("votePage").classList.add("hidden");
   const detailPage = document.getElementById("postDetailPage");
   detailPage.style.display = "flex";
+  // ★ 슬라이드 인 애니메이션
+  detailPage.classList.remove('page-slide-in');
+  void detailPage.offsetWidth; // reflow 강제 (애니메이션 재시작)
+  detailPage.classList.add('page-slide-in');
   // 스크롤은 내부 컨테이너에서 발생하므로 컨테이너를 최상단으로
   const detailContainer = detailPage.querySelector('.post-detail-container');
   if (detailContainer) detailContainer.scrollTop = 0;
@@ -857,8 +850,10 @@ function loadDetailComments(fandom, postId) {
           </div>
         `;
         commentsList.appendChild(commentEl);
-        // 답글 수 미리 로드
-        loadReplyCount(fandom, postId, commentId);
+        // ★ 답글 수: 이미 로드된 comment 데이터에서 직접 계산 (Firebase 재읽기 없음)
+        const replyCount = comment.replies ? Object.keys(comment.replies).length : 0;
+        const replyCountEl = document.getElementById(`reply-count-${commentId}`);
+        if (replyCountEl) replyCountEl.textContent = replyCount;
       });
     }
 
@@ -1314,10 +1309,10 @@ function showCommentsModal(fandom, postId) {
     }
   };
 
-  // 리스너 등록 및 저장
+  // .once()로 1회 로드 (.on() 실시간 구독 제거 → 비용 절감)
   const commentsRef = db.ref(`comments/${fandom}/${postId}`);
-  commentsRef.on("value", commentsModalCallback);
-  commentsModalListener = { ref: commentsRef, callback: commentsModalCallback };
+  commentsRef.once("value", commentsModalCallback);
+  commentsModalListener = null;
 
   // 댓글 입력 섹션 업데이트
   const inputSection = document.getElementById("commentsModalInput");
@@ -1378,21 +1373,6 @@ async function submitCommentFromModal(fandom, postId) {
   }
 }
 
-// ── 댓글 개수 업데이트 ──
-function updateCommentCount(fandom, postId) {
-  const commentCountEl = document.getElementById(`comment-count-${postId}`);
-  if (!commentCountEl) return;
-
-  const commentCountCallback = (snap) => {
-    const comments = snap.val() || {};
-    const count = Object.keys(comments).filter(id => !comments[id].isHidden).length;
-    if (commentCountEl) commentCountEl.textContent = count;
-  };
-
-  const commentsRef = db.ref(`comments/${fandom}/${postId}`);
-  commentsRef.on("value", commentCountCallback);
-  postListListeners.push({ ref: commentsRef, callback: commentCountCallback });
-}
 
 // ── 게시물 삭제 확인 모달 ──
 let deletePostState = { fandom: null, postId: null, closeDetail: false };
@@ -1745,6 +1725,7 @@ async function submitPost() {
 
     // ★ 새 글 작성 → 캐시 무효화 (다음 로드 시 Firebase 재요청)
     _invalidatePostListCache(selectedFandom);
+    _invalidateAllFeedCache();
     // ★ 내 팬덤 탭으로 이동하여 새 글 즉시 반영
     selectFandomTab(selectedFandom);
   } catch (error) {
@@ -1851,6 +1832,7 @@ async function deletePost(fandom, postId, closeAfterDelete = false) {
     db.ref(`likes/${fandom}/${postId}`).remove().catch(() => {});
     db.ref(`comments/${fandom}/${postId}`).remove().catch(() => {});
     _invalidatePostListCache(fandom); // ★ 삭제 후 캐시 무효화
+    _invalidateAllFeedCache();
     showToast("✅ 게시물이 삭제되었어요");
     // 목록에서 즉시 제거
     document.querySelector(`[data-postid="${postId}"]`)?.remove();
@@ -2005,29 +1987,46 @@ function loadLikes(fandom, postId) {
   });
 }
 
-// ── 댓글 삭제 ──
-async function deleteComment(fandom, postId, commentId) {
-  if (!isLoggedIn || !currentUser) {
-    showToast("로그인이 필요합니다");
-    return;
-  }
+// ── 댓글 삭제 확인 모달 (브라우저 confirm() 대체) ──
+function deleteComment(fandom, postId, commentId) {
+  if (!isLoggedIn || !currentUser) { showToast("로그인이 필요합니다"); return; }
 
-  // 댓글 작성자 확인
-  const snap = await db.ref(`comments/${fandom}/${postId}/${commentId}`).once("value");
-  const comment = snap.val();
-  if (!comment) { showToast("댓글을 찾을 수 없어요"); return; }
-  if (comment.authorUid !== currentUser.uid) {
-    showToast("본인 댓글만 삭제할 수 있어요");
-    return;
-  }
+  const existing = document.getElementById('deleteCommentModal');
+  if (existing) existing.remove();
 
-  if (!confirm("댓글을 삭제하시겠어요?")) return;
+  const modal = document.createElement('div');
+  modal.id = 'deleteCommentModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:10001;backdrop-filter:blur(5px);padding:16px;box-sizing:border-box';
+  modal.innerHTML = `
+    <div style="background:linear-gradient(135deg,rgba(18,12,36,0.99),rgba(26,16,46,0.99));border:1.5px solid rgba(255,100,100,0.3);border-radius:20px;padding:28px 24px;max-width:320px;width:100%;text-align:center;animation:modalSlideIn 0.25s ease-out;box-shadow:0 20px 50px rgba(0,0,0,0.5)">
+      <div style="font-size:2.5rem;margin-bottom:12px">🗑️</div>
+      <h3 style="font-size:1.05rem;font-weight:700;color:var(--text);margin:0 0 8px">댓글을 삭제할까요?</h3>
+      <p style="font-size:0.83rem;color:var(--muted);margin:0 0 22px;line-height:1.5">삭제하면 되돌릴 수 없어요</p>
+      <div style="display:flex;gap:10px">
+        <button id="_dcCancel" style="flex:1;padding:12px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(255,255,255,0.5);font-weight:600;font-size:0.88rem;cursor:pointer;font-family:inherit">취소</button>
+        <button id="_dcConfirm" style="flex:1;padding:12px;background:linear-gradient(135deg,rgba(255,80,80,0.9),rgba(200,40,40,0.9));border:none;border-radius:12px;color:#fff;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(255,80,80,0.3)">삭제</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.getElementById('_dcCancel').onclick = () => modal.remove();
+  document.getElementById('_dcConfirm').onclick = () => {
+    modal.remove();
+    _executeDeleteComment(fandom, postId, commentId);
+  };
+}
 
+async function _executeDeleteComment(fandom, postId, commentId) {
   try {
+    const snap = await db.ref(`comments/${fandom}/${postId}/${commentId}`).once("value");
+    const comment = snap.val();
+    if (!comment) { showToast("댓글을 찾을 수 없어요"); return; }
+    if (comment.authorUid !== currentUser.uid) { showToast("본인 댓글만 삭제할 수 있어요"); return; }
+
     await db.ref(`comments/${fandom}/${postId}/${commentId}`).remove();
     db.ref(`community/${fandom}/${postId}/commentsCount`).transaction(c => Math.max(0, (c || 0) - 1)).catch(() => {});
     showToast("댓글이 삭제되었어요");
-    // ★ .once() 전환으로 자동 재렌더 없음 → 수동 재로드
     loadDetailComments(fandom, postId);
   } catch (error) {
     showToast("삭제 실패: " + error.message);
@@ -2192,26 +2191,63 @@ function changeCommentSortMode(mode) {
 
   // 댓글 목록을 다시 렌더링 (Firebase 리스너가 자동으로 처리)
   // commentSortMode가 변경되면 다음 리스너 콜백에서 정렬된 순서로 렌더링됨
+  // .once() 전환 이후: 재정렬은 모달을 다시 열어서 처리 (리스너 없음)
+  // showCommentsModal이 currentFandom/postId를 기억하지 않으므로 정렬만 시각적 반영
   const commentsList = document.getElementById('commentsModalList');
   if (commentsList) {
-    // 리스너를 재설정하여 정렬된 댓글을 다시 로드
-    if (commentsModalListener && commentsModalListener.ref) {
-      commentsModalListener.ref.off('value', commentsModalListener.callback);
-      commentsModalListener.ref.on('value', commentsModalListener.callback);
-    }
+    const items = Array.from(commentsList.children);
+    // 이미 렌더된 댓글 DOM 재정렬 (추가 Firebase read 없음)
+    items.sort((a, b) => {
+      const tsA = parseInt(a.dataset?.ts || 0);
+      const tsB = parseInt(b.dataset?.ts || 0);
+      return commentSortMode === 'latest' ? tsB - tsA : tsA - tsB;
+    });
+    items.forEach(el => commentsList.appendChild(el));
   }
 }
 
-// ── 게시물 신고 ──
-async function reportPost(fandom, postId) {
-  if (!isLoggedIn) {
-    showToast("로그인 후 신고할 수 있습니다");
-    return;
-  }
+// ── 게시물 신고 (브라우저 prompt() 대체 → 커스텀 선택 모달) ──
+function reportPost(fandom, postId) {
+  if (!isLoggedIn) { showToast("로그인 후 신고할 수 있습니다"); return; }
 
-  const reason = prompt("신고 사유를 선택하세요:\n1. 부적절한 내용\n2. 스팸\n3. 광고\n4. 욕설");
-  if (!reason) return;
+  const existing = document.getElementById('reportPostModal');
+  if (existing) existing.remove();
 
+  const reasons = ['부적절한 내용', '스팸', '광고', '욕설/혐오'];
+  const modal = document.createElement('div');
+  modal.id = 'reportPostModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:10001;backdrop-filter:blur(5px);padding:16px;box-sizing:border-box';
+  modal.innerHTML = `
+    <div style="background:linear-gradient(135deg,rgba(18,12,36,0.99),rgba(26,16,46,0.99));border:1.5px solid rgba(255,150,50,0.3);border-radius:20px;padding:28px 24px;max-width:340px;width:100%;animation:modalSlideIn 0.25s ease-out;box-shadow:0 20px 50px rgba(0,0,0,0.5)">
+      <div style="font-size:2rem;margin-bottom:10px;text-align:center">🚩</div>
+      <h3 style="font-size:1.05rem;font-weight:700;color:var(--text);margin:0 0 6px;text-align:center">신고 사유 선택</h3>
+      <p style="font-size:0.8rem;color:var(--muted);margin:0 0 18px;text-align:center">해당하는 사유를 선택해주세요</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px">
+        ${reasons.map((r, i) => `
+          <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.08);border-radius:10px;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='rgba(255,150,50,0.4)';this.style.background='rgba(255,150,50,0.06)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.04)'">
+            <input type="radio" name="reportReason" value="${escAttr(r)}" style="accent-color:rgba(255,150,50,0.9);width:16px;height:16px;cursor:pointer">
+            <span style="font-size:0.9rem;color:var(--text);font-weight:500">${escHtml(r)}</span>
+          </label>
+        `).join('')}
+      </div>
+      <div style="display:flex;gap:10px">
+        <button id="_rpCancel" style="flex:1;padding:12px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(255,255,255,0.5);font-weight:600;font-size:0.88rem;cursor:pointer;font-family:inherit">취소</button>
+        <button id="_rpConfirm" style="flex:1;padding:12px;background:linear-gradient(135deg,rgba(255,150,50,0.9),rgba(220,100,20,0.9));border:none;border-radius:12px;color:#fff;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(255,150,50,0.3)">신고하기</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.getElementById('_rpCancel').onclick = () => modal.remove();
+  document.getElementById('_rpConfirm').onclick = () => {
+    const selected = modal.querySelector('input[name="reportReason"]:checked');
+    if (!selected) { showToast('신고 사유를 선택해주세요'); return; }
+    modal.remove();
+    _executeReportPost(fandom, postId, selected.value);
+  };
+}
+
+async function _executeReportPost(fandom, postId, reason) {
   try {
     // 기존 신고 데이터 조회 (fandom 포함 경로로 수정)
     const reportPath = `reports/${fandom}/${postId}`;
@@ -2495,11 +2531,37 @@ function updateAllFeedTimestamp() {
   el.style.display = 'block';
 }
 
+// ── 전체 피드 localStorage 캐시 (새로고침 후에도 유지) ──
+const _ALL_FEED_LS_KEY = 'allFeed_ls_cache';
+const _ALL_FEED_LS_TTL = 10 * 60 * 1000; // 10분
+
+function _getAllFeedLsCache() {
+  try {
+    const raw = localStorage.getItem(_ALL_FEED_LS_KEY);
+    if (!raw) return null;
+    const { d, ts } = JSON.parse(raw);
+    if (Date.now() - ts > _ALL_FEED_LS_TTL) return null;
+    return d;
+  } catch { return null; }
+}
+
+function _setAllFeedLsCache(posts) {
+  try {
+    localStorage.setItem(_ALL_FEED_LS_KEY, JSON.stringify({ d: posts, ts: Date.now() }));
+  } catch {}
+}
+
+function _invalidateAllFeedCache() {
+  try { localStorage.removeItem(_ALL_FEED_LS_KEY); } catch {}
+  _allFeedLastLoadedAt = 0;
+  _allFeedIsRendered = false;
+}
+
 // ── 전체 피드 로드 (상위 팬덤 게시글 병렬 수집) ──
 async function loadAllFandomPosts(forceRefresh = false) {
   const postsList = document.getElementById("communityPostsList");
 
-  // ★ 캐시 유효성 검사: forceRefresh가 아니고, 5분 이내에 로드된 적 있고, 실제로 전체피드가 DOM에 표시 중이면 스킵
+  // ★ in-memory 캐시: 같은 세션 내 5분 이내 + 이미 렌더된 경우 스킵
   if (!forceRefresh && _allFeedLastLoadedAt > 0 &&
       Date.now() - _allFeedLastLoadedAt < ALL_FEED_CACHE_TTL &&
       allFeedPosts.length > 0 &&
@@ -2507,6 +2569,24 @@ async function loadAllFandomPosts(forceRefresh = false) {
     syncSortButtonStyles(currentSortMode);
     updateAllFeedTimestamp();
     return;
+  }
+
+  // ★ localStorage 캐시: 새로고침 후에도 10분 이내면 Firebase 읽기 없이 즉시 렌더
+  if (!forceRefresh) {
+    const lsCache = _getAllFeedLsCache();
+    if (lsCache && lsCache.length > 0) {
+      allFeedPosts = lsCache;
+      allFeedDisplayed = 0;
+      if (currentSortMode !== 'latest') sortAllFeedPostsArray(currentSortMode);
+      postsList.innerHTML = "";
+      renderMoreFeedPosts();
+      _allFeedIsRendered = true;
+      _allFeedLastLoadedAt = Date.now();
+      communityPostsLoaded = true;
+      syncSortButtonStyles(currentSortMode);
+      updateAllFeedTimestamp();
+      return;
+    }
   }
 
   // ★ 레이스 컨디션 방지: 각 호출마다 고유 ID 부여, 응답 시 최신 호출인지 확인
@@ -2571,6 +2651,9 @@ async function loadAllFandomPosts(forceRefresh = false) {
     allPosts.sort((a, b) => (b.post.timestamp || 0) - (a.post.timestamp || 0));
     allFeedPosts = allPosts.slice(0, 200);
     allFeedDisplayed = 0;
+
+    // ★ localStorage에 캐시 저장 (새로고침 후에도 재사용)
+    _setAllFeedLsCache(allFeedPosts);
 
     // 현재 정렬 모드 반영
     if (currentSortMode !== 'latest') sortAllFeedPostsArray(currentSortMode);

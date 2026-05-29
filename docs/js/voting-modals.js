@@ -307,6 +307,15 @@ function showVoteCompleteModal(type, group, emoji, param3, param4) {
       " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 20px rgba(77,158,255,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
         다음 투표하기
       </button>
+      ${(currentUser?.primaryFandom) ? `
+      <button id="voteCompleteCommunityBtn" style="
+        width: 100%; margin-top: 10px; padding: 12px 24px;
+        background: rgba(124,77,255,0.15); border: 1.5px solid rgba(124,77,255,0.35);
+        border-radius: 12px; color: var(--primary); font-weight: 600; font-size: 0.88rem;
+        cursor: pointer; transition: all 0.2s; font-family: inherit;
+      " onmouseover="this.style.background='rgba(124,77,255,0.25)'" onmouseout="this.style.background='rgba(124,77,255,0.15)'">
+        💬 ${escHtml(currentUser.primaryFandom)} 커뮤니티 보기 →
+      </button>` : ''}
     `;
   } else if (type === "paid") {
     // 구매 투표권 사용 완료
@@ -369,17 +378,18 @@ function showVoteCompleteModal(type, group, emoji, param3, param4) {
     modal.remove();
   }, 2500);
 
-  document.getElementById("voteCompleteClose").onclick = () => {
-    clearTimeout(autoCloseTimer);
-    modal.remove();
-  };
+  const closeFn = () => { clearTimeout(autoCloseTimer); modal.remove(); };
+  document.getElementById("voteCompleteClose").onclick = closeFn;
 
-  modal.onclick = (e) => {
-    if (e.target === modal) {
-      clearTimeout(autoCloseTimer);
-      modal.remove();
-    }
-  };
+  const communityBtn = document.getElementById("voteCompleteCommunityBtn");
+  if (communityBtn) {
+    communityBtn.onclick = () => {
+      closeFn();
+      if (typeof showCommunityPage === 'function') showCommunityPage();
+    };
+  }
+
+  modal.onclick = (e) => { if (e.target === modal) closeFn(); };
 }
 
 // 닉네임/팬덤 설정 모달 표시

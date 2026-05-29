@@ -45,6 +45,17 @@
   <link rel="stylesheet" href="css/posts.css?v=20260529b" />
   <link rel="stylesheet" href="css/main.css?v=20260609" />
 
+  <style>
+    /* ── 게시글 상세 슬라이드 인 애니메이션 ── */
+    @keyframes pageSlideIn {
+      from { opacity: 0; transform: translateX(18px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .page-slide-in {
+      animation: pageSlideIn 0.22s ease-out forwards;
+    }
+  </style>
+
 </head>
 <body>
 
@@ -470,13 +481,13 @@
 <div class="toast" id="toast"></div>
 
 <script src="js/config.js?v=20260609"></script>
-<script src="js/auth.js?v=20260529j"></script>
+<script src="js/auth.js?v=20260609c"></script>
 <script src="js/fandom.js?v=20260602a"></script>
-<script src="js/voting-modals.js?v=20260602d"></script>
-<script src="js/voting.js?v=20260609a"></script>
+<script src="js/voting-modals.js?v=20260609c"></script>
+<script src="js/voting.js?v=20260609c"></script>
 <script src="js/ranking.js?v=20260609b"></script>
 <script src="js/utils.js?v=20260529e"></script>
-<script src="js/community.js?v=20260609b"></script>
+<script src="js/community.js?v=20260609c"></script>
 </body>
 </html>
 
