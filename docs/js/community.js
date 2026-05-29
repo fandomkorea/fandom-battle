@@ -40,6 +40,7 @@ let allFeedDisplayed = 0; // 현재 화면에 표시된 수
 const ALL_FEED_PAGE_SIZE = 20; // 한 번에 표시할 게시글 수
 let _allFeedLoadId = 0; // 레이스 컨디션 방지용 로드 ID (비동기 중첩 무시)
 let _allFeedLastLoadedAt = 0; // 마지막 전체 피드 로드 시각 (ms)
+let _allFeedIsRendered = false; // 현재 DOM이 실제로 전체피드를 표시 중인지 여부
 const ALL_FEED_CACHE_TTL = 5 * 60 * 1000; // 5분 이내 재로드 스킵
 let _savedCommunityScrollY = 0; // 뒤로가기 스크롤 위치 복원용
 let currentOtherFandom = null; // 팬덤 찾기로 선택한 타 팬덤
@@ -83,6 +84,7 @@ function clearPostListListeners() {
 
 // ── 커뮤니티 게시물 로드 (실시간 리스너) ──
 function loadCommunityPosts() {
+  _allFeedIsRendered = false; // 단일 팬덤 로드 시 전체피드 플래그 초기화
   const selectedFandom = document.getElementById("communityFandomSelect").value;
   if (!selectedFandom) {
     document.getElementById("communityPostsList").innerHTML = `
@@ -2472,11 +2474,11 @@ function updateAllFeedTimestamp() {
 async function loadAllFandomPosts(forceRefresh = false) {
   const postsList = document.getElementById("communityPostsList");
 
-  // ★ 캐시 유효성 검사: forceRefresh가 아니고, 5분 이내에 로드된 적 있고, 현재 전체피드가 표시 중이면 스킵
+  // ★ 캐시 유효성 검사: forceRefresh가 아니고, 5분 이내에 로드된 적 있고, 실제로 전체피드가 DOM에 표시 중이면 스킵
   if (!forceRefresh && _allFeedLastLoadedAt > 0 &&
       Date.now() - _allFeedLastLoadedAt < ALL_FEED_CACHE_TTL &&
       allFeedPosts.length > 0 &&
-      postsList.querySelector('.fandom-badge')) {
+      _allFeedIsRendered) {
     syncSortButtonStyles(currentSortMode);
     updateAllFeedTimestamp();
     return;
@@ -2550,6 +2552,7 @@ async function loadAllFandomPosts(forceRefresh = false) {
 
     postsList.innerHTML = "";
     renderMoreFeedPosts(); // 첫 20개 표시
+    _allFeedIsRendered = true;
 
     // ★ 캐시 타임스탬프 기록
     _allFeedLastLoadedAt = Date.now();
