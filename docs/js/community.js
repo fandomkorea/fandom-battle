@@ -435,10 +435,17 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
     fandomBadgeHtml = `<span class="fandom-badge" style="background:${hexToRgba(color, 0.13)};border-color:${hexToRgba(color, 0.38)};color:${color}">${emoji} ${escHtml(fandom)}</span>`;
   }
 
+  // 게시글 유형 배지
+  const TYPE_LABELS = { schedule: '📅 일정', fanart: '🎨 팬아트', news: '📰 뉴스', qna: '❓ Q&A' };
+  const typeBadgeHtml = (post.type && TYPE_LABELS[post.type])
+    ? `<span style="display:inline-flex;align-items:center;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(100,200,255,0.12);border:1px solid rgba(100,200,255,0.28);color:rgba(100,200,255,0.9);white-space:nowrap">${TYPE_LABELS[post.type]}</span>`
+    : '';
+
   postEl.innerHTML = `
     <div class="post-list-left">
       <div class="post-title-row">
         ${fandomBadgeHtml}
+        ${typeBadgeHtml}
         ${isHot ? '<span class="hot-badge">🔥 HOT</span>' : ''}
         <div class="post-list-title">${escHtml(post.title)}</div>
         <div class="post-list-indicators">
@@ -577,10 +584,12 @@ async function showPostDetail(fandom, postId) {
       managementHTML = `
         <button class="post-action-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,rgba(100,200,100,0.1) 0%,rgba(140,220,140,0.05) 100%);border:1px solid rgba(100,200,100,0.2);border-radius:8px;padding:8px 12px;font-size:0.9rem;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);color:var(--text);cursor:pointer" onclick="editPost('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(post.title)}', '${escAttr(post.content)}'); event.stopPropagation()" onmouseover="this.style.background='linear-gradient(135deg,rgba(100,200,100,0.18) 0%,rgba(140,220,140,0.12) 100%)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(100,200,100,0.2)';this.style.borderColor='rgba(100,200,100,0.4)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(100,200,100,0.1) 0%,rgba(140,220,140,0.05) 100%)';this.style.transform='translateY(0)';this.style.boxShadow='none';this.style.borderColor='rgba(100,200,100,0.2)'"><span style="font-size:1rem">✏️</span><span style="font-weight:700">수정</span></button>
         <button class="post-action-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,rgba(255,100,100,0.15) 0%,rgba(255,120,120,0.05) 100%);border:1px solid rgba(255,100,100,0.3);border-radius:8px;padding:8px 12px;font-size:0.9rem;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);color:rgb(255,100,100);cursor:pointer" onclick="confirmDeletePost('${escAttr(fandom)}', '${escAttr(postId)}', true); event.stopPropagation()" onmouseover="this.style.background='linear-gradient(135deg,rgba(255,100,100,0.25) 0%,rgba(255,120,120,0.15) 100%)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(255,100,100,0.25)';this.style.borderColor='rgba(255,100,100,0.5)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(255,100,100,0.15) 0%,rgba(255,120,120,0.05) 100%)';this.style.transform='translateY(0)';this.style.boxShadow='none';this.style.borderColor='rgba(255,100,100,0.3)'"><span style="font-size:1rem">🗑️</span><span style="font-weight:700">삭제</span></button>
+        <button class="post-action-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,rgba(100,180,255,0.1) 0%,rgba(140,200,255,0.05) 100%);border:1px solid rgba(100,180,255,0.2);border-radius:8px;padding:8px 12px;font-size:0.9rem;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);color:var(--text);cursor:pointer;grid-column:span 2" onclick="sharePost('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(post.title)}'); event.stopPropagation()" onmouseover="this.style.background='linear-gradient(135deg,rgba(100,180,255,0.18) 0%,rgba(140,200,255,0.12) 100%)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(100,180,255,0.2)';this.style.borderColor='rgba(100,180,255,0.4)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(100,180,255,0.1) 0%,rgba(140,200,255,0.05) 100%)';this.style.transform='translateY(0)';this.style.boxShadow='none';this.style.borderColor='rgba(100,180,255,0.2)'"><span style="font-size:1rem">🔗</span><span style="font-weight:700">공유</span></button>
       `;
     } else {
       managementHTML = `
-        <button class="post-action-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,rgba(255,150,50,0.1) 0%,rgba(255,170,80,0.05) 100%);border:1px solid rgba(255,150,50,0.2);border-radius:8px;padding:8px 12px;font-size:0.9rem;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);grid-column:span 2;cursor:pointer" onclick="reportPost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()" onmouseover="this.style.background='linear-gradient(135deg,rgba(255,150,50,0.18) 0%,rgba(255,170,80,0.12) 100%)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(255,150,50,0.2)';this.style.borderColor='rgba(255,150,50,0.4)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(255,150,50,0.1) 0%,rgba(255,170,80,0.05) 100%)';this.style.transform='translateY(0)';this.style.boxShadow='none';this.style.borderColor='rgba(255,150,50,0.2)'"><span style="font-size:1rem">🚩</span><span style="font-weight:700;color:var(--text)">신고</span></button>
+        <button class="post-action-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,rgba(255,150,50,0.1) 0%,rgba(255,170,80,0.05) 100%);border:1px solid rgba(255,150,50,0.2);border-radius:8px;padding:8px 12px;font-size:0.9rem;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);cursor:pointer" onclick="reportPost('${escAttr(fandom)}', '${escAttr(postId)}'); event.stopPropagation()" onmouseover="this.style.background='linear-gradient(135deg,rgba(255,150,50,0.18) 0%,rgba(255,170,80,0.12) 100%)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(255,150,50,0.2)';this.style.borderColor='rgba(255,150,50,0.4)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(255,150,50,0.1) 0%,rgba(255,170,80,0.05) 100%)';this.style.transform='translateY(0)';this.style.boxShadow='none';this.style.borderColor='rgba(255,150,50,0.2)'"><span style="font-size:1rem">🚩</span><span style="font-weight:700;color:var(--text)">신고</span></button>
+        <button class="post-action-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,rgba(100,180,255,0.1) 0%,rgba(140,200,255,0.05) 100%);border:1px solid rgba(100,180,255,0.2);border-radius:8px;padding:8px 12px;font-size:0.9rem;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);color:var(--text);cursor:pointer" onclick="sharePost('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(post.title)}'); event.stopPropagation()" onmouseover="this.style.background='linear-gradient(135deg,rgba(100,180,255,0.18) 0%,rgba(140,200,255,0.12) 100%)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(100,180,255,0.2)';this.style.borderColor='rgba(100,180,255,0.4)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(100,180,255,0.1) 0%,rgba(140,200,255,0.05) 100%)';this.style.transform='translateY(0)';this.style.boxShadow='none';this.style.borderColor='rgba(100,180,255,0.2)'"><span style="font-size:1rem">🔗</span><span style="font-weight:700">공유</span></button>
       `;
     }
     document.getElementById("postDetailManagement").innerHTML = managementHTML;
@@ -734,6 +743,13 @@ function loadDetailComments(fandom, postId) {
         const commentLikeCount = Object.keys(commentLikes).length;
         const hasLikedComment = isLoggedIn && currentUser && !!commentLikes[currentUser.uid];
 
+        // 작성자 팬덤 배지
+        const commentFandomName = comment.authorFandom;
+        const commentFandomMeta = commentFandomName ? (GROUP_META[commentFandomName] || null) : null;
+        const commentFandomBadge = commentFandomMeta
+          ? `<span style="font-size:0.62rem;padding:1px 6px;border-radius:4px;background:${hexToRgba(commentFandomMeta.color || '#7c4dff', 0.15)};color:${commentFandomMeta.color || '#7c4dff'};border:1px solid ${hexToRgba(commentFandomMeta.color || '#7c4dff', 0.3)};font-weight:700;white-space:nowrap">${commentFandomMeta.emoji || ''} ${escHtml(commentFandomName)}</span>`
+          : '';
+
         const commentEl = document.createElement("div");
         commentEl.style.cssText = "padding:12px 14px;background:linear-gradient(135deg,rgba(124,77,255,0.08) 0%,rgba(100,150,255,0.04) 100%);border:1px solid rgba(124,77,255,0.15);border-radius:10px;margin-bottom:10px;font-size:0.9rem;transition:all 0.2s";
         commentEl.onmouseover = function() {
@@ -749,6 +765,7 @@ function loadDetailComments(fandom, postId) {
             <div style="flex:1;min-width:0">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
                 <span style="font-weight:700;color:var(--text);font-size:0.95rem">${escHtml(resolveAuthorNickname(comment))}</span>
+                ${commentFandomBadge}
                 ${isCommentAuthor ? `<span style="background:linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,150,255,0.2) 100%);color:var(--primary);font-size:0.7rem;padding:2px 6px;border-radius:4px;font-weight:600">내가 쓴 댓글</span>` : ''}
               </div>
               <div style="font-size:0.75rem;color:var(--muted)">${timeStr}</div>
@@ -860,10 +877,13 @@ async function submitReply(fandom, postId, commentId) {
 
   try {
     const replyId = db.ref().push().key;
+    const replyNickname = currentUser.customNickname || currentUser.displayName || '익명';
     await db.ref(`community/${fandom}/${postId}/comments/${commentId}/replies/${replyId}`).set({
       content,
       authorUid: currentUser.uid,
-      authorName: currentUser.customNickname || currentUser.displayName || '익명',
+      authorNickname: replyNickname,
+      authorName: replyNickname,
+      authorFandom: currentUser.primaryFandom || null,
       timestamp: Date.now()
     });
     textarea.value = '';
@@ -904,10 +924,13 @@ async function submitDetailComment(fandom, postId) {
 
   try {
     const commentId = db.ref().push().key;
+    const commentNickname = currentUser.customNickname || currentUser.displayName || "익명";
     await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).set({
       content,
       authorUid: currentUser.uid,
-      authorName: currentUser.customNickname || currentUser.displayName || "익명",
+      authorNickname: commentNickname,
+      authorName: commentNickname,
+      authorFandom: currentUser.primaryFandom || null,
       timestamp: Date.now(),
       isHidden: false
     });
@@ -944,10 +967,13 @@ async function submitStickyComment(fandom, postId) {
 
   try {
     const commentId = db.ref().push().key;
+    const stickyNickname = currentUser.customNickname || currentUser.displayName || "익명";
     await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).set({
       content,
       authorUid: currentUser.uid,
-      authorName: currentUser.customNickname || currentUser.displayName || "익명",
+      authorNickname: stickyNickname,
+      authorName: stickyNickname,
+      authorFandom: currentUser.primaryFandom || null,
       timestamp: Date.now(),
       isHidden: false
     });
@@ -993,6 +1019,46 @@ async function sendCommentNotification(fandom, postId, commentContent) {
   }
 }
 
+// ── 좋아요 알림 전송 ──
+async function sendLikeNotification(fandom, postId) {
+  if (!isLoggedIn || !currentUser) return;
+  try {
+    const postSnap = await db.ref(`community/${fandom}/${postId}`).once("value");
+    if (!postSnap.exists()) return;
+    const post = postSnap.val();
+    if (!post.authorUid || post.authorUid === currentUser.uid) return;
+    const notifId = db.ref().push().key;
+    await db.ref(`notifications/${post.authorUid}/${notifId}`).set({
+      type: 'like',
+      fandom,
+      postId,
+      postTitle: post.title || '(제목 없음)',
+      fromNickname: currentUser.customNickname || currentUser.displayName || '익명',
+      timestamp: Date.now(),
+      read: false
+    });
+  } catch (e) {
+    console.warn("좋아요 알림 전송 실패:", e.code);
+  }
+}
+
+// ── 게시글 공유 ──
+async function sharePost(fandom, postId, title) {
+  const url = `${location.protocol}//${location.host}${location.pathname}#postDetail/${encodeURIComponent(fandom)}/${encodeURIComponent(postId)}`;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: `팬픽 | ${title}`, url });
+      return;
+    } catch (e) { /* 취소 시 무시 */ }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('링크가 복사되었어요! 💜');
+  } catch {
+    showToast('공유: ' + url);
+  }
+}
+
 // ── 알림 로드 ──
 async function loadNotifications() {
   if (!isLoggedIn || !currentUser || !db) return;
@@ -1028,10 +1094,13 @@ async function loadNotifications() {
           showPostDetail(notif.fandom, notif.postId);
         }
       };
+      const notifText = notif.type === 'like'
+        ? `<b>${escHtml(notif.fromNickname)}</b>님이 회원님의 게시글을 좋아해요 ❤️<br><span style="color:var(--muted);font-size:0.8rem">${escHtml(notif.postTitle)}</span>`
+        : `<b>${escHtml(notif.fromNickname)}</b>님이 <b>${escHtml(notif.postTitle)}</b>에 댓글을 남겼어요`;
       el.innerHTML = `
         <div class="notif-item-text">
-          <b>${escHtml(notif.fromNickname)}</b>님이 <b>${escHtml(notif.postTitle)}</b>에 댓글을 남겼어요
-          ${notif.preview ? `<br><span style="color:var(--muted)">"${escHtml(notif.preview)}"</span>` : ''}
+          ${notifText}
+          ${notif.preview && notif.type !== 'like' ? `<br><span style="color:var(--muted)">"${escHtml(notif.preview)}"</span>` : ''}
         </div>
         <div class="notif-item-time">${getRelativeTime(notif.timestamp)}</div>
       `;
@@ -1384,44 +1453,17 @@ document.addEventListener("click", (e) => {
 // ESC 키로 모달 닫기 (내용 있으면 확인)
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
+    const editModal = document.getElementById("editPostModal");
+    if (editModal && editModal.style.display === "flex") {
+      closeEditPostModal();
+      return;
+    }
     const modal = document.getElementById("postCreateModal");
     if (modal.style.display === "flex") {
       confirmAndClosePostModal();
     }
   }
 });
-
-// ── 이미지 미리보기 ──
-function previewImage(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  // 이미지 크기 제한: 300KB
-  const MAX_SIZE = 300 * 1024; // 300KB
-  if (file.size > MAX_SIZE) {
-    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-    showToast(`파일이 너무 커요! (${sizeMB}MB)\n300KB 이하 이미지를 선택해주세요`);
-    document.getElementById("postImage").value = "";
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const container = document.getElementById("imagePreviewContainer");
-    container.innerHTML = `
-      <div style="position:relative;display:inline-block">
-        <img src="${e.target.result}" style="max-width:100%;border-radius:8px;max-height:200px">
-        <button onclick="removeImage()" style="position:absolute;top:8px;right:8px;background:#ff4d4d;border:none;color:#fff;border-radius:50%;width:32px;height:32px;cursor:pointer;font-weight:700;font-size:1rem">✕</button>
-      </div>
-    `;
-  };
-  reader.readAsDataURL(file);
-}
-
-function removeImage() {
-  document.getElementById("postImage").value = "";
-  document.getElementById("imagePreviewContainer").innerHTML = "";
-}
 
 // ── 배지 시스템 ──
 async function addUserBadge(uid, badgeType) {
@@ -1579,23 +1621,44 @@ async function submitPost() {
   }
 }
 
-// ── 게시물 수정 ──
-async function editPost(fandom, postId, title, content) {
-  const newTitle = prompt("제목을 수정해주세요:", title);
-  if (newTitle === null || newTitle.trim() === "") return;
+// ── 게시물 수정 모달 ──
+let editPostState = { fandom: null, postId: null };
 
-  const newContent = prompt("내용을 수정해주세요:", content);
-  if (newContent === null || newContent.trim() === "") return;
+function editPost(fandom, postId, title, content) {
+  editPostState = { fandom, postId };
+  const titleEl = document.getElementById('editPostTitle');
+  const contentEl = document.getElementById('editPostContent');
+  titleEl.value = title;
+  contentEl.value = content;
+  document.getElementById('editPostTitleCount').textContent = title.length;
+  document.getElementById('editPostContentCount').textContent = content.length;
+  document.getElementById('editPostModal').style.display = 'flex';
+  setTimeout(() => titleEl.focus(), 100);
+}
 
+function closeEditPostModal() {
+  document.getElementById('editPostModal').style.display = 'none';
+  editPostState = { fandom: null, postId: null };
+}
+
+async function saveEditPost() {
+  const title = document.getElementById('editPostTitle').value.trim();
+  const content = document.getElementById('editPostContent').value.trim();
+  if (!title) { showToast('제목을 입력해주세요'); return; }
+  if (!content) { showToast('내용을 입력해주세요'); return; }
+  const { fandom, postId } = editPostState;
+  if (!fandom || !postId) return;
+  const btn = document.getElementById('saveEditPostBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '저장 중...'; }
   try {
-    await db.ref(`community/${fandom}/${postId}`).update({
-      title: newTitle.trim(),
-      content: newContent.trim()
-    });
-    showToast("✅ 게시물이 수정되었어요!");
-  } catch (error) {
-    showToast("수정 실패: " + error.message);
-    console.error(error);
+    await db.ref(`community/${fandom}/${postId}`).update({ title, content });
+    showToast('✅ 게시물이 수정되었어요!');
+    closeEditPostModal();
+  } catch (e) {
+    showToast('수정 실패: ' + e.message);
+    console.error(e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '저장'; }
   }
 }
 
@@ -1712,6 +1775,7 @@ async function toggleLike(fandom, postId) {
       await likeRef.remove();
     } else {
       await likeRef.set(true);
+      sendLikeNotification(fandom, postId).catch(() => {});
     }
 
     // 좋아요 수 업데이트 및 data-likes 속성 갱신
