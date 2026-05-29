@@ -1015,8 +1015,8 @@ async function sendCommentNotification(fandom, postId, commentContent) {
       timestamp: Date.now(),
       read: false
     });
+    db.ref(`notif_counts/${post.authorUid}/unread`).transaction(c => (c || 0) + 1).catch(() => {});
   } catch (e) {
-    // 알림 전송 실패는 조용히 무시 (댓글은 이미 저장됨)
     console.warn("알림 전송 실패:", e.code);
   }
 }
@@ -1039,6 +1039,7 @@ async function sendLikeNotification(fandom, postId) {
       timestamp: Date.now(),
       read: false
     });
+    db.ref(`notif_counts/${post.authorUid}/unread`).transaction(c => (c || 0) + 1).catch(() => {});
   } catch (e) {
     console.warn("좋아요 알림 전송 실패:", e.code);
   }
@@ -1067,10 +1068,9 @@ let _notifBadgeCallback = null;
 
 function setupNotifBadgeListener(uid) {
   teardownNotifBadgeListener();
-  _notifBadgeRef = db.ref(`notifications/${uid}`);
+  _notifBadgeRef = db.ref(`notif_counts/${uid}/unread`);
   _notifBadgeCallback = (snap) => {
-    const notifs = snap.val() || {};
-    const unread = Object.values(notifs).filter(n => !n.read).length;
+    const unread = snap.val() || 0;
     const badge = document.getElementById("notifBadge");
     if (badge) {
       badge.textContent = unread;
@@ -1155,6 +1155,7 @@ function closeNotifPanel() {
 function markNotifRead(notifId) {
   if (!isLoggedIn || !currentUser) return;
   db.ref(`notifications/${currentUser.uid}/${notifId}/read`).set(true).catch(() => {});
+  db.ref(`notif_counts/${currentUser.uid}/unread`).transaction(c => Math.max(0, (c || 0) - 1)).catch(() => {});
   loadNotifications();
 }
 
@@ -1169,6 +1170,7 @@ async function markAllNotifsRead() {
     if (Object.keys(updates).length > 0) {
       await db.ref(`notifications/${currentUser.uid}`).update(updates);
     }
+    await db.ref(`notif_counts/${currentUser.uid}/unread`).set(0);
     loadNotifications();
     closeNotifPanel();
   } catch (e) {
@@ -1641,6 +1643,13 @@ async function submitPost() {
     };
 
     await db.ref(`community/${selectedFandom}/${postId}`).set(postData);
+    // 내가 쓴 글 인덱스 동시 기록 (loadMyPosts 최적화용)
+    db.ref(`user_posts/${currentUser.uid}/${postId}`).set({
+      fandom: selectedFandom,
+      title,
+      timestamp: postData.timestamp,
+      type: template || null
+    }).catch(() => {});
 
     // 게시글 작성 후 이미지 URL 및 public_id 초기화
     postImageUrl = null;
@@ -1756,6 +1765,7 @@ async function deletePost(fandom, postId, closeAfterDelete = false) {
 
     // Database에서 게시물 삭제
     await db.ref(`community/${fandom}/${postId}`).remove();
+    db.ref(`user_posts/${currentUser.uid}/${postId}`).remove().catch(() => {});
     showToast("✅ 게시물이 삭제되었어요");
     // 목록에서 즉시 제거
     document.querySelector(`[data-postid="${postId}"]`)?.remove();
@@ -1920,8 +1930,7 @@ function loadLikesForPostList(fandom, postId) {
   };
 
   const likesRef = db.ref(`community/${fandom}/${postId}/likes`);
-  likesRef.on("value", likesCallback);
-  postListListeners.push({ ref: likesRef, callback: likesCallback });
+  likesRef.once("value", likesCallback);
 }
 
 // ── 포스트 리스트용 조회수 로드 (리스너 추적) ──
@@ -1937,8 +1946,7 @@ function loadViewsForPostList(fandom, postId) {
   };
 
   const viewsRef = db.ref(`community/${fandom}/${postId}/views`);
-  viewsRef.on("value", viewsCallback);
-  postListListeners.push({ ref: viewsRef, callback: viewsCallback });
+  viewsRef.once("value", viewsCallback);
 }
 
 // ── 댓글 로드 ──
@@ -2687,26 +2695,36 @@ async function loadMyPosts() {
     </div>
   `;
 
-  // 전체 팬덤에서 내 글 수집 (ALL_GROUPS 전체)
-  const fandomsToLoad = [...ALL_GROUPS];
-
+  // user_posts 인덱스에서 내 글 목록 조회 (팬덤 전체 스캔 대신 O(내 글 수)만 읽음)
   try {
+    const indexSnap = await db.ref(`user_posts/${currentUser.uid}`)
+      .orderByChild('timestamp').limitToLast(50).once('value');
+    const index = indexSnap.val() || {};
+    const entries = Object.entries(index).sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
+
+    if (entries.length === 0) {
+      postsList.innerHTML = `
+        <div class="community-empty">
+          <div class="community-empty-icon">✏️</div>
+          <div class="community-empty-text">아직 작성한 글이 없어요<br>첫 번째 글을 써보세요!</div>
+        </div>
+      `;
+      return;
+    }
+
+    // 각 게시글 전체 데이터를 병렬로 개별 조회 (최대 50개 targeted read)
     const snapshots = await Promise.all(
-      fandomsToLoad.map(fandom => db.ref(`community/${fandom}`).once("value"))
+      entries.map(([postId, meta]) => db.ref(`community/${meta.fandom}/${postId}`).once('value'))
     );
 
     let myPosts = [];
     snapshots.forEach((snap, i) => {
-      const fandom = fandomsToLoad[i];
-      const posts = snap.val() || {};
-      Object.entries(posts).forEach(([postId, post]) => {
-        if (!post.isHidden && post.authorUid === currentUser.uid) {
-          myPosts.push({ fandom, postId, post });
-        }
-      });
+      if (!snap.exists()) return; // 삭제됐지만 인덱스가 남은 경우 스킵
+      const post = snap.val();
+      if (post.isHidden) return;
+      const [postId, meta] = entries[i];
+      myPosts.push({ fandom: meta.fandom, postId, post });
     });
-
-    myPosts.sort((a, b) => (b.post.timestamp || 0) - (a.post.timestamp || 0));
 
     postsList.innerHTML = '';
     if (myPosts.length === 0) {
@@ -2720,7 +2738,7 @@ async function loadMyPosts() {
     }
 
     myPosts.forEach(({ fandom, postId, post }, i) => {
-      const postEl = renderPost(fandom, postId, post, i, true); // showFandomBadge=true
+      const postEl = renderPost(fandom, postId, post, i, true);
       postsList.appendChild(postEl);
     });
   } catch (e) {

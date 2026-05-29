@@ -92,6 +92,21 @@
         ".indexOn": ["timestamp"]
       }
     },
+    "user_posts": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid",
+        "$postId": {
+          ".validate": "newData.hasChildren(['fandom', 'title', 'timestamp'])"
+        }
+      }
+    },
+    "notif_counts": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "auth != null"
+      }
+    },
     "group_requests": {
       ".read": false,
       ".write": "auth != null",
