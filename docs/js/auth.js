@@ -251,7 +251,6 @@ async function loadUserVotes() {
     }
 
     // ★ 알림 로드
-    if (typeof loadFCMNotifications === 'function') loadFCMNotifications();
   } catch (e) {
     console.error("투표 데이터 로드 실패:", e);
     pendingPaidVotes = 0;

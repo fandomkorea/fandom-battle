@@ -26,7 +26,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3646356464963069"
@@ -67,19 +66,6 @@
       <div id="adButtonContainer" style="flex-shrink:0"></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
-      <!-- 알림 벨 -->
-      <div class="notif-bell-wrap">
-        <button class="notif-bell-btn" id="notifBellBtn" onclick="toggleNotifPanel()">
-          🔔 <span id="notifBadge" class="notif-badge" style="display:none">0</span>
-        </button>
-        <div class="notif-panel" id="notifPanel">
-          <div class="notif-panel-header">
-            <span>알림</span>
-            <button onclick="markAllNotifsRead()" style="background:none;border:none;color:var(--primary);font-size:0.75rem;cursor:pointer;font-weight:600">모두 읽음</button>
-          </div>
-          <div id="notifList"><div class="notif-empty">알림이 없어요</div></div>
-        </div>
-      </div>
       <button onclick="signOut()" style="white-space:nowrap">로그아웃</button>
     </div>
   </div>
@@ -418,10 +404,9 @@
 <div class="toast" id="toast"></div>
 
 <script src="js/config.js?v=20260609"></script>
-<script src="js/auth.js?v=20260529h"></script>
+<script src="js/auth.js?v=20260529i"></script>
 <script src="js/fandom.js?v=20260602"></script>
-<script src="js/notifications.js?v=20260529c"></script>
-<script src="js/voting-modals.js?v=20260529f"></script>
+<script src="js/voting-modals.js?v=20260529g"></script>
 <script src="js/voting.js?v=20260529a"></script>
 <script src="js/ranking.js?v=20260529f"></script>
 <script src="js/utils.js?v=20260529d"></script>
