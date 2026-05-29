@@ -48,7 +48,11 @@ let currentOtherFandom = null; // 팬덤 찾기로 선택한 타 팬덤
 
 // ── 게시글 이미지 URL 및 public_id 저장소 ──
 let postImageUrl = null;
-let postImagePublicId = null; // Cloudinary 이미지 삭제용
+let postImagePublicId = null; // 이미지 키 (R2 object key 또는 Cloudinary public_id)
+
+// ── R2 이미지 업로드 Worker URL (Cloudinary 대체) ──
+// 배포 후 입력: 'https://fandom-upload.coder-leebeegle2.workers.dev'
+const R2_UPLOAD_WORKER_URL = '';
 
 // ── 현재 열린 게시글 최소 메타 캐시 (알림 전송 시 Firebase 재읽기 방지) ──
 let currentViewingPost = null;
@@ -114,6 +118,28 @@ function _invalidatePostListCache(fandom) {
     if (fandom) localStorage.removeItem(`posts_c_${fandom}`);
     localStorage.removeItem('posts_c_all');
   } catch {}
+}
+
+// ── 이미지 클라이언트 압축 (Canvas → WebP, 최대 1200px, ~100-300KB) ──
+async function _compressImage(file, maxPx = 1200, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objUrl);
+      const ratio = Math.min(1, maxPx / img.width, maxPx / img.height);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        blob => blob ? resolve(blob) : reject(new Error('압축 실패')),
+        'image/webp', quality
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(objUrl); reject(new Error('이미지 로드 실패')); };
+    img.src = objUrl;
+  });
 }
 
 // ── Cloudinary 목록 썸네일 URL 변환 (w_300,h_300 — 상세 페이지는 원본 사용) ──
@@ -1865,26 +1891,26 @@ async function deletePost(fandom, postId, closeAfterDelete = false) {
       return;
     }
 
-    // Cloudinary 이미지가 있으면 직접 삭제 (unsigned API)
+    // 이미지 삭제 (R2 신형 / Cloudinary 구형 자동 분기)
     if (postData && postData.imagePublicId) {
       try {
-        const formData = new FormData();
-        formData.append('public_id', postData.imagePublicId);
-        formData.append('upload_preset', 'fandom_battle_images');
-
-        // Cloudinary destroy API 호출 (unsigned)
-        const response = await fetch(
-          'https://api.cloudinary.com/v1_1/dhkgabcme/image/destroy',
-          {
-            method: 'POST',
-            body: formData
-          }
-        );
-
-        if (response.ok) {
-          console.log("✅ Cloudinary 이미지 삭제 완료:", postData.imagePublicId);
-        } else {
-          console.warn("⚠️ 이미지 삭제 실패 (계속 진행)");
+        if (postData.imageUrl && postData.imageUrl.includes('res.cloudinary.com')) {
+          // ── 구형: Cloudinary 삭제 ──
+          const formData = new FormData();
+          formData.append('public_id', postData.imagePublicId);
+          formData.append('upload_preset', 'fandom_battle_images');
+          await fetch('https://api.cloudinary.com/v1_1/dhkgabcme/image/destroy', {
+            method: 'POST', body: formData
+          });
+          console.log("✅ Cloudinary 이미지 삭제:", postData.imagePublicId);
+        } else if (R2_UPLOAD_WORKER_URL) {
+          // ── 신형: R2 삭제 ──
+          const idToken = await firebase.auth().currentUser.getIdToken(true);
+          await fetch(`${R2_UPLOAD_WORKER_URL}/${encodeURIComponent(postData.imagePublicId)}`, {
+            method: 'DELETE',
+            headers: { 'X-Firebase-Token': idToken },
+          });
+          console.log("✅ R2 이미지 삭제:", postData.imagePublicId);
         }
       } catch (imgError) {
         console.error("⚠️ 이미지 삭제 중 오류 (계속 진행):", imgError);
@@ -2182,31 +2208,26 @@ function openPostImageUpload() {
     if (uploadBtn) { uploadBtn.disabled = true; uploadBtn.textContent = "⏳ 업로드 중..."; }
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'fandom_battle_images'); // Unsigned upload
+      if (!R2_UPLOAD_WORKER_URL) throw new Error('R2_UPLOAD_WORKER_URL 미설정');
 
-      // Cloudinary API로 업로드
-      const response = await fetch(
-        'https://api.cloudinary.com/v1_1/dhkgabcme/image/upload',
-        {
-          method: 'POST',
-          body: formData
-        }
-      );
+      // ★ R2 업로드: 클라이언트 압축(WebP) → Worker 인증 → R2 저장
+      if (uploadBtn) uploadBtn.textContent = "⏳ 압축 중...";
+      const compressed = await _compressImage(file);
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      if (uploadBtn) uploadBtn.textContent = "⏳ 업로드 중...";
+      const idToken = await firebase.auth().currentUser.getIdToken(true);
+      const r2Key = `community/${currentUser.uid}/${Date.now()}.webp`;
 
-      const data = await response.json();
-      // 응답 URL에 변환 파라미터 추가 (자동 최적화)
-      postImageUrl = data.secure_url.replace(
-        '/upload/',
-        '/upload/w_1200,q_auto,f_auto/'
-      );
-      // public_id 저장 (삭제 시 사용)
-      postImagePublicId = data.public_id;
+      const res = await fetch(`${R2_UPLOAD_WORKER_URL}/${encodeURIComponent(r2Key)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'image/webp', 'X-Firebase-Token': idToken },
+        body: compressed,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      postImageUrl = data.url;
+      postImagePublicId = r2Key; // R2 object key (삭제 시 사용)
 
       // 이미지 미리보기 표시
       const preview = document.getElementById('postImagePreview');
