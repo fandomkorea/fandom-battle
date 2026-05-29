@@ -1061,6 +1061,33 @@ async function sharePost(fandom, postId, title) {
   }
 }
 
+// ── 알림 뱃지 실시간 리스너 ──
+let _notifBadgeRef = null;
+let _notifBadgeCallback = null;
+
+function setupNotifBadgeListener(uid) {
+  teardownNotifBadgeListener();
+  _notifBadgeRef = db.ref(`notifications/${uid}`);
+  _notifBadgeCallback = (snap) => {
+    const notifs = snap.val() || {};
+    const unread = Object.values(notifs).filter(n => !n.read).length;
+    const badge = document.getElementById("notifBadge");
+    if (badge) {
+      badge.textContent = unread;
+      badge.style.display = unread > 0 ? 'inline-block' : 'none';
+    }
+  };
+  _notifBadgeRef.on('value', _notifBadgeCallback);
+}
+
+function teardownNotifBadgeListener() {
+  if (_notifBadgeRef && _notifBadgeCallback) {
+    _notifBadgeRef.off('value', _notifBadgeCallback);
+  }
+  _notifBadgeRef = null;
+  _notifBadgeCallback = null;
+}
+
 // ── 알림 로드 ──
 async function loadNotifications() {
   if (!isLoggedIn || !currentUser || !db) return;

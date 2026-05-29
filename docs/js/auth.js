@@ -182,12 +182,23 @@ function setupAuthListener() {
       await loadUserVotes(); // Firebase에서 투표권 로드 (닉네임도 함께 로드)
       // loadUserVotes() 내에서 updateAuthUI()를 호출하므로 여기서는 안 함
 
+      // 알림 뱃지 실시간 리스너 시작
+      if (typeof setupNotifBadgeListener === 'function') {
+        setupNotifBadgeListener(user.uid);
+      }
+
       // ★ 팬덤 설정 팝업 닫기
       closeFandomSetupPopup();
     } else {
       currentUser = null;
       isLoggedIn = false;
       pendingPaidVotes = 0;
+
+      // 알림 뱃지 리스너 해제
+      if (typeof teardownNotifBadgeListener === 'function') {
+        teardownNotifBadgeListener();
+      }
+
       updateAuthUI(); // 로그아웃 경로에서만 여기서 호출
       updateFavBar();
 
