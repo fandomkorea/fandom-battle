@@ -674,7 +674,7 @@ function init() {
     // 발급: https://www.google.com/recaptcha/admin/create (reCAPTCHA v3 선택, 도메인 추가)
     try {
       firebase.appCheck().activate(
-        new firebase.appCheck.ReCaptchaV3Provider('REPLACE_WITH_RECAPTCHA_V3_SITE_KEY'),
+        new firebase.appCheck.ReCaptchaV3Provider('6LdyUgItAAAAAKa2BT84IgauQYdHGDIqTgU0XIUK'),
         true
       );
     } catch (e) {
