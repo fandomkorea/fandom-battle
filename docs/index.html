@@ -66,6 +66,19 @@
       <div id="adButtonContainer" style="flex-shrink:0"></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+      <!-- 알림 벨 (앱 내 댓글 알림) -->
+      <div class="notif-bell-wrap">
+        <button class="notif-bell-btn" id="notifBellBtn" onclick="toggleNotifPanel()">
+          🔔 <span id="notifBadge" class="notif-badge" style="display:none">0</span>
+        </button>
+        <div class="notif-panel" id="notifPanel">
+          <div class="notif-panel-header">
+            <span>알림</span>
+            <button onclick="markAllNotifsRead()" style="background:none;border:none;color:var(--primary);font-size:0.75rem;cursor:pointer;font-weight:600">모두 읽음</button>
+          </div>
+          <div id="notifList"><div class="notif-empty">알림이 없어요</div></div>
+        </div>
+      </div>
       <button onclick="signOut()" style="white-space:nowrap">로그아웃</button>
     </div>
   </div>
