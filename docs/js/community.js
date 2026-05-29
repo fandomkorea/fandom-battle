@@ -565,14 +565,24 @@ async function showPostDetail(fandom, postId) {
   `;
 
   try {
-    // 게시물 데이터 로드
-    const snap = await db.ref(`community/${fandom}/${postId}`).once("value");
-    if (!snap.exists()) {
-      showToast("게시물을 찾을 수 없어요");
-      return;
+    // ★ 게시글 상세 sessionStorage 캐시 (10분 TTL) — Firebase 읽기 절감
+    let post = null;
+    const _pdKey = `pd_${postId}`;
+    try {
+      const _pdRaw = sessionStorage.getItem(_pdKey);
+      if (_pdRaw) {
+        const { d, ts } = JSON.parse(_pdRaw);
+        if (Date.now() - ts < 10 * 60 * 1000) post = d;
+      }
+    } catch {}
+
+    if (!post) {
+      const snap = await db.ref(`community/${fandom}/${postId}`).once("value");
+      if (!snap.exists()) { showToast("게시물을 찾을 수 없어요"); return; }
+      post = snap.val();
+      try { sessionStorage.setItem(_pdKey, JSON.stringify({ d: post, ts: Date.now() })); } catch {}
     }
 
-    const post = snap.val();
     const isAuthor = isLoggedIn && currentUser && post.authorUid === currentUser.uid;
     const timeStr = getRelativeTime(post.timestamp);
 
@@ -666,9 +676,10 @@ async function showPostDetail(fandom, postId) {
       if (stickyCount) stickyCount.textContent = likeCount;
       if (stickyBtn) stickyBtn.classList.toggle('liked', hasLiked);
     };
+    // ★ .once()로 초기 상태만 로드 (실시간 구독 제거 → toggleLike에서 UI 직접 갱신)
     const likesRef = db.ref(`likes/${fandom}/${postId}`);
-    likesRef.on("value", likesCallback);
-    postDetailListeners.likes = { ref: likesRef, callback: likesCallback };
+    likesRef.once("value", likesCallback);
+    postDetailListeners.likes = null; // .once()는 자동 정리
 
     // 댓글 섹션 설정
     const canCommentHere = isLoggedIn && !!currentUser?.primaryFandom && currentUser.primaryFandom === fandom;
@@ -856,10 +867,10 @@ function loadDetailComments(fandom, postId) {
     if (countEl) countEl.textContent = commentCount;
   };
 
-  // 리스너 등록 및 저장
+  // ★ .once()로 1회만 로드 (실시간 구독 제거 → 댓글 작성/삭제/수정 후 수동 재로드)
   const commentsRef = db.ref(`comments/${fandom}/${postId}`);
-  commentsRef.on("value", commentsCallback);
-  postDetailListeners.comments = { ref: commentsRef, callback: commentsCallback };
+  commentsRef.once("value", commentsCallback);
+  postDetailListeners.comments = null; // .once()는 자동 정리
 }
 
 // ── 답글 수 로드 ──
@@ -990,6 +1001,8 @@ async function submitDetailComment(fandom, postId) {
     if (charCount) charCount.textContent = "0";
     showToast("댓글이 작성됐어요! 💬");
     sendCommentNotification(fandom, postId, content);
+    // ★ .once() 전환으로 자동 재렌더 없음 → 수동 재로드
+    loadDetailComments(fandom, postId);
   } catch (e) {
     console.error("댓글 작성 실패:", e);
     showToast("댓글 작성에 실패했어요");
@@ -1035,6 +1048,8 @@ async function submitStickyComment(fandom, postId) {
     if (submitBtn) submitBtn.classList.remove('visible');
     showToast("댓글이 작성됐어요! 💬");
     sendCommentNotification(fandom, postId, content);
+    // ★ .once() 전환으로 자동 재렌더 없음 → 수동 재로드
+    loadDetailComments(fandom, postId);
   } catch (e) {
     console.error("댓글 작성 실패:", e);
     showToast("댓글 작성에 실패했어요");
@@ -1774,6 +1789,7 @@ async function saveEditPost() {
   if (btn) { btn.disabled = true; btn.textContent = '저장 중...'; }
   try {
     await db.ref(`community/${fandom}/${postId}`).update({ title, content });
+    try { sessionStorage.removeItem(`pd_${postId}`); } catch {} // ★ 게시글 캐시 무효화
     showToast('✅ 게시물이 수정되었어요!');
     closeEditPostModal();
   } catch (e) {
@@ -1916,6 +1932,26 @@ async function toggleLike(fandom, postId) {
 
     loadLikes(fandom, postId);
 
+    // ★ 상세 페이지 좋아요 UI 직접 갱신 (.once() 전환으로 리스너 없음)
+    const _liked = !wasLiked;
+    const _dCount = document.getElementById(`detail-like-count-${postId}`);
+    const _dBtn   = document.getElementById("postDetailLikeBtn");
+    const _dHeart = document.getElementById("postDetailLikeHeart");
+    const _sHeart = document.getElementById("stickyLikeHeart");
+    const _sCount = document.getElementById("stickyLikeCount");
+    const _sBtn   = document.getElementById("stickyLikeBtn");
+    if (_dCount) _dCount.textContent = likeCount;
+    if (_dBtn) {
+      _dBtn.style.background = _liked
+        ? 'linear-gradient(135deg,rgba(255,80,80,0.35) 0%,rgba(255,120,120,0.25) 100%)'
+        : 'linear-gradient(135deg,rgba(255,100,100,0.1) 0%,rgba(255,140,140,0.05) 100%)';
+      _dBtn.style.borderColor = _liked ? 'rgba(255,80,80,0.6)' : 'rgba(255,100,100,0.2)';
+    }
+    if (_dHeart) _dHeart.textContent = _liked ? '❤️' : '🤍';
+    if (_sHeart) _sHeart.textContent = _liked ? '❤️' : '🤍';
+    if (_sCount) _sCount.textContent = likeCount;
+    if (_sBtn)   _sBtn.classList.toggle('liked', _liked);
+
   } catch (e) {
     console.error("좋아요 저장 실패:", e.code, e.message);
     // 실패 시 즉시 UI 원복 (heart를 이전 상태로)
@@ -1949,7 +1985,8 @@ async function toggleCommentLike(fandom, postId, commentId) {
     } else {
       await likeRef.set(true);
     }
-    // 댓글 리스너가 comments 경로 전체를 구독하므로 자동으로 UI 재렌더링됨
+    // ★ .once() 전환으로 자동 재렌더 없음 → 댓글 목록 수동 재로드
+    loadDetailComments(fandom, postId);
   } catch (e) {
     console.error("댓글 좋아요 실패:", e.code, e.message);
     showToast("댓글 좋아요 저장에 실패했어요.");
@@ -1990,6 +2027,8 @@ async function deleteComment(fandom, postId, commentId) {
     await db.ref(`comments/${fandom}/${postId}/${commentId}`).remove();
     db.ref(`community/${fandom}/${postId}/commentsCount`).transaction(c => Math.max(0, (c || 0) - 1)).catch(() => {});
     showToast("댓글이 삭제되었어요");
+    // ★ .once() 전환으로 자동 재렌더 없음 → 수동 재로드
+    loadDetailComments(fandom, postId);
   } catch (error) {
     showToast("삭제 실패: " + error.message);
     console.error(error);
@@ -2043,6 +2082,8 @@ async function saveEditComment() {
 
     showToast("댓글이 수정되었어요!");
     closeEditCommentModal();
+    // ★ .once() 전환으로 자동 재렌더 없음 → 수동 재로드
+    loadDetailComments(fandom, postId);
   } catch (error) {
     showToast("댓글 수정 실패: " + error.message);
     console.error(error);
