@@ -31,6 +31,7 @@
       ".read": true,
       ".write": "auth != null",
       "$group": {
+        ".indexOn": ["timestamp"],
         "$postId": {
           ".write": "root.child('community').child($group).child($postId).child('authorUid').val() === auth.uid || !root.child('community').child($group).child($postId).exists()",
           ".validate": "newData.hasChildren(['title', 'content', 'authorUid', 'timestamp'])",
