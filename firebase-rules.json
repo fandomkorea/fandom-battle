@@ -114,6 +114,46 @@
         ".validate": "newData.hasChildren(['krName', 'enName', 'requestedBy', 'timestamp'])"
       }
     },
+    "likes": {
+      "$fandom": {
+        "$postId": {
+          ".read": true,
+          ".write": "auth != null",
+          "$uid": {
+            ".write": "$uid === auth.uid",
+            ".validate": "newData.val() === true"
+          }
+        }
+      }
+    },
+    "comments": {
+      "$fandom": {
+        "$postId": {
+          ".read": true,
+          ".write": "auth != null",
+          "$commentId": {
+            ".write": "auth != null && (!data.exists() || data.child('authorUid').val() === auth.uid)",
+            ".validate": "newData.hasChildren(['content', 'authorUid', 'timestamp'])",
+            "content": { ".validate": "newData.isString() && newData.val().length > 0" },
+            "authorUid": { ".validate": "newData.val() === auth.uid" },
+            "timestamp": { ".validate": "newData.isNumber()" },
+            "isHidden": { ".validate": "newData.isBoolean()" },
+            "likes": {
+              "$uid": {
+                ".write": "$uid === auth.uid",
+                ".validate": "newData.val() === true"
+              }
+            },
+            "replies": {
+              "$replyId": {
+                ".write": "auth != null && (!data.exists() || data.child('authorUid').val() === auth.uid)",
+                ".validate": "newData.hasChildren(['content', 'authorUid', 'timestamp'])"
+              }
+            }
+          }
+        }
+      }
+    },
     "group_records": {
       ".read": true,
       ".write": false

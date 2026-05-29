@@ -114,7 +114,7 @@ function loadCommunityPosts() {
   // 1회 읽기 (실시간 구독 제거 → 읽기 횟수 절감)
   communityPostsLoaded = false;
   currentCommunityListener = `community/${selectedFandom}`;
-  db.ref(currentCommunityListener).once("value", snap => {
+  db.ref(currentCommunityListener).orderByChild('timestamp').limitToLast(30).once("value", snap => {
     communityPostsLoaded = true;
     const posts = snap.val() || {};
 
@@ -399,8 +399,8 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
   const postNumber = index + 1; // 1부터 시작하는 순번
 
   // 좋아요/댓글/조회수 초기값 (post 데이터에서 직접 읽기 — DOM 삽입 전 Firebase 재쿼리 불필요)
-  const likeCount = Object.keys(post.likes || {}).length;
-  const commentCount = Object.values(post.comments || {}).filter(c => !c.isHidden).length;
+  const likeCount = post.likesCount != null ? post.likesCount : Object.keys(post.likes || {}).length;
+  const commentCount = post.commentsCount != null ? post.commentsCount : Object.values(post.comments || {}).filter(c => !c.isHidden).length;
   const isHot = likeCount >= 5; // 좋아요 5개 이상 HOT
 
   const postEl = document.createElement("div");
@@ -622,7 +622,7 @@ async function showPostDetail(fandom, postId) {
       if (stickyCount) stickyCount.textContent = likeCount;
       if (stickyBtn) stickyBtn.classList.toggle('liked', hasLiked);
     };
-    const likesRef = db.ref(`community/${fandom}/${postId}/likes`);
+    const likesRef = db.ref(`likes/${fandom}/${postId}`);
     likesRef.on("value", likesCallback);
     postDetailListeners.likes = { ref: likesRef, callback: likesCallback };
 
@@ -810,14 +810,14 @@ function loadDetailComments(fandom, postId) {
   };
 
   // 리스너 등록 및 저장
-  const commentsRef = db.ref(`community/${fandom}/${postId}/comments`);
+  const commentsRef = db.ref(`comments/${fandom}/${postId}`);
   commentsRef.on("value", commentsCallback);
   postDetailListeners.comments = { ref: commentsRef, callback: commentsCallback };
 }
 
 // ── 답글 수 로드 ──
 function loadReplyCount(fandom, postId, commentId) {
-  db.ref(`community/${fandom}/${postId}/comments/${commentId}/replies`).once("value", snap => {
+  db.ref(`comments/${fandom}/${postId}/${commentId}/replies`).once("value", snap => {
     const count = snap.exists() ? Object.keys(snap.val()).length : 0;
     const el = document.getElementById(`reply-count-${commentId}`);
     if (el) el.textContent = count;
@@ -839,7 +839,7 @@ async function loadReplies(fandom, postId, commentId) {
   if (!listEl) return;
   listEl.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:4px 0">로딩 중...</div>';
 
-  const snap = await db.ref(`community/${fandom}/${postId}/comments/${commentId}/replies`).once("value");
+  const snap = await db.ref(`comments/${fandom}/${postId}/${commentId}/replies`).once("value");
   const replies = snap.val() || {};
   const entries = Object.entries(replies).sort((a, b) => (a[1].timestamp || 0) - (b[1].timestamp || 0));
 
@@ -880,7 +880,7 @@ async function submitReply(fandom, postId, commentId) {
   try {
     const replyId = db.ref().push().key;
     const replyNickname = currentUser.customNickname || currentUser.displayName || '익명';
-    await db.ref(`community/${fandom}/${postId}/comments/${commentId}/replies/${replyId}`).set({
+    await db.ref(`comments/${fandom}/${postId}/${commentId}/replies/${replyId}`).set({
       content,
       authorUid: currentUser.uid,
       authorNickname: replyNickname,
@@ -927,7 +927,7 @@ async function submitDetailComment(fandom, postId) {
   try {
     const commentId = db.ref().push().key;
     const commentNickname = currentUser.customNickname || currentUser.displayName || "익명";
-    await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).set({
+    await db.ref(`comments/${fandom}/${postId}/${commentId}`).set({
       content,
       authorUid: currentUser.uid,
       authorNickname: commentNickname,
@@ -936,6 +936,7 @@ async function submitDetailComment(fandom, postId) {
       timestamp: Date.now(),
       isHidden: false
     });
+    db.ref(`community/${fandom}/${postId}/commentsCount`).transaction(c => (c || 0) + 1).catch(() => {});
     textarea.value = "";
     // ★ 글자 수 카운터 리셋
     const charCount = document.getElementById(`char-count-${postId}`);
@@ -970,7 +971,7 @@ async function submitStickyComment(fandom, postId) {
   try {
     const commentId = db.ref().push().key;
     const stickyNickname = currentUser.customNickname || currentUser.displayName || "익명";
-    await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).set({
+    await db.ref(`comments/${fandom}/${postId}/${commentId}`).set({
       content,
       authorUid: currentUser.uid,
       authorNickname: stickyNickname,
@@ -979,6 +980,7 @@ async function submitStickyComment(fandom, postId) {
       timestamp: Date.now(),
       isHidden: false
     });
+    db.ref(`community/${fandom}/${postId}/commentsCount`).transaction(c => (c || 0) + 1).catch(() => {});
     if (textarea) {
       textarea.value = '';
       textarea.style.height = '';
@@ -1239,7 +1241,7 @@ function showCommentsModal(fandom, postId) {
   };
 
   // 리스너 등록 및 저장
-  const commentsRef = db.ref(`community/${fandom}/${postId}/comments`);
+  const commentsRef = db.ref(`comments/${fandom}/${postId}`);
   commentsRef.on("value", commentsModalCallback);
   commentsModalListener = { ref: commentsRef, callback: commentsModalCallback };
 
@@ -1286,13 +1288,14 @@ async function submitCommentFromModal(fandom, postId) {
 
   try {
     const commentId = db.ref().push().key;
-    await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).set({
+    await db.ref(`comments/${fandom}/${postId}/${commentId}`).set({
       content,
       authorUid: currentUser.uid,
       authorName: currentUser.customNickname || currentUser.displayName || "익명",
       timestamp: Date.now(),
       isHidden: false
     });
+    db.ref(`community/${fandom}/${postId}/commentsCount`).transaction(c => (c || 0) + 1).catch(() => {});
     textarea.value = "";
     showToast("댓글이 작성됐어요!");
   } catch (e) {
@@ -1312,7 +1315,7 @@ function updateCommentCount(fandom, postId) {
     if (commentCountEl) commentCountEl.textContent = count;
   };
 
-  const commentsRef = db.ref(`community/${fandom}/${postId}/comments`);
+  const commentsRef = db.ref(`comments/${fandom}/${postId}`);
   commentsRef.on("value", commentCountCallback);
   postListListeners.push({ ref: commentsRef, callback: commentCountCallback });
 }
@@ -1636,10 +1639,12 @@ async function submitPost() {
       isHidden: false,
       reportCount: 0,
       views: 0,
-      type: template, // 게시글 유형 저장
-      isSchedule: isSchedule, // 일정 여부
-      imageUrl: postImageUrl || null, // 이미지 URL (있으면 저장)
-      imagePublicId: postImagePublicId || null // Cloudinary public_id (이미지 삭제용)
+      likesCount: 0,
+      commentsCount: 0,
+      type: template,
+      isSchedule: isSchedule,
+      imageUrl: postImageUrl || null,
+      imagePublicId: postImagePublicId || null
     };
 
     await db.ref(`community/${selectedFandom}/${postId}`).set(postData);
@@ -1766,6 +1771,8 @@ async function deletePost(fandom, postId, closeAfterDelete = false) {
     // Database에서 게시물 삭제
     await db.ref(`community/${fandom}/${postId}`).remove();
     db.ref(`user_posts/${currentUser.uid}/${postId}`).remove().catch(() => {});
+    db.ref(`likes/${fandom}/${postId}`).remove().catch(() => {});
+    db.ref(`comments/${fandom}/${postId}`).remove().catch(() => {});
     showToast("✅ 게시물이 삭제되었어요");
     // 목록에서 즉시 제거
     document.querySelector(`[data-postid="${postId}"]`)?.remove();
@@ -1824,7 +1831,7 @@ async function toggleLike(fandom, postId) {
   const likeBtn = document.getElementById("postDetailLikeBtn");
   if (likeBtn) likeBtn.style.opacity = "0.5";
 
-  const likeRef = db.ref(`community/${fandom}/${postId}/likes/${currentUser.uid}`);
+  const likeRef = db.ref(`likes/${fandom}/${postId}/${currentUser.uid}`);
 
   try {
     const snapshot = await likeRef.once("value");
@@ -1838,8 +1845,9 @@ async function toggleLike(fandom, postId) {
     }
 
     // 좋아요 수 업데이트 및 data-likes 속성 갱신
-    const likesSnap = await db.ref(`community/${fandom}/${postId}/likes`).once("value");
+    const likesSnap = await db.ref(`likes/${fandom}/${postId}`).once("value");
     const likeCount = Object.keys(likesSnap.val() || {}).length;
+    db.ref(`community/${fandom}/${postId}/likesCount`).set(likeCount).catch(() => {});
 
     const postEl = document.querySelector(`[data-postid="${postId}"]`);
     if (postEl) postEl.setAttribute("data-likes", likeCount);
@@ -1871,7 +1879,7 @@ async function toggleCommentLike(fandom, postId, commentId) {
     showToast("로그인 후 좋아요를 할 수 있습니다");
     return;
   }
-  const likeRef = db.ref(`community/${fandom}/${postId}/comments/${commentId}/likes/${currentUser.uid}`);
+  const likeRef = db.ref(`comments/${fandom}/${postId}/${commentId}/likes/${currentUser.uid}`);
   try {
     const snap = await likeRef.once("value");
     if (snap.exists()) {
@@ -1888,7 +1896,7 @@ async function toggleCommentLike(fandom, postId, commentId) {
 
 // ── 좋아요 수 로드 (once: toggleLike 후 1회성 갱신용) ──
 function loadLikes(fandom, postId) {
-  db.ref(`community/${fandom}/${postId}/likes`).once("value", snap => {
+  db.ref(`likes/${fandom}/${postId}`).once("value", snap => {
     const likes = snap.val() || {};
     const likeCount = Object.keys(likes).length;
     const likeCountEl = document.getElementById(`like-count-${postId}`);
@@ -1929,7 +1937,7 @@ function loadLikesForPostList(fandom, postId) {
     }
   };
 
-  const likesRef = db.ref(`community/${fandom}/${postId}/likes`);
+  const likesRef = db.ref(`likes/${fandom}/${postId}`);
   likesRef.once("value", likesCallback);
 }
 
@@ -1954,7 +1962,7 @@ function loadComments(fandom, postId) {
   const commentsList = document.getElementById(`comments-list-${postId}`);
   if (!commentsList) return;
 
-  db.ref(`community/${fandom}/${postId}/comments`).on("value", snap => {
+  db.ref(`comments/${fandom}/${postId}`).on("value", snap => {
     const comments = snap.val() || {};
     commentsList.innerHTML = "";
 
@@ -2000,13 +2008,14 @@ async function submitComment(fandom, postId) {
 
   try {
     const commentId = db.ref().push().key;
-    await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).set({
+    await db.ref(`comments/${fandom}/${postId}/${commentId}`).set({
       content,
       authorUid: currentUser.uid,
       authorName: currentUser.customNickname || currentUser.displayName || "익명",
       timestamp: Date.now(),
       isHidden: false
     });
+    db.ref(`community/${fandom}/${postId}/commentsCount`).transaction(c => (c || 0) + 1).catch(() => {});
     input.value = "";
     showToast("💬 댓글이 등록되었어요!");
 
@@ -2028,7 +2037,7 @@ async function deleteComment(fandom, postId, commentId) {
   }
 
   // 댓글 작성자 확인
-  const snap = await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).once("value");
+  const snap = await db.ref(`comments/${fandom}/${postId}/${commentId}`).once("value");
   const comment = snap.val();
   if (!comment) { showToast("댓글을 찾을 수 없어요"); return; }
   if (comment.authorUid !== currentUser.uid) {
@@ -2039,7 +2048,8 @@ async function deleteComment(fandom, postId, commentId) {
   if (!confirm("댓글을 삭제하시겠어요?")) return;
 
   try {
-    await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).remove();
+    await db.ref(`comments/${fandom}/${postId}/${commentId}`).remove();
+    db.ref(`community/${fandom}/${postId}/commentsCount`).transaction(c => Math.max(0, (c || 0) - 1)).catch(() => {});
     showToast("댓글이 삭제되었어요");
   } catch (error) {
     showToast("삭제 실패: " + error.message);
@@ -2088,7 +2098,7 @@ async function saveEditComment() {
   }
 
   try {
-    await db.ref(`community/${fandom}/${postId}/comments/${commentId}`).update({
+    await db.ref(`comments/${fandom}/${postId}/${commentId}`).update({
       content: newContent
     });
 
@@ -2611,14 +2621,14 @@ function sortAllFeedPostsArray(mode) {
     allFeedPosts.sort((a, b) => (b.post.timestamp || 0) - (a.post.timestamp || 0));
   } else if (mode === 'popular') {
     allFeedPosts.sort((a, b) => {
-      const la = Object.keys(a.post.likes || {}).length;
-      const lb = Object.keys(b.post.likes || {}).length;
+      const la = a.post.likesCount != null ? a.post.likesCount : Object.keys(a.post.likes || {}).length;
+      const lb = b.post.likesCount != null ? b.post.likesCount : Object.keys(b.post.likes || {}).length;
       return lb - la || (b.post.timestamp || 0) - (a.post.timestamp || 0);
     });
   } else if (mode === 'best') {
     allFeedPosts.sort((a, b) => {
-      const la = Object.keys(a.post.likes || {}).length;
-      const lb = Object.keys(b.post.likes || {}).length;
+      const la = a.post.likesCount != null ? a.post.likesCount : Object.keys(a.post.likes || {}).length;
+      const lb = b.post.likesCount != null ? b.post.likesCount : Object.keys(b.post.likes || {}).length;
       const va = a.post.views || 0;
       const vb = b.post.views || 0;
       const scoreA = la * 0.4 + va * 0.6;
