@@ -430,6 +430,21 @@
   </div>
 </div>
 
+<!-- 게시글 삭제 확인 모달 -->
+<div id="deletePostModal" style="display:none !important;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1001;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)" onclick="if(event.target===this)closeDeletePostModal()">
+  <div style="background:linear-gradient(180deg,var(--card) 0%,rgba(20,15,30,0.98) 100%);border:1px solid rgba(255,80,80,0.25);border-radius:16px;padding:0;width:100%;max-width:360px;box-shadow:0 24px 64px rgba(0,0,0,0.5),0 0 40px rgba(255,80,80,0.08);overflow:hidden">
+    <div style="padding:28px 24px 24px;text-align:center">
+      <div style="width:52px;height:52px;background:linear-gradient(135deg,rgba(255,80,80,0.2) 0%,rgba(255,120,80,0.1) 100%);border:1.5px solid rgba(255,80,80,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 16px">🗑️</div>
+      <h3 style="font-size:1.1rem;font-weight:800;color:var(--text);margin:0 0 10px">게시글을 삭제할까요?</h3>
+      <p style="font-size:0.85rem;color:var(--muted);margin:0;line-height:1.6">삭제하면 댓글도 함께 사라지며<br>복구할 수 없어요.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,80,80,0.15)">
+      <button onclick="closeDeletePostModal()" style="padding:16px;background:transparent;border:none;border-right:1px solid rgba(255,80,80,0.15);color:var(--muted);font-size:0.95rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">취소</button>
+      <button id="deletePostConfirmBtn" onclick="confirmDeletePostAction()" style="padding:16px;background:transparent;border:none;color:#ff5050;font-size:0.95rem;font-weight:800;font-family:inherit;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(255,80,80,0.1)'" onmouseout="this.style.background='transparent'">삭제</button>
+    </div>
+  </div>
+</div>
+
 <!-- 댓글 수정 모달 -->
 <div id="editCommentModal" style="display:none !important;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;padding:16px;overflow-y:auto">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;width:100%;max-width:500px">
@@ -460,7 +475,7 @@
 <script src="js/voting.js?v=20260529a"></script>
 <script src="js/ranking.js?v=20260529f"></script>
 <script src="js/utils.js?v=20260529d"></script>
-<script src="js/community.js?v=20260529f"></script>
+<script src="js/community.js?v=20260529g"></script>
 </body>
 </html>
 

@@ -1286,11 +1286,24 @@ function updateCommentCount(fandom, postId) {
   postListListeners.push({ ref: commentsRef, callback: commentCountCallback });
 }
 
-// ── 게시물 삭제 확인 ──
+// ── 게시물 삭제 확인 모달 ──
+let deletePostState = { fandom: null, postId: null, closeDetail: false };
+
 function confirmDeletePost(fandom, postId, closeDetail = false) {
-  if (confirm("정말 이 게시물을 삭제하시겠어요?\n삭제하면 댓글도 함께 사라져요.")) {
-    deletePost(fandom, postId, closeDetail);
-  }
+  deletePostState = { fandom, postId, closeDetail };
+  document.getElementById('deletePostModal').style.display = 'flex';
+}
+
+function closeDeletePostModal() {
+  document.getElementById('deletePostModal').style.display = 'none';
+  deletePostState = { fandom: null, postId: null, closeDetail: false };
+}
+
+function confirmDeletePostAction() {
+  const { fandom, postId, closeDetail } = deletePostState;
+  if (!fandom || !postId) return;
+  closeDeletePostModal();
+  deletePost(fandom, postId, closeDetail);
 }
 
 // ── 게시물 작성 폼 ──
@@ -1453,6 +1466,11 @@ document.addEventListener("click", (e) => {
 // ESC 키로 모달 닫기 (내용 있으면 확인)
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
+    const deleteModal = document.getElementById("deletePostModal");
+    if (deleteModal && deleteModal.style.display === "flex") {
+      closeDeletePostModal();
+      return;
+    }
     const editModal = document.getElementById("editPostModal");
     if (editModal && editModal.style.display === "flex") {
       closeEditPostModal();
@@ -1710,6 +1728,8 @@ async function deletePost(fandom, postId, closeAfterDelete = false) {
     // Database에서 게시물 삭제
     await db.ref(`community/${fandom}/${postId}`).remove();
     showToast("✅ 게시물이 삭제되었어요");
+    // 목록에서 즉시 제거
+    document.querySelector(`[data-postid="${postId}"]`)?.remove();
     if (closeAfterDelete) closePostDetail();
   } catch (error) {
     showToast("삭제 실패: " + error.message);
