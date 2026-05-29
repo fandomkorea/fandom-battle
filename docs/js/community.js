@@ -52,7 +52,7 @@ let postImagePublicId = null; // 이미지 키 (R2 object key 또는 Cloudinary 
 
 // ── R2 이미지 업로드 Worker URL (Cloudinary 대체) ──
 // 배포 후 입력: 'https://fandom-upload.coder-leebeegle2.workers.dev'
-const R2_UPLOAD_WORKER_URL = '';
+const R2_UPLOAD_WORKER_URL = 'https://fanpick-upload.coder-leebeegle2.workers.dev';
 
 // ── 현재 열린 게시글 최소 메타 캐시 (알림 전송 시 Firebase 재읽기 방지) ──
 let currentViewingPost = null;
