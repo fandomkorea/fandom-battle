@@ -76,8 +76,8 @@ const GROUP_META = {
   "ENHYPEN":           { emoji: "🖤", color: "#546e7a", fandom: "ENGENE", kr: "엔하이픈" },
   "TWICE":             { emoji: "🎀", color: "#e91e8c", fandom: "ONCE", kr: "트와이스" },
   "EXO":               { emoji: "⭐", color: "#f57f17", fandom: "EXO-L", kr: "엑소" },
-  "NCT 127":           { emoji: "🔴", color: "#e53935", fandom: "NCTzen", kr: "NCT 127" },
-  "NCT Dream":         { emoji: "🌈", color: "#43a047", fandom: "NCTzen", kr: "NCT 드림" },
+  "NCT 127":           { emoji: "💚", color: "#39FF14", fandom: "NCTzen", kr: "NCT 127" },
+  "NCT Dream":         { emoji: "🌈", color: "#43a047", fandom: "NCTzen", kr: "NCT Dream" },
   "WayV":              { emoji: "💛", color: "#f9a825", fandom: "WayZenNi", kr: "웨이브" },
   "ITZY":              { emoji: "💥", color: "#e53935", fandom: "MIDZY", kr: "있지" },
   "NMIXX":             { emoji: "🫧", color: "#1565c0", fandom: "NSWER", kr: "엔믹스" },
@@ -101,7 +101,7 @@ const GROUP_META = {
   "&TEAM":             { emoji: "💜", color: "#7c4dff", fandom: "FAMILY", kr: "앤드팀" },
   "XDINARY HEROES":    { emoji: "🎸", color: "#d32f2f", fandom: "VILLAINS", kr: "엑스디너리 히어로즈" },
   "TWS":               { emoji: "✨", color: "#0288d1", fandom: "TWINSS", kr: "투어스" },
-  "NCT WISH":          { emoji: "🌿", color: "#43a047", fandom: "WISHY", kr: "엔시티 위시" },
+  "NCT WISH":          { emoji: "🌿", color: "#43a047", fandom: "WISHY", kr: "NCT WISH" },
 
   // ★ 5세대 신인 그룹
   "BOYNEXTDOOR":       { emoji: "🚪", color: "#1565c0", fandom: "BNDCLASS", kr: "보이넥스트도어" },
