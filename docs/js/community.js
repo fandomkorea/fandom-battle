@@ -1563,6 +1563,65 @@ function showPostCreateForm() {
 // 모달 상태 추적
 let modalHistoryState = null;
 
+// ── 커뮤니티 글쓰기 투표권 보상 모달 ──
+function _showCommunityVoteRewardModal(writtenFandom) {
+  const existing = document.getElementById("communityRewardModal");
+  if (existing) existing.remove();
+
+  const myFav = currentUserFav || writtenFandom;
+  const meta  = GROUP_META[myFav] || {};
+  const color = meta.color || '#7c4dff';
+  const emoji = meta.emoji || '🩷';
+
+  const overlay = document.createElement("div");
+  overlay.id = "communityRewardModal";
+  overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(4px)";
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+  const box = document.createElement("div");
+  box.style.cssText = `background:linear-gradient(135deg,rgba(20,15,40,0.98) 0%,rgba(30,20,50,0.98) 100%);border:1.5px solid ${hexToRgba(color,0.45)};border-radius:20px;padding:36px 28px;max-width:380px;width:90%;box-shadow:0 20px 60px ${hexToRgba(color,0.25)},inset 0 1px 0 rgba(255,255,255,0.08);animation:modalSlideIn 0.3s ease-out;text-align:center`;
+
+  box.innerHTML = `
+    <div style="font-size:3rem;margin-bottom:10px">🎁</div>
+    <h2 style="font-size:1.35rem;font-weight:800;color:#fff;margin-bottom:6px">투표권 1개 지급!</h2>
+    <p style="font-size:0.88rem;color:rgba(255,255,255,0.6);margin-bottom:20px;line-height:1.6">
+      오늘 첫 커뮤니티 게시글 작성을 완료했어요 ✅<br>
+      투표권 <strong style="color:#FFD700">1개</strong>를 드렸어요!
+    </p>
+    <div style="background:${hexToRgba(color,0.12)};border:1px solid ${hexToRgba(color,0.3)};border-radius:12px;padding:14px 16px;margin-bottom:20px">
+      <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-bottom:4px">현재 보유 투표권</div>
+      <div style="font-size:1.6rem;font-weight:800;color:${color}">💳 ${pendingPaidVotes}개</div>
+    </div>
+    <button id="communityRewardVoteBtn" style="width:100%;padding:14px;background:linear-gradient(135deg,${color},${hexToRgba(color,0.7)});border:none;border-radius:12px;color:#fff;font-weight:800;font-size:0.97rem;cursor:pointer;font-family:inherit;margin-bottom:10px;transition:all 0.2s" onmouseover="this.style.transform='translateY(-2px)';this.style.opacity='0.9'" onmouseout="this.style.transform='translateY(0)';this.style.opacity='1'">
+      ${emoji} ${escHtml(myFav)}에 빠른투표하기
+    </button>
+    <button id="communityRewardCloseBtn" style="width:100%;padding:11px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:12px;color:rgba(255,255,255,0.6);font-size:0.88rem;cursor:pointer;font-family:inherit">
+      나중에 투표할게요
+    </button>
+  `;
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  // 빠른투표 버튼
+  box.querySelector("#communityRewardVoteBtn").onclick = () => {
+    overlay.remove();
+    showVotePage();
+    // 잠깐 후 해당 팬덤 투표 실행
+    setTimeout(() => {
+      if (typeof voteForGroup === 'function' && myFav) {
+        voteForGroup(myFav);
+      }
+    }, 400);
+  };
+
+  // 닫기 버튼
+  box.querySelector("#communityRewardCloseBtn").onclick = () => overlay.remove();
+
+  // 5초 후 자동 닫기
+  setTimeout(() => { if (document.getElementById("communityRewardModal")) overlay.remove(); }, 6000);
+}
+
 function openPostCreateModal() {
   if (!isLoggedIn || !currentUser) {
     showToast("로그인이 필요합니다");
@@ -1844,7 +1903,7 @@ async function submitPost() {
     postImagePublicId = null;
 
     // ── 하루 첫 글 작성 시 투표권 1개 지급 ──
-    let toastMsg = isSchedule ? "✅ 게시물이 작성되었어요! 📅 정보 제공자 배지를 획득했습니다!" : "✅ 게시물이 작성되었어요!";
+    let gotReward = false;
     try {
       const today = getTodayKey();
       const rewardKey = `users/${currentUser.uid}/lastCommunityPostDate`;
@@ -1854,16 +1913,18 @@ async function submitPost() {
         await db.ref(`users/${currentUser.uid}/pendingPaidVotes`).transaction(cur => (cur || 0) + 1);
         pendingPaidVotes = (pendingPaidVotes || 0) + 1;
         if (typeof updateAuthUI === 'function') updateAuthUI();
-        toastMsg = isSchedule
-          ? "✅ 게시물 작성 완료! 🎁 투표권 1개 지급! 📅 정보 제공자 배지도 획득!"
-          : "✅ 게시물 작성 완료! 🎁 오늘의 투표권 1개를 드렸어요!";
+        gotReward = true;
       }
     } catch (e) {
       console.warn("커뮤니티 투표권 지급 실패:", e);
     }
     if (isSchedule) await addUserBadge(currentUser.uid, "info-provider");
-    showToast(toastMsg);
     closePostCreateModal();
+    if (gotReward) {
+      _showCommunityVoteRewardModal(selectedFandom);
+    } else {
+      showToast(isSchedule ? "✅ 게시물이 작성되었어요! 📅 정보 제공자 배지를 획득했습니다!" : "✅ 게시물이 작성되었어요!");
+    }
 
     // ★ 새 글 작성 → 캐시 무효화 (다음 로드 시 Firebase 재요청)
     _invalidatePostListCache(selectedFandom);
