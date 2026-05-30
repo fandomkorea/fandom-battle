@@ -1843,13 +1843,26 @@ async function submitPost() {
     postImageUrl = null;
     postImagePublicId = null;
 
-    // 일정 게시글이면 "정보 제공자" 배지 부여
-    if (isSchedule) {
-      await addUserBadge(currentUser.uid, "info-provider");
-      showToast("✅ 게시물이 작성되었어요! 📅 정보 제공자 배지를 획득했습니다!");
-    } else {
-      showToast("✅ 게시물이 작성되었어요!");
+    // ── 하루 첫 글 작성 시 투표권 1개 지급 ──
+    let toastMsg = isSchedule ? "✅ 게시물이 작성되었어요! 📅 정보 제공자 배지를 획득했습니다!" : "✅ 게시물이 작성되었어요!";
+    try {
+      const today = getTodayKey();
+      const rewardKey = `users/${currentUser.uid}/lastCommunityPostDate`;
+      const lastSnap = await db.ref(rewardKey).once("value");
+      if (lastSnap.val() !== today) {
+        await db.ref(rewardKey).set(today);
+        await db.ref(`users/${currentUser.uid}/pendingPaidVotes`).transaction(cur => (cur || 0) + 1);
+        pendingPaidVotes = (pendingPaidVotes || 0) + 1;
+        if (typeof updateAuthUI === 'function') updateAuthUI();
+        toastMsg = isSchedule
+          ? "✅ 게시물 작성 완료! 🎁 투표권 1개 지급! 📅 정보 제공자 배지도 획득!"
+          : "✅ 게시물 작성 완료! 🎁 오늘의 투표권 1개를 드렸어요!";
+      }
+    } catch (e) {
+      console.warn("커뮤니티 투표권 지급 실패:", e);
     }
+    if (isSchedule) await addUserBadge(currentUser.uid, "info-provider");
+    showToast(toastMsg);
     closePostCreateModal();
 
     // ★ 새 글 작성 → 캐시 무효화 (다음 로드 시 Firebase 재요청)
@@ -3046,7 +3059,7 @@ async function loadCategoryOverview(forceRefresh = false) {
 
     // 베스트: 7일 이내, 좋아요×2+댓글 가중치
     const bestPosts = allPosts
-      .filter(p => (p.post.timestamp || 0) > sevenDaysAgo)
+      .filter(p => (p.post.timestamp || 0) > sevenDaysAgo && (p.post.likesCount || 0) + (p.post.commentsCount || 0) >= 1)
       .sort((a, b) => {
         const sA = (a.post.likesCount || 0) * 2 + (a.post.commentsCount || 0);
         const sB = (b.post.likesCount || 0) * 2 + (b.post.commentsCount || 0);
@@ -3293,7 +3306,7 @@ function showFandomCategoryFull(fandom, catId) {
     filtered = [...allPosts].sort((a, b) => (b.post.timestamp || 0) - (a.post.timestamp || 0));
   } else if (catId === 'best') {
     filtered = [...allPosts]
-      .filter(p => (p.post.timestamp || 0) > sevenDaysAgo)
+      .filter(p => (p.post.timestamp || 0) > sevenDaysAgo && (p.post.likesCount || 0) + (p.post.commentsCount || 0) >= 1)
       .sort((a, b) => {
         const sA = (a.post.likesCount || 0) * 2 + (a.post.commentsCount || 0);
         const sB = (b.post.likesCount || 0) * 2 + (b.post.commentsCount || 0);
