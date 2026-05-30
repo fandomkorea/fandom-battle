@@ -2750,8 +2750,19 @@ function _renderGroupedFeed(sections) {
     return;
   }
 
-  postsList.innerHTML = sections.map(({fandom, posts}) => {
+  const RANK_BADGES = [
+    { label: '1위', bg: 'linear-gradient(135deg,#FFD700,#FFA500)', color: '#000', shadow: '0 0 8px rgba(255,200,0,0.5)' },
+    { label: '2위', bg: 'linear-gradient(135deg,#C0C0C0,#A8A8A8)', color: '#000', shadow: '0 0 6px rgba(192,192,192,0.4)' },
+    { label: '3위', bg: 'linear-gradient(135deg,#CD7F32,#A0522D)', color: '#fff', shadow: '0 0 6px rgba(205,127,50,0.4)' },
+    { label: '4위', bg: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)', shadow: 'none' },
+    { label: '5위', bg: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)', shadow: 'none' },
+  ];
+
+  postsList.innerHTML = sections.map(({fandom, posts}, idx) => {
     const meta = GROUP_META[fandom] || {emoji: '🌟', kr: fandom};
+    const badge = RANK_BADGES[idx] || RANK_BADGES[4];
+    const badgeHtml = `<span class="fandom-rank-badge" style="background:${badge.bg};color:${badge.color};box-shadow:${badge.shadow}">${badge.label}</span>`;
+
     const postsHtml = posts.map(({postId, post}) => {
       const ago = getRelativeTime(post.timestamp);
       const comments = post.commentsCount || 0;
@@ -2769,7 +2780,7 @@ function _renderGroupedFeed(sections) {
     return `
       <div class="fandom-group-section">
         <div class="fandom-group-header">
-          <span class="fandom-group-title">${escHtml(meta.emoji || '🌟')} ${escHtml(meta.kr || fandom)}</span>
+          <span class="fandom-group-title">${badgeHtml} ${escHtml(meta.emoji || '🌟')} ${escHtml(meta.kr || fandom)}</span>
           <button class="fandom-group-more" onclick="selectFandomTab('${escAttr(fandom)}')">더보기 ›</button>
         </div>
         <div class="fandom-group-posts">${postsHtml}</div>
