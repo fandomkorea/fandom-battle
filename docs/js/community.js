@@ -542,19 +542,8 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
   // 사진 여부 확인
   const hasImage = post.imageUrl ? '📷' : '';
 
-  // ★ 본문 미리보기 (마크다운 기호 제거 후 1줄)
-  const previewText = post.content
-    ? post.content
-        .replace(/\*\*/g, '')
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-        .replace(/^---\n?/m, '')
-        .replace(/\n/g, ' ')
-        .trim()
-        .substring(0, 70)
-    : '';
-  const previewHtml = previewText
-    ? `<div class="post-content-preview">${escHtml(previewText)}</div>`
-    : '';
+  // 본문 미리보기 제거됨
+  const previewHtml = '';
 
   // 팬덤 배지 (전체 피드 모드에서만 표시)
   let fandomBadgeHtml = '';
