@@ -3292,7 +3292,7 @@ function _renderFandomCategoryOverview(fandom, allPosts) {
 
   const latest = sorted.slice(0, 5);
   const best = [...allPosts]
-    .filter(p => (p.post.timestamp || 0) > sevenDaysAgo)
+    .filter(p => (p.post.timestamp || 0) > sevenDaysAgo && (p.post.likesCount || 0) + (p.post.commentsCount || 0) >= 1)
     .sort((a, b) => {
       const sA = (a.post.likesCount || 0) * 2 + (a.post.commentsCount || 0);
       const sB = (b.post.likesCount || 0) * 2 + (b.post.commentsCount || 0);
