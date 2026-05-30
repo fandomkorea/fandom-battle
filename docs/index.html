@@ -156,6 +156,66 @@
       margin-right: 2px;
       letter-spacing: 0.3px;
     }
+
+    /* ── 전체 탭 서브탭 버튼 ── */
+    #allFeedSubTabBar::-webkit-scrollbar { display: none; }
+    .all-subtab-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 7px 16px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .all-subtab-btn:hover { background: rgba(124,77,255,0.15); border-color: rgba(124,77,255,0.35); color: var(--text); }
+    .all-subtab-btn.active {
+      background: rgba(124,77,255,0.25);
+      border-color: rgba(124,77,255,0.55);
+      color: var(--primary);
+    }
+
+    /* ── 베스트 글 카드 ── */
+    .best-post-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .best-post-card:hover { background: rgba(124,77,255,0.08); border-color: rgba(124,77,255,0.25); }
+    .best-post-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: nowrap; overflow: hidden; }
+    .best-rank-badge { font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 6px; white-space: nowrap; flex-shrink: 0; }
+    .best-post-fandom { font-size: 0.78rem; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+    .best-post-time { font-size: 0.72rem; color: var(--muted); margin-left: auto; white-space: nowrap; flex-shrink: 0; }
+    .best-post-title { font-size: 0.92rem; font-weight: 600; color: var(--text); line-height: 1.45; margin-bottom: 6px; }
+    .best-post-counts { font-size: 0.75rem; color: var(--muted); }
+
+    /* ── 글쓰기 카테고리 버튼 ── */
+    .post-cat-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .post-cat-btn.active {
+      background: rgba(124,77,255,0.3);
+      border-color: rgba(124,77,255,0.6);
+      color: var(--primary);
+      font-weight: 700;
+    }
   </style>
 
 </head>
@@ -342,6 +402,9 @@
   <!-- 전체 피드 마지막 업데이트 시각 -->
   <div id="allFeedLastUpdate" style="display:none;text-align:right;font-size:0.72rem;color:rgba(255,255,255,0.38);margin-top:-14px;margin-bottom:14px"></div>
 
+  <!-- 전체 탭 서브탭 바 (베스트/유머/일상/음악/잡담/팬덤별) -->
+  <div id="allFeedSubTabBar" style="display:none;gap:6px;overflow-x:auto;padding-bottom:12px;margin-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-shrink:0"></div>
+
   <!-- 게시물 리스트 (깔끔함) -->
   <div class="community-posts-section" id="communityPostsList">
     <div class="community-empty">
@@ -402,6 +465,18 @@
       <div style="margin-bottom:20px">
         <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(124,77,255,0.9);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">📌 팬덤</label>
         <div style="padding:12px 14px;background:linear-gradient(135deg,rgba(124,77,255,0.12) 0%,rgba(100,200,255,0.08) 100%);border:1.5px solid rgba(124,77,255,0.3);border-radius:10px;color:var(--text);font-weight:600;font-size:0.95rem;box-shadow:inset 0 1px 2px rgba(0,0,0,0.2)" id="postCreateFandom">선택됨</div>
+      </div>
+
+      <!-- 게시글 카테고리 선택 -->
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(124,77,255,0.9);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">🏷️ 카테고리</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <button class="post-cat-btn active" data-cat="general" onclick="selectPostCategory('general')">💬 일반</button>
+          <button class="post-cat-btn" data-cat="humor"   onclick="selectPostCategory('humor')">😂 유머</button>
+          <button class="post-cat-btn" data-cat="daily"   onclick="selectPostCategory('daily')">🌸 일상</button>
+          <button class="post-cat-btn" data-cat="music"   onclick="selectPostCategory('music')">🎵 음악/무대</button>
+          <button class="post-cat-btn" data-cat="chat"    onclick="selectPostCategory('chat')">💭 잡담</button>
+        </div>
       </div>
 
       <!-- 게시글 템플릿 선택 -->
@@ -589,7 +664,7 @@
 <script src="js/voting.js?v=20260609c"></script>
 <script src="js/ranking.js?v=20260610d"></script>
 <script src="js/utils.js?v=20260529e"></script>
-<script src="js/community.js?v=20260610l"></script>
+<script src="js/community.js?v=20260611a"></script>
 
 <!-- ★ Service Worker 등록 (PWA 캐시 + 오프라인 지원) -->
 <script>
