@@ -987,6 +987,8 @@ function toggleReplySection(fandom, postId, commentId) {
   if (!section) return;
   const isOpen = section.style.display !== 'none';
   section.style.display = isOpen ? 'none' : 'block';
+  const inputArea = document.getElementById(`reply-input-area-${commentId}`);
+  if (inputArea) inputArea.classList.toggle('open', !isOpen);
   if (!isOpen) loadReplies(fandom, postId, commentId);
 }
 
