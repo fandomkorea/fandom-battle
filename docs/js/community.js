@@ -560,10 +560,24 @@ function renderPost(fandom, postId, post, index, showFandomBadge = false) {
     ? `<span style="display:inline-flex;align-items:center;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(100,200,255,0.12);border:1px solid rgba(100,200,255,0.28);color:rgba(100,200,255,0.9);white-space:nowrap">${TYPE_LABELS[post.type]}</span>`
     : '';
 
+  // 팬덤 순위 배지
+  const fandomRank = _getFandomRank(fandom);
+  const rankBadgeHtml = fandomRank
+    ? (() => {
+        let bg, color;
+        if      (fandomRank === 1) { bg = 'linear-gradient(135deg,#FFD700,#FFA500)'; color = '#000'; }
+        else if (fandomRank === 2) { bg = 'linear-gradient(135deg,#C0C0C0,#A8A8A8)'; color = '#000'; }
+        else if (fandomRank === 3) { bg = 'linear-gradient(135deg,#CD7F32,#A0522D)'; color = '#fff'; }
+        else                       { bg = 'rgba(255,255,255,0.1)'; color = 'rgba(255,255,255,0.55)'; }
+        return `<span style="display:inline-flex;align-items:center;font-size:0.65rem;font-weight:800;padding:2px 6px;border-radius:5px;background:${bg};color:${color};white-space:nowrap;letter-spacing:0.3px;flex-shrink:0">${fandomRank}위</span>`;
+      })()
+    : '';
+
   postEl.innerHTML = `
     <div class="post-list-left">
       <div class="post-title-row">
         ${fandomBadgeHtml}
+        ${rankBadgeHtml}
         ${typeBadgeHtml}
         ${isHot ? '<span class="hot-badge">🔥 HOT</span>' : ''}
         <div class="post-list-title">${escHtml(post.title)}</div>
@@ -2763,6 +2777,16 @@ async function _loadGroupedFeed(forceRefresh = false) {
       </div>
     `;
   }
+}
+
+// ── 팬덤 현재 순위 반환 (1위=1, 없으면 null) ──
+function _getFandomRank(fandom) {
+  if (!allRankingsData || Object.keys(allRankingsData).length === 0) return null;
+  const sorted = Object.entries(allRankingsData)
+    .filter(([g]) => ALL_GROUPS.includes(g))
+    .sort((a, b) => b[1] - a[1]);
+  const idx = sorted.findIndex(([g]) => g === fandom);
+  return idx >= 0 ? idx + 1 : null;
 }
 
 // ── 랭킹 상위 5개 팬덤 가져오기 ──
