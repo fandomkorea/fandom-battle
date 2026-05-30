@@ -2492,8 +2492,9 @@ window.addEventListener('popstate', (e) => {
     closePostCreateModal();
     window._modalFromPopstate = false;
   } else if (e.state && e.state.page === 'allSubTab') {
-    // 전체 탭에 있을 때만 처리 (팬덤 탭에서 뒤로가기 시 오발동 방지)
-    if (currentSelectedTab === 'all') {
+    // 전체 탭이고 postDetail이 닫혀있을 때만 처리
+    if (currentSelectedTab === 'all' &&
+        document.getElementById('postDetailPage').style.display === 'none') {
       const prev = e.state.prevTab || 'overview';
       switchAllSubTab(prev, true);
     }
