@@ -14,6 +14,13 @@ self.addEventListener('activate', e => {
   );
 });
 
+// 응답을 캐시에 저장하는 헬퍼 (clone을 즉시 생성해 body 소비 문제 방지)
+function _cacheResponse(request, response) {
+  if (!response || !response.ok) return;
+  const cloned = response.clone(); // 즉시 clone (비동기 콜백 밖에서)
+  caches.open(CACHE_NAME).then(c => c.put(request, cloned));
+}
+
 // ── 요청 가로채기 ──
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
@@ -31,7 +38,7 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       fetch(e.request)
         .then(res => {
-          if (res.ok) caches.open(CACHE_NAME).then(c => c.put(e.request, res.clone()));
+          _cacheResponse(e.request, res);
           return res;
         })
         .catch(() => caches.match(e.request))
@@ -45,7 +52,7 @@ self.addEventListener('fetch', e => {
       caches.match(e.request).then(cached => {
         if (cached) return cached;
         return fetch(e.request).then(res => {
-          if (res.ok) caches.open(CACHE_NAME).then(c => c.put(e.request, res.clone()));
+          _cacheResponse(e.request, res);
           return res;
         });
       })
@@ -61,7 +68,7 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       fetch(e.request)
         .then(res => {
-          if (res.ok) caches.open(CACHE_NAME).then(c => c.put(e.request, res.clone()));
+          _cacheResponse(e.request, res);
           return res;
         })
         .catch(() =>
@@ -76,13 +83,13 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // 6. 그 외 정적 리소스 (폰트 캐시 등) → 캐시 우선, 없으면 네트워크
+  // 6. 그 외 정적 리소스 (이미지, 폰트 등) → 캐시 우선, 없으면 네트워크
   if (['image', 'font', 'style', 'script'].includes(e.request.destination)) {
     e.respondWith(
       caches.match(e.request).then(cached => {
         if (cached) return cached;
         return fetch(e.request).then(res => {
-          if (res.ok) caches.open(CACHE_NAME).then(c => c.put(e.request, res.clone()));
+          _cacheResponse(e.request, res);
           return res;
         });
       })

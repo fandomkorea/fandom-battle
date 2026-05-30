@@ -49,6 +49,16 @@ async function _fetchRankingsData() {
 
 // 새 데이터 적용 (trending 감지, 렌더링, 캐시 저장)
 function _applyRankingsData(data) {
+  // 낙관적 업데이트 보호: CDN 캐시가 아직 갱신 안 된 경우
+  // 로컬이 더 높으면 로컬 값 유지 (투표는 증가만 하므로 안전)
+  if (allRankingsData) {
+    Object.keys(allRankingsData).forEach(group => {
+      if ((allRankingsData[group] || 0) > (data[group] || 0)) {
+        data[group] = allRankingsData[group];
+      }
+    });
+  }
+
   if (lastRankingData) {
     Object.entries(data).forEach(([group, votes]) => {
       const oldVotes = lastRankingData[group] || 0;
