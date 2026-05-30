@@ -48,7 +48,7 @@ let _savedCommunityScrollY = 0; // 뒤로가기 스크롤 위치 복원용
 let currentOtherFandom = null; // 팬덤 찾기로 선택한 타 팬덤
 
 // ── 전체 피드 서브탭 상태 ──
-let currentAllSubTab = 'best'; // 'best' | 'humor' | 'daily' | 'music' | 'chat' | 'grouped'
+let currentAllSubTab = 'grouped'; // 'grouped' | 'best' | 'humor' | 'daily' | 'music' | 'chat'
 
 // ── 글쓰기 카테고리 선택 ──
 let selectedPostCategory = 'general';
@@ -2794,12 +2794,12 @@ function _renderAllSubTabBar() {
   const bar = document.getElementById("allFeedSubTabBar");
   if (!bar) return;
   const tabs = [
+    { id: 'grouped', label: '📋 팬덤별' },
     { id: 'best',    label: '🏆 베스트' },
     { id: 'humor',   label: '😂 유머' },
     { id: 'daily',   label: '🌸 일상' },
     { id: 'music',   label: '🎵 음악' },
     { id: 'chat',    label: '💬 잡담' },
-    { id: 'grouped', label: '📋 팬덤별' },
   ];
   bar.innerHTML = tabs.map(t =>
     `<button class="all-subtab-btn${t.id === currentAllSubTab ? ' active' : ''}" data-subtab="${t.id}" onclick="switchAllSubTab('${t.id}')">${t.label}</button>`
