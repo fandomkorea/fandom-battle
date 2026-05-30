@@ -2582,6 +2582,9 @@ function selectFandomTab(tabId) {
     return;
   }
 
+  // 탭 전환 시 현재 history state를 초기화 — 이전 탭의 stale state가 뒤로가기를 오염시키는 것 방지
+  history.replaceState({ page: 'fandomTab', tabId }, '');
+
   // 전체 탭이 아닌 곳으로 이동 시 정렬 버튼 복원 + 서브탭 바 숨김
   if (tabId !== 'all') {
     const sortGroup = document.getElementById("sortButtonGroup");
