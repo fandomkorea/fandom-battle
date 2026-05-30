@@ -3358,6 +3358,17 @@ function showFandomCategoryFull(fandom, catId) {
   const sortGroup = document.getElementById("sortButtonGroup");
   if (sortGroup) sortGroup.style.display = 'none';
 
+  // 뒤로가기(Android) 시 팬덤 홈으로 복귀
+  window.history.pushState({ page: 'fandomCategoryFull', fandom, catId }, '');
+  if (!window._fandomCategoryFullPopstateSetup) {
+    window.addEventListener('popstate', function(e) {
+      if (e.state && e.state.page === 'fandomCategoryFull') {
+        loadFandomCategoryOverview(e.state.fandom);
+      }
+    });
+    window._fandomCategoryFullPopstateSetup = true;
+  }
+
   const cache = _fandomOverviewCache[fandom];
   const allPosts = cache ? cache.posts : [];
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
