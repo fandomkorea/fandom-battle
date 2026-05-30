@@ -3093,15 +3093,17 @@ function _renderCategoryOverview(sections) {
     const postsHtml = posts.length > 0
       ? posts.map(({ fandom, postId, post }) => {
           const meta   = GROUP_META[fandom] || { emoji: '🌟', kr: fandom, color: '#7c4dff' };
+          const color  = meta.color || '#7c4dff';
           const ago    = getRelativeTime(post.timestamp);
           const likes  = post.likesCount || 0;
           const cmts   = post.commentsCount || 0;
           const counts = [cmts ? `💬 ${cmts}` : '', likes ? `❤️ ${likes}` : ''].filter(Boolean).join(' · ');
+          const fanBadge = `<span class="fandom-badge" style="background:${hexToRgba(color,0.13)};border-color:${hexToRgba(color,0.38)};color:${color};flex-shrink:0">${escHtml(meta.emoji||'🌟')} ${escHtml(meta.kr||fandom)}</span>`;
           return `
             <div class="grouped-post-item" onclick="showPostDetail('${escAttr(fandom)}','${escAttr(postId)}')">
               <div class="grouped-post-row1">
                 <div class="grouped-post-left">
-                  <span style="font-size:0.75rem;flex-shrink:0" title="${escAttr(meta.kr||fandom)}">${escHtml(meta.emoji||'🌟')}</span>
+                  ${fanBadge}
                   <span class="grouped-post-title">${escHtml(post.title)}</span>
                   ${counts ? `<span class="grouped-post-counts">${counts}</span>` : ''}
                 </div>
