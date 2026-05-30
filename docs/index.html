@@ -111,19 +111,31 @@
     }
     .grouped-post-item:last-child { border-bottom: none; }
     .grouped-post-item:hover { background: rgba(255,255,255,0.04); }
+    .grouped-post-row1 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 3px;
+    }
     .grouped-post-title {
       font-size: 0.88rem;
       color: var(--text);
       font-weight: 500;
-      display: block;
-      margin-bottom: 3px;
+      flex: 1;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .grouped-post-comments {
+      font-size: 0.75rem;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
     .grouped-post-meta {
       font-size: 0.75rem;
       color: var(--muted);
+      text-align: right;
     }
     .fandom-rank-badge {
       display: inline-block;
@@ -568,7 +580,7 @@
 <script src="js/voting.js?v=20260609c"></script>
 <script src="js/ranking.js?v=20260610d"></script>
 <script src="js/utils.js?v=20260529e"></script>
-<script src="js/community.js?v=20260610f"></script>
+<script src="js/community.js?v=20260610g"></script>
 
 <!-- ★ Service Worker 등록 (PWA 캐시 + 오프라인 지원) -->
 <script>

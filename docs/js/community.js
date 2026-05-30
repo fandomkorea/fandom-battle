@@ -2767,11 +2767,13 @@ function _renderGroupedFeed(sections) {
       const ago = getRelativeTime(post.timestamp);
       const comments = post.commentsCount || 0;
       const likes = post.likesCount || 0;
-      const metaText = [ago, comments ? `💬 ${comments}` : '', likes ? `❤️ ${likes}` : '']
-        .filter(Boolean).join(' · ');
+      const metaText = [ago, likes ? `❤️ ${likes}` : ''].filter(Boolean).join(' · ');
       return `
         <div class="grouped-post-item" onclick="showPostDetail('${escAttr(fandom)}','${escAttr(postId)}')">
-          <div class="grouped-post-title">${escHtml(post.title)}</div>
+          <div class="grouped-post-row1">
+            <span class="grouped-post-title">${escHtml(post.title)}</span>
+            ${comments ? `<span class="grouped-post-comments">💬 ${comments}</span>` : ''}
+          </div>
           <div class="grouped-post-meta">${escHtml(metaText)}</div>
         </div>
       `;
