@@ -67,6 +67,64 @@
       from { opacity: 0; transform: translateY(-100%); }
       to   { opacity: 1; transform: translateY(0); }
     }
+
+    /* ── 전체 피드 그룹뷰 ── */
+    .fandom-group-section {
+      margin-bottom: 20px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .fandom-group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: rgba(124,77,255,0.08);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .fandom-group-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+    .fandom-group-more {
+      background: rgba(124,77,255,0.2);
+      border: 1px solid rgba(124,77,255,0.4);
+      border-radius: 8px;
+      color: var(--primary);
+      font-size: 0.78rem;
+      font-weight: 600;
+      font-family: inherit;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .fandom-group-more:hover { background: rgba(124,77,255,0.35); }
+    .fandom-group-posts { padding: 4px 0; }
+    .grouped-post-item {
+      padding: 10px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      transition: background 0.15s;
+    }
+    .grouped-post-item:last-child { border-bottom: none; }
+    .grouped-post-item:hover { background: rgba(255,255,255,0.04); }
+    .grouped-post-title {
+      font-size: 0.88rem;
+      color: var(--text);
+      font-weight: 500;
+      display: block;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .grouped-post-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
   </style>
 
 </head>
@@ -500,7 +558,7 @@
 <script src="js/voting.js?v=20260609c"></script>
 <script src="js/ranking.js?v=20260610d"></script>
 <script src="js/utils.js?v=20260529e"></script>
-<script src="js/community.js?v=20260610d"></script>
+<script src="js/community.js?v=20260610e"></script>
 
 <!-- ★ Service Worker 등록 (PWA 캐시 + 오프라인 지원) -->
 <script>

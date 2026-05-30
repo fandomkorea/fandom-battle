@@ -2444,6 +2444,12 @@ function selectFandomTab(tabId) {
     return;
   }
 
+  // 전체 탭이 아닌 곳으로 이동 시 정렬 버튼 복원
+  if (tabId !== 'all') {
+    const sortGroup = document.getElementById("sortButtonGroup");
+    if (sortGroup) sortGroup.style.display = 'flex';
+  }
+
   currentSelectedTab = tabId;
 
   // 타팬덤이 아닌 탭으로 이동하면 타팬덤 세션 초기화
@@ -2628,42 +2634,37 @@ function _invalidateAllFeedCache() {
   _allFeedIsRendered = false;
 }
 
-// ── 전체 피드 로드 (상위 팬덤 게시글 병렬 수집) ──
+// ── 전체 피드 로드 (상위 5개 팬덤 그룹 뷰) ──
 async function loadAllFandomPosts(forceRefresh = false) {
   const postsList = document.getElementById("communityPostsList");
 
-  // ★ in-memory 캐시: 같은 세션 내 5분 이내 + 이미 렌더된 경우 스킵
+  // 정렬 버튼 숨기기 (그룹뷰에선 불필요)
+  const sortGroup = document.getElementById("sortButtonGroup");
+  if (sortGroup) sortGroup.style.display = 'none';
+
+  // ★ in-memory 캐시
   if (!forceRefresh && _allFeedLastLoadedAt > 0 &&
       Date.now() - _allFeedLastLoadedAt < ALL_FEED_CACHE_TTL &&
-      allFeedPosts.length > 0 &&
       _allFeedIsRendered) {
-    syncSortButtonStyles(currentSortMode);
     updateAllFeedTimestamp();
     return;
   }
 
-  // ★ localStorage 캐시: 새로고침 후에도 10분 이내면 Firebase 읽기 없이 즉시 렌더
+  // ★ localStorage 캐시 (새로고침 후에도 유지)
   if (!forceRefresh) {
     const lsCache = _getAllFeedLsCache();
     if (lsCache && lsCache.length > 0) {
-      allFeedPosts = lsCache;
-      allFeedDisplayed = 0;
-      if (currentSortMode !== 'latest') sortAllFeedPostsArray(currentSortMode);
-      postsList.innerHTML = "";
-      renderMoreFeedPosts();
+      _renderGroupedFeed(lsCache);
       _allFeedIsRendered = true;
       _allFeedLastLoadedAt = Date.now();
       communityPostsLoaded = true;
-      syncSortButtonStyles(currentSortMode);
       updateAllFeedTimestamp();
       return;
     }
   }
 
-  // ★ 레이스 컨디션 방지: 각 호출마다 고유 ID 부여, 응답 시 최신 호출인지 확인
   const loadId = ++_allFeedLoadId;
 
-  // 기존 리스너 해제
   clearPostListListeners();
   if (currentCommunityListener) {
     db.ref(currentCommunityListener).off("value");
@@ -2677,66 +2678,40 @@ async function loadAllFandomPosts(forceRefresh = false) {
     </div>
   `;
 
-  // 전체 팬덤 게시글 탐색 (ALL_GROUPS 전체)
-  const fandomsToLoad = [...ALL_GROUPS];
+  // 랭킹 상위 5개 팬덤만 로드
+  const top5 = _getTop5Fandoms();
 
   try {
-    // ★ limitToLast(50): 팬덤당 최신 50개만 로드하여 읽기 비용 절감
+    // ★ 팬덤당 최신 5개만 로드 (전체 피드보다 훨씬 저렴)
     const snapshots = await Promise.all(
-      fandomsToLoad.map(fandom =>
+      top5.map(fandom =>
         db.ref(`community/${fandom}`)
           .orderByChild('timestamp')
-          .limitToLast(50)
+          .limitToLast(5)
           .once("value")
       )
     );
 
-    // ★ 더 새로운 loadAllFandomPosts 호출이 시작됐으면 이 결과 무시
     if (loadId !== _allFeedLoadId) return;
 
-    // 전체 게시글 수집
-    let allPosts = [];
-    snapshots.forEach((snap, i) => {
-      const fandom = fandomsToLoad[i];
-      const posts = snap.val() || {};
-      Object.entries(posts).forEach(([postId, post]) => {
-        if (!post.isHidden) {
-          allPosts.push({ fandom, postId, post });
-        }
+    // 팬덤별 섹션 구성
+    const sections = top5.map((fandom, i) => {
+      const posts = [];
+      const val = snapshots[i].val() || {};
+      Object.entries(val).forEach(([postId, post]) => {
+        if (!post.isHidden) posts.push({postId, post});
       });
-    });
+      posts.sort((a, b) => (b.post.timestamp || 0) - (a.post.timestamp || 0));
+      return {fandom, posts: posts.slice(0, 5)};
+    }).filter(s => s.posts.length > 0);
 
     communityPostsLoaded = true;
 
-    if (allPosts.length === 0) {
-      postsList.innerHTML = `
-        <div class="community-empty">
-          <div class="community-empty-icon">📭</div>
-          <div class="community-empty-text">아직 게시물이 없어요<br>첫 번째 게시물을 작성해보세요!</div>
-        </div>
-      `;
-      return;
-    }
-
-    // 정렬 후 전체 배열 저장 (최대 200개)
-    allPosts.sort((a, b) => (b.post.timestamp || 0) - (a.post.timestamp || 0));
-    allFeedPosts = allPosts.slice(0, 200);
-    allFeedDisplayed = 0;
-
-    // ★ localStorage에 캐시 저장 (새로고침 후에도 재사용)
-    _setAllFeedLsCache(allFeedPosts);
-
-    // 현재 정렬 모드 반영
-    if (currentSortMode !== 'latest') sortAllFeedPostsArray(currentSortMode);
-
-    postsList.innerHTML = "";
-    renderMoreFeedPosts(); // 첫 20개 표시
+    _setAllFeedLsCache(sections);
+    _renderGroupedFeed(sections);
     _allFeedIsRendered = true;
-
-    // ★ 캐시 타임스탬프 기록
     _allFeedLastLoadedAt = Date.now();
     updateAllFeedTimestamp();
-    syncSortButtonStyles(currentSortMode);
 
   } catch (e) {
     console.error("전체 피드 로드 실패:", e);
@@ -2747,6 +2722,60 @@ async function loadAllFandomPosts(forceRefresh = false) {
       </div>
     `;
   }
+}
+
+// ── 랭킹 상위 5개 팬덤 가져오기 ──
+function _getTop5Fandoms() {
+  if (allRankingsData && Object.keys(allRankingsData).length > 0) {
+    return Object.entries(allRankingsData)
+      .filter(([g]) => ALL_GROUPS.includes(g))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([g]) => g);
+  }
+  return ALL_GROUPS.slice(0, 5);
+}
+
+// ── 그룹별 피드 렌더링 ──
+function _renderGroupedFeed(sections) {
+  const postsList = document.getElementById("communityPostsList");
+
+  if (!sections || sections.length === 0) {
+    postsList.innerHTML = `
+      <div class="community-empty">
+        <div class="community-empty-icon">📭</div>
+        <div class="community-empty-text">아직 게시물이 없어요</div>
+      </div>
+    `;
+    return;
+  }
+
+  postsList.innerHTML = sections.map(({fandom, posts}) => {
+    const meta = GROUP_META[fandom] || {emoji: '🌟', kr: fandom};
+    const postsHtml = posts.map(({postId, post}) => {
+      const ago = getRelativeTime(post.timestamp);
+      const comments = post.commentsCount || 0;
+      const likes = post.likesCount || 0;
+      const metaText = [ago, comments ? `💬 ${comments}` : '', likes ? `❤️ ${likes}` : '']
+        .filter(Boolean).join(' · ');
+      return `
+        <div class="grouped-post-item" onclick="showPostDetail('${escAttr(fandom)}','${escAttr(postId)}')">
+          <div class="grouped-post-title">${escHtml(post.title)}</div>
+          <div class="grouped-post-meta">${escHtml(metaText)}</div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="fandom-group-section">
+        <div class="fandom-group-header">
+          <span class="fandom-group-title">${escHtml(meta.emoji || '🌟')} ${escHtml(meta.kr || fandom)}</span>
+          <button class="fandom-group-more" onclick="selectFandomTab('${escAttr(fandom)}')">더보기 ›</button>
+        </div>
+        <div class="fandom-group-posts">${postsHtml}</div>
+      </div>
+    `;
+  }).join('');
 }
 
 // ── 전체 피드 배열 정렬 ──
