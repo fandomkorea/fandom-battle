@@ -3104,37 +3104,36 @@ async function loadCategoryOverview(forceRefresh = false) {
 function _renderCategoryOverview(sections) {
   const postsList = document.getElementById("communityPostsList");
 
-  const visibleSections = sections.filter(s => s.posts.length > 0);
-  if (visibleSections.length === 0) {
-    postsList.innerHTML = `
-      <div class="community-empty">
-        <div class="community-empty-icon">📭</div>
-        <div class="community-empty-text">아직 게시물이 없어요<br><span style="font-size:0.82rem;opacity:0.7">글을 쓰고 카테고리를 선택해보세요!</span></div>
-      </div>
-    `;
-    return;
-  }
+  const catEmptyMsg = {
+    best:  '아직 좋아요를 받은 글이 없어요',
+    humor: '유머 글이 없어요 — 글 쓸 때 😂 유머를 선택해보세요!',
+    daily: '일상 글이 없어요 — 글 쓸 때 🌸 일상을 선택해보세요!',
+    music: '음악/무대 글이 없어요 — 글 쓸 때 🎵 음악을 선택해보세요!',
+    chat:  '잡담 글이 없어요 — 글 쓸 때 💬 잡담을 선택해보세요!',
+  };
 
-  postsList.innerHTML = visibleSections.map(({ id, label, posts }) => {
-    const postsHtml = posts.map(({ fandom, postId, post }) => {
-      const meta  = GROUP_META[fandom] || { emoji: '🌟', kr: fandom, color: '#7c4dff' };
-      const ago   = getRelativeTime(post.timestamp);
-      const likes = post.likesCount || 0;
-      const cmts  = post.commentsCount || 0;
-      const counts = [cmts ? `💬 ${cmts}` : '', likes ? `❤️ ${likes}` : ''].filter(Boolean).join(' · ');
-      return `
-        <div class="grouped-post-item" onclick="showPostDetail('${escAttr(fandom)}','${escAttr(postId)}')">
-          <div class="grouped-post-row1">
-            <div class="grouped-post-left">
-              <span style="font-size:0.75rem;flex-shrink:0" title="${escAttr(meta.kr||fandom)}">${escHtml(meta.emoji||'🌟')}</span>
-              <span class="grouped-post-title">${escHtml(post.title)}</span>
-              ${counts ? `<span class="grouped-post-counts">${counts}</span>` : ''}
+  postsList.innerHTML = sections.map(({ id, label, posts }) => {
+    const postsHtml = posts.length > 0
+      ? posts.map(({ fandom, postId, post }) => {
+          const meta   = GROUP_META[fandom] || { emoji: '🌟', kr: fandom, color: '#7c4dff' };
+          const ago    = getRelativeTime(post.timestamp);
+          const likes  = post.likesCount || 0;
+          const cmts   = post.commentsCount || 0;
+          const counts = [cmts ? `💬 ${cmts}` : '', likes ? `❤️ ${likes}` : ''].filter(Boolean).join(' · ');
+          return `
+            <div class="grouped-post-item" onclick="showPostDetail('${escAttr(fandom)}','${escAttr(postId)}')">
+              <div class="grouped-post-row1">
+                <div class="grouped-post-left">
+                  <span style="font-size:0.75rem;flex-shrink:0" title="${escAttr(meta.kr||fandom)}">${escHtml(meta.emoji||'🌟')}</span>
+                  <span class="grouped-post-title">${escHtml(post.title)}</span>
+                  ${counts ? `<span class="grouped-post-counts">${counts}</span>` : ''}
+                </div>
+                <span class="grouped-post-time">${escHtml(ago)}</span>
+              </div>
             </div>
-            <span class="grouped-post-time">${escHtml(ago)}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
+          `;
+        }).join('')
+      : `<div style="padding:12px 16px;font-size:0.82rem;color:var(--muted);text-align:center">${catEmptyMsg[id] || '아직 글이 없어요'}</div>`;
 
     return `
       <div class="fandom-group-section">
