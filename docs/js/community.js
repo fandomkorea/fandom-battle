@@ -619,8 +619,10 @@ async function showPostDetail(fandom, postId) {
       if (document.getElementById("postDetailPage").style.display !== "none") {
         if (!event.state || event.state.page !== "postDetail") {
           window.popstateActive = true;
+          window._postDetailJustClosed = true;
           closePostDetail();
           window.popstateActive = false;
+          setTimeout(() => { window._postDetailJustClosed = false; }, 0);
         }
       }
     });
@@ -2492,9 +2494,8 @@ window.addEventListener('popstate', (e) => {
     closePostCreateModal();
     window._modalFromPopstate = false;
   } else if (e.state && e.state.page === 'allSubTab') {
-    // 전체 탭이고 postDetail이 닫혀있을 때만 처리
-    if (currentSelectedTab === 'all' &&
-        document.getElementById('postDetailPage').style.display === 'none') {
+    // 전체 탭이고 postDetail 닫기와 충돌하지 않을 때만 처리
+    if (currentSelectedTab === 'all' && !window._postDetailJustClosed) {
       const prev = e.state.prevTab || 'overview';
       switchAllSubTab(prev, true);
     }
@@ -3402,8 +3403,8 @@ function showFandomCategoryFull(fandom, catId) {
   if (!window._fandomCategoryFullPopstateSetup) {
     window.addEventListener('popstate', function(e) {
       if (e.state && e.state.page === 'fandomCategoryFull') {
-        // postDetail이 열려있으면 postDetail 닫기 핸들러가 처리 — 여기선 건너뜀
-        if (document.getElementById('postDetailPage').style.display !== 'none') return;
+        // postDetail 닫기와 동시에 발동된 경우 건너뜀
+        if (window._postDetailJustClosed) return;
         loadFandomCategoryOverview(e.state.fandom);
         const savedScroll = e.state.scrollY || 0;
         setTimeout(() => window.scrollTo({ top: savedScroll, behavior: 'instant' }), 80);
