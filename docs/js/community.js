@@ -938,7 +938,7 @@ function loadDetailComments(fandom, postId) {
               </button>
               ${isLoggedIn ? `<button onclick="openReplyInput('${escAttr(fandom)}','${escAttr(postId)}','${escAttr(commentId)}'); event.stopPropagation()" style="font-size:0.78rem;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 4px;font-weight:600">↳ 답글 달기</button>` : ''}
             </div>
-            <button onclick="toggleCommentLike('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="display:flex;align-items:center;gap:4px;background:${hasLikedComment ? 'rgba(255,80,80,0.2)' : 'rgba(255,100,100,0.06)'};border:1px solid ${hasLikedComment ? 'rgba(255,80,80,0.45)' : 'rgba(255,100,100,0.15)'};border-radius:20px;padding:4px 10px;cursor:pointer;transition:all 0.2s;font-size:0.8rem" onmouseover="this.style.background='rgba(255,100,100,0.2)';this.style.borderColor='rgba(255,100,100,0.4)'" onmouseout="this.style.background='${hasLikedComment ? 'rgba(255,80,80,0.2)' : 'rgba(255,100,100,0.06)'}';this.style.borderColor='${hasLikedComment ? 'rgba(255,80,80,0.45)' : 'rgba(255,100,100,0.15)'}'">
+            <button id="comment-like-btn-${escAttr(commentId)}" onclick="toggleCommentLike('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="display:flex;align-items:center;gap:4px;background:${hasLikedComment ? 'rgba(255,80,80,0.2)' : 'rgba(255,100,100,0.06)'};border:1px solid ${hasLikedComment ? 'rgba(255,80,80,0.45)' : 'rgba(255,100,100,0.15)'};border-radius:20px;padding:4px 10px;cursor:pointer;transition:all 0.2s;font-size:0.8rem" onmouseover="this.style.background='rgba(255,100,100,0.2)';this.style.borderColor='rgba(255,100,100,0.4)'" onmouseout="this.style.background='${hasLikedComment ? 'rgba(255,80,80,0.2)' : 'rgba(255,100,100,0.06)'}';this.style.borderColor='${hasLikedComment ? 'rgba(255,80,80,0.45)' : 'rgba(255,100,100,0.15)'}'">
               <span>${hasLikedComment ? '❤️' : '🤍'}</span>
               <span style="color:${hasLikedComment ? 'rgb(255,100,100)' : 'var(--muted)'}; font-weight:600">${commentLikeCount > 0 ? commentLikeCount : ''}</span>
             </button>
@@ -2168,13 +2168,28 @@ async function toggleCommentLike(fandom, postId, commentId) {
   const likeRef = db.ref(`comments/${fandom}/${postId}/${commentId}/likes/${currentUser.uid}`);
   try {
     const snap = await likeRef.once("value");
+    const nowLiked = !snap.exists();
     if (snap.exists()) {
       await likeRef.remove();
     } else {
       await likeRef.set(true);
     }
-    // ★ .once() 전환으로 자동 재렌더 없음 → 댓글 목록 수동 재로드
-    loadDetailComments(fandom, postId);
+    // ★ 전체 댓글 재로드 없이 해당 버튼 UI만 직접 갱신 → Firebase 읽기 절감
+    const btn = document.getElementById(`comment-like-btn-${commentId}`);
+    if (btn) {
+      const spans = btn.querySelectorAll('span');
+      const currentCount = parseInt(spans[1].textContent) || 0;
+      const newCount = nowLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
+      spans[0].textContent = nowLiked ? '❤️' : '🤍';
+      spans[1].textContent = newCount > 0 ? newCount : '';
+      spans[1].style.color = nowLiked ? 'rgb(255,100,100)' : 'var(--muted)';
+      btn.style.background = nowLiked ? 'rgba(255,80,80,0.2)' : 'rgba(255,100,100,0.06)';
+      btn.style.borderColor = nowLiked ? 'rgba(255,80,80,0.45)' : 'rgba(255,100,100,0.15)';
+      btn.onmouseout = () => {
+        btn.style.background = nowLiked ? 'rgba(255,80,80,0.2)' : 'rgba(255,100,100,0.06)';
+        btn.style.borderColor = nowLiked ? 'rgba(255,80,80,0.45)' : 'rgba(255,100,100,0.15)';
+      };
+    }
   } catch (e) {
     console.error("댓글 좋아요 실패:", e.code, e.message);
     showToast("댓글 좋아요 저장에 실패했어요.");
