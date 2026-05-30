@@ -1625,7 +1625,7 @@ function _showCommunityVoteRewardModal(writtenFandom) {
   setTimeout(() => { if (document.getElementById("communityRewardModal")) overlay.remove(); }, 6000);
 }
 
-function openPostCreateModal() {
+function openPostCreateModal(presetCategory = null) {
   if (!isLoggedIn || !currentUser) {
     showToast("로그인이 필요합니다");
     return;
@@ -1657,8 +1657,8 @@ function openPostCreateModal() {
   contentCountEl.textContent = "0";
   contentCountEl.style.color = "";
   document.getElementById("scheduleTemplate").style.display = "none";
-  // 카테고리 초기화
-  selectPostCategory('general');
+  // 카테고리 초기화 (presetCategory가 있으면 해당 카테고리 선택)
+  selectPostCategory(presetCategory || 'general');
 
   // ★ 이미지 초기화 (이전 게시글의 이미지가 남지 않도록)
   postImageUrl = null;
@@ -2491,6 +2491,10 @@ window.addEventListener('popstate', (e) => {
     window._modalFromPopstate = true;
     closePostCreateModal();
     window._modalFromPopstate = false;
+  } else if (e.state && e.state.page === 'allSubTab') {
+    // 서브탭 뒤로가기 → 이전 탭으로 복귀
+    const prev = e.state.prevTab || 'overview';
+    switchAllSubTab(prev, true);
   } else if (e.state && e.state.modal === 'editPost') {
     window._modalFromPopstate = true;
     closeEditPostModal();
@@ -2931,13 +2935,28 @@ function _renderAllSubTabBar() {
 }
 
 // ── 서브탭 전환 ──
-async function switchAllSubTab(tabId) {
+async function switchAllSubTab(tabId, fromPopstate = false) {
   if (currentAllSubTab === tabId) return;
+  const prevTab = currentAllSubTab;
   currentAllSubTab = tabId;
   // active 클래스 갱신
   document.querySelectorAll('.all-subtab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.subtab === tabId);
   });
+  // 스크롤 상단 이동
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // 뒤로가기 히스토리 (popstate에서 호출된 경우 제외)
+  if (!fromPopstate) {
+    window.history.pushState({ page: 'allSubTab', tabId, prevTab }, '');
+  }
+  // 카테고리 탭(유머/일상/음악/잡담)에서 글쓰기 시 해당 카테고리 자동 선택
+  const catTabs = ['humor', 'daily', 'music', 'chat'];
+  if (catTabs.includes(tabId)) {
+    currentFabWriteAction = () => openPostCreateModalForAll(tabId);
+  } else {
+    currentFabWriteAction = openPostCreateModalForAll;
+  }
+
   if (tabId === 'overview')      { await loadCategoryOverview(false); }
   else if (tabId === 'best')    { await loadBestPosts(false); }
   else if (tabId === 'grouped') { await _loadGroupedFeed(false); }
@@ -2978,7 +2997,8 @@ async function loadBestPosts(forceRefresh = false) {
     top10.forEach((fandom, i) => {
       const val = snapshots[i].val() || {};
       Object.entries(val).forEach(([postId, post]) => {
-        if (!post.isHidden && (post.timestamp || 0) > sevenDaysAgo) {
+        if (!post.isHidden && (post.timestamp || 0) > sevenDaysAgo &&
+            (post.likesCount || 0) + (post.commentsCount || 0) >= 1) {
           allPosts.push({ fandom, postId, post });
         }
       });
@@ -3373,16 +3393,20 @@ function showFandomCategoryFull(fandom, catId) {
   const sortGroup = document.getElementById("sortButtonGroup");
   if (sortGroup) sortGroup.style.display = 'none';
 
-  // 뒤로가기(Android) 시 팬덤 홈으로 복귀
-  window.history.pushState({ page: 'fandomCategoryFull', fandom, catId }, '');
+  // 뒤로가기(Android) 시 팬덤 홈으로 복귀 + 스크롤 위치 복원
+  const scrollY = window.scrollY;
+  window.history.pushState({ page: 'fandomCategoryFull', fandom, catId, scrollY }, '');
   if (!window._fandomCategoryFullPopstateSetup) {
     window.addEventListener('popstate', function(e) {
       if (e.state && e.state.page === 'fandomCategoryFull') {
         loadFandomCategoryOverview(e.state.fandom);
+        const savedScroll = e.state.scrollY || 0;
+        setTimeout(() => window.scrollTo({ top: savedScroll, behavior: 'instant' }), 80);
       }
     });
     window._fandomCategoryFullPopstateSetup = true;
   }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
   const cache = _fandomOverviewCache[fandom];
   const allPosts = cache ? cache.posts : [];
@@ -3548,7 +3572,7 @@ function renderMoreFeedPosts() {
 }
 
 // ── 전체 피드 모드에서 글쓰기 (내 팬덤으로 포스팅) ──
-function openPostCreateModalForAll() {
+function openPostCreateModalForAll(presetCategory = null) {
   if (!isLoggedIn || !currentUser) {
     showToast("로그인이 필요합니다");
     return;
@@ -3561,7 +3585,7 @@ function openPostCreateModalForAll() {
   // 내 팬덤으로 hidden select 설정 후 모달 오픈
   const select = document.getElementById("communityFandomSelect");
   if (select) select.value = myFav;
-  openPostCreateModal();
+  openPostCreateModal(presetCategory);
 }
 
 // ── 내가 쓴 글 로드 ──
