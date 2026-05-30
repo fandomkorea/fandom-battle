@@ -2492,9 +2492,11 @@ window.addEventListener('popstate', (e) => {
     closePostCreateModal();
     window._modalFromPopstate = false;
   } else if (e.state && e.state.page === 'allSubTab') {
-    // 서브탭 뒤로가기 → 이전 탭으로 복귀
-    const prev = e.state.prevTab || 'overview';
-    switchAllSubTab(prev, true);
+    // 전체 탭에 있을 때만 처리 (팬덤 탭에서 뒤로가기 시 오발동 방지)
+    if (currentSelectedTab === 'all') {
+      const prev = e.state.prevTab || 'overview';
+      switchAllSubTab(prev, true);
+    }
   } else if (e.state && e.state.modal === 'editPost') {
     window._modalFromPopstate = true;
     closeEditPostModal();
@@ -3399,6 +3401,8 @@ function showFandomCategoryFull(fandom, catId) {
   if (!window._fandomCategoryFullPopstateSetup) {
     window.addEventListener('popstate', function(e) {
       if (e.state && e.state.page === 'fandomCategoryFull') {
+        // postDetail이 열려있으면 postDetail 닫기 핸들러가 처리 — 여기선 건너뜀
+        if (document.getElementById('postDetailPage').style.display !== 'none') return;
         loadFandomCategoryOverview(e.state.fandom);
         const savedScroll = e.state.scrollY || 0;
         setTimeout(() => window.scrollTo({ top: savedScroll, behavior: 'instant' }), 80);
