@@ -2940,7 +2940,7 @@ async function loadCategoryPosts(category, forceRefresh = false) {
   }
 }
 
-// ── 베스트 글 렌더링 ──
+// ── 베스트 글 렌더링 — 일반 게시글 카드 형식 재사용 ──
 function _renderBestPosts(posts) {
   const postsList = document.getElementById("communityPostsList");
   if (!posts || posts.length === 0) {
@@ -2952,36 +2952,14 @@ function _renderBestPosts(posts) {
     `;
     return;
   }
-  const BEST_BADGES = [
-    { label:'🥇 1위', bg:'linear-gradient(135deg,#FFD700,#FFA500)', color:'#000' },
-    { label:'🥈 2위', bg:'linear-gradient(135deg,#C0C0C0,#A8A8A8)', color:'#000' },
-    { label:'🥉 3위', bg:'linear-gradient(135deg,#CD7F32,#A0522D)', color:'#fff' },
-  ];
-  postsList.innerHTML = posts.map(({fandom, postId, post}, idx) => {
-    const meta = GROUP_META[fandom] || {emoji:'🌟', kr:fandom, color:'#7c4dff'};
-    const ago  = getRelativeTime(post.timestamp);
-    const likes = post.likesCount || 0;
-    const cmts  = post.commentsCount || 0;
-    const badge = BEST_BADGES[idx];
-    const rankHtml = badge
-      ? `<span class="best-rank-badge" style="background:${badge.bg};color:${badge.color}">${badge.label}</span>`
-      : `<span class="best-rank-badge" style="background:rgba(255,255,255,0.1);color:var(--muted)">${idx+1}위</span>`;
-    const counts = [likes ? `❤️ ${likes}` : '', cmts ? `💬 ${cmts}` : ''].filter(Boolean).join(' · ');
-    return `
-      <div class="best-post-card" onclick="showPostDetail('${escAttr(fandom)}','${escAttr(postId)}')">
-        <div class="best-post-top">
-          ${rankHtml}
-          <span class="best-post-fandom" style="color:${meta.color||'var(--primary)'}">${escHtml(meta.emoji||'🌟')} ${escHtml(meta.kr||fandom)}</span>
-          <span class="best-post-time">${escHtml(ago)}</span>
-        </div>
-        <div class="best-post-title">${escHtml(post.title)}</div>
-        ${counts ? `<div class="best-post-counts">${counts}</div>` : ''}
-      </div>
-    `;
-  }).join('');
+  postsList.innerHTML = "";
+  posts.forEach(({ fandom, postId, post }, idx) => {
+    const postEl = renderPost(fandom, postId, post, idx, true); // showFandomBadge=true
+    postsList.appendChild(postEl);
+  });
 }
 
-// ── 카테고리별 글 렌더링 ──
+// ── 카테고리별 글 렌더링 — 일반 게시글 카드 형식 재사용 ──
 function _renderCategoryPosts(posts, category) {
   const postsList = document.getElementById("communityPostsList");
   const catInfo = {
@@ -3000,25 +2978,11 @@ function _renderCategoryPosts(posts, category) {
     `;
     return;
   }
-  postsList.innerHTML = posts.map(({fandom, postId, post}) => {
-    const meta  = GROUP_META[fandom] || {emoji:'🌟', kr:fandom, color:'#7c4dff'};
-    const ago   = getRelativeTime(post.timestamp);
-    const likes = post.likesCount || 0;
-    const cmts  = post.commentsCount || 0;
-    const counts = [cmts ? `💬 ${cmts}` : '', likes ? `❤️ ${likes}` : ''].filter(Boolean).join(' · ');
-    return `
-      <div class="grouped-post-item" onclick="showPostDetail('${escAttr(fandom)}','${escAttr(postId)}')">
-        <div style="margin-bottom:4px">
-          <span style="font-size:0.7rem;font-weight:700;color:${meta.color||'var(--primary)'};background:${hexToRgba(meta.color||'#7c4dff',0.15)};padding:1px 7px;border-radius:4px;white-space:nowrap">${escHtml(meta.emoji||'🌟')} ${escHtml(meta.kr||fandom)}</span>
-        </div>
-        <div class="grouped-post-row1">
-          <span class="grouped-post-title">${escHtml(post.title)}</span>
-          <span class="grouped-post-time">${escHtml(ago)}</span>
-        </div>
-        ${counts ? `<div class="grouped-post-counts" style="margin-top:2px">${counts}</div>` : ''}
-      </div>
-    `;
-  }).join('');
+  postsList.innerHTML = "";
+  posts.forEach(({ fandom, postId, post }, idx) => {
+    const postEl = renderPost(fandom, postId, post, idx, true); // showFandomBadge=true
+    postsList.appendChild(postEl);
+  });
 }
 
 // ── 카테고리별 그룹 개요 로드 (기본 전체 탭 뷰) ──
