@@ -11,6 +11,8 @@
  *      (Firebase 콘솔 → 프로젝트 설정 → 서비스 계정 → 데이터베이스 비밀번호)
  *   4. 배포 후 받은 URL을 ranking.js의 CF_RANKINGS_WORKER_URL 에 입력
  *
+ * 현재 배포 URL: https://fanpick-rankings.coder-leebeegle2.workers.dev
+ *
  * App Check Enforce 환경에서 REST API 접근 시 DB Secret으로 인증 필요
  */
 
