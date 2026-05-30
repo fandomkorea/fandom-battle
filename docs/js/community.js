@@ -142,12 +142,9 @@ async function _compressImage(file, maxPx = 1200, quality = 0.82) {
   });
 }
 
-// ── Cloudinary 목록 썸네일 URL 변환 (w_300,h_300 — 상세 페이지는 원본 사용) ──
+// ── 썸네일 URL (R2는 업로드 시 이미 압축됨 — 원본 그대로 반환) ──
 function _getThumbUrl(imageUrl) {
   if (!imageUrl) return null;
-  if (imageUrl.includes('res.cloudinary.com') && imageUrl.includes('/upload/')) {
-    return imageUrl.replace('/upload/', '/upload/w_300,h_300,c_fill,q_60,f_auto/');
-  }
   return imageUrl;
 }
 
@@ -1891,27 +1888,15 @@ async function deletePost(fandom, postId, closeAfterDelete = false) {
       return;
     }
 
-    // 이미지 삭제 (R2 신형 / Cloudinary 구형 자동 분기)
-    if (postData && postData.imagePublicId) {
+    // 이미지 삭제 (R2)
+    if (postData && postData.imagePublicId && R2_UPLOAD_WORKER_URL) {
       try {
-        if (postData.imageUrl && postData.imageUrl.includes('res.cloudinary.com')) {
-          // ── 구형: Cloudinary 삭제 ──
-          const formData = new FormData();
-          formData.append('public_id', postData.imagePublicId);
-          formData.append('upload_preset', 'fandom_battle_images');
-          await fetch('https://api.cloudinary.com/v1_1/dhkgabcme/image/destroy', {
-            method: 'POST', body: formData
-          });
-          console.log("✅ Cloudinary 이미지 삭제:", postData.imagePublicId);
-        } else if (R2_UPLOAD_WORKER_URL) {
-          // ── 신형: R2 삭제 ──
-          const idToken = await firebase.auth().currentUser.getIdToken(true);
-          await fetch(`${R2_UPLOAD_WORKER_URL}/${encodeURIComponent(postData.imagePublicId)}`, {
-            method: 'DELETE',
-            headers: { 'X-Firebase-Token': idToken },
-          });
-          console.log("✅ R2 이미지 삭제:", postData.imagePublicId);
-        }
+        const idToken = await firebase.auth().currentUser.getIdToken(true);
+        await fetch(`${R2_UPLOAD_WORKER_URL}/${encodeURIComponent(postData.imagePublicId)}`, {
+          method: 'DELETE',
+          headers: { 'X-Firebase-Token': idToken },
+        });
+        console.log("✅ R2 이미지 삭제:", postData.imagePublicId);
       } catch (imgError) {
         console.error("⚠️ 이미지 삭제 중 오류 (계속 진행):", imgError);
       }
@@ -2180,9 +2165,9 @@ async function saveEditComment() {
   }
 }
 
-// ── 게시글 이미지 업로드 (Cloudinary) ──
+// ── 게시글 이미지 업로드 (R2) ──
 function openPostImageUpload() {
-  // Cloudinary 직접 업로드 - 파일 선택 대화
+  // 파일 선택 대화
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
