@@ -2490,6 +2490,11 @@ window.addEventListener('popstate', (e) => {
     if (currentSelectedTab === 'all') {
       switchAllSubTab(s.tabId || 'overview', true);
     }
+  } else if (s.page === 'fandomTab') {
+    // 팬덤 커뮤니티 더보기에서 뒤로가기 → 팬덤 홈 overview 복원
+    if (s.tabId && s.tabId !== 'all') {
+      loadFandomCategoryOverview(s.tabId);
+    }
   } else if (s.modal === 'postCreate') {
     window._modalFromPopstate = true;
     closePostCreateModal();
