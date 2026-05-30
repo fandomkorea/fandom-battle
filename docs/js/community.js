@@ -900,18 +900,18 @@ function loadDetailComments(fandom, postId) {
           this.style.borderColor = 'rgba(124,77,255,0.15)';
         };
         commentEl.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px">
-            <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;overflow:hidden">
-                <span style="font-weight:700;color:var(--text);font-size:0.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex-shrink:1">${escHtml(resolveAuthorNickname(comment))}</span>
-                ${commentFandomBadge}
-              </div>
-              <div style="font-size:0.75rem;color:var(--muted)">${timeStr}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
+            <div style="display:flex;align-items:center;gap:5px;min-width:0;flex:1;overflow:hidden">
+              <span style="font-weight:700;color:var(--text);font-size:0.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex-shrink:1">${escHtml(resolveAuthorNickname(comment))}</span>
+              ${commentFandomBadge}
             </div>
-            ${isCommentAuthor ? `<div style="display:flex;gap:6px">
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+              <span style="font-size:0.75rem;color:var(--muted);white-space:nowrap">${timeStr}</span>
+              ${isCommentAuthor ? `
               <button onclick="editComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}', '${escAttr(comment.content)}'); event.stopPropagation()" style="font-size:0.75rem;background:rgba(100,150,255,0.1);border:1px solid rgba(100,150,255,0.3);color:rgb(100,150,255);cursor:pointer;padding:5px 10px;border-radius:6px;font-weight:600;transition:all 0.2s;white-space:nowrap" onmouseover="this.style.background='rgba(100,150,255,0.2)';this.style.borderColor='rgba(100,150,255,0.5)'" onmouseout="this.style.background='rgba(100,150,255,0.1)';this.style.borderColor='rgba(100,150,255,0.3)'">수정</button>
               <button onclick="deleteComment('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="font-size:0.75rem;background:rgba(255,100,100,0.1);border:1px solid rgba(255,100,100,0.3);color:rgb(255,100,100);cursor:pointer;padding:5px 10px;border-radius:6px;font-weight:600;transition:all 0.2s;white-space:nowrap" onmouseover="this.style.background='rgba(255,100,100,0.2)';this.style.borderColor='rgba(255,100,100,0.5)'" onmouseout="this.style.background='rgba(255,100,100,0.1)';this.style.borderColor='rgba(255,100,100,0.3)'">삭제</button>
-            </div>` : ''}
+              ` : ''}
+            </div>
           </div>
           <div style="color:var(--text);line-height:1.6;word-break:break-word;margin-bottom:8px">${escHtml(comment.content)}</div>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
