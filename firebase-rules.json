@@ -14,7 +14,10 @@
     },
     "rankings": {
       ".read": true,
-      ".write": false
+      ".write": "auth != null",
+      "$group": {
+        ".validate": "newData.isNumber() && newData.val() >= 0"
+      }
     },
     "users": {
       ".read": "auth != null",
