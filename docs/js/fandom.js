@@ -300,8 +300,9 @@ async function changePrimaryFandom(newFandom) {
       db.ref(`users/${currentUser.uid}`).update({ activePage: "community" }).catch(() => {});
     }
 
-    // ★ loadCommunityPosts() 호출 (showCommunityPage() 대신)
-    loadCommunityPosts();
+    // ★ 카테고리 개요 뷰로 로드
+    if (typeof loadFandomCategoryOverview === 'function') loadFandomCategoryOverview(newFandom);
+    else loadCommunityPosts();
 
     // 팬덤 변경 성공 모달 표시
     await showFandomChangeSuccessModal(newFandom, emoji);

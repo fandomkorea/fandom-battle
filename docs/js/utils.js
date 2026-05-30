@@ -740,7 +740,7 @@ function showCommunityPage() {
     currentFeedMode = 'my';
     select.value = savedOtherFandom;
     if (typeof renderFandomTabBar === 'function') renderFandomTabBar();
-    if (typeof loadCommunityPosts === 'function') loadCommunityPosts();
+    if (typeof loadFandomCategoryOverview === 'function') loadFandomCategoryOverview(savedOtherFandom);
     return;
   }
 
@@ -760,7 +760,8 @@ function showCommunityPage() {
     }
   } else if (select.value) {
     currentSelectedTab = select.value;
-    loadCommunityPosts();
+    if (typeof loadFandomCategoryOverview === 'function') loadFandomCategoryOverview(select.value);
+    else loadCommunityPosts();
   } else {
     // 팬덤 미설정 → 전체 피드로 기본
     currentSelectedTab = 'all';

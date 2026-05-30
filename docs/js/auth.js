@@ -175,7 +175,8 @@ function setupAuthListener() {
         const _sel = document.getElementById('communityFandomSelect');
         if (_sel && typeof communityPostsLoaded !== 'undefined' && !communityPostsLoaded) {
           if (!_sel.value) _sel.value = _cachedFandom;
-          if (typeof loadCommunityPosts === 'function') loadCommunityPosts();
+          if (typeof loadFandomCategoryOverview === 'function') loadFandomCategoryOverview(_cachedFandom);
+          else if (typeof loadCommunityPosts === 'function') loadCommunityPosts();
         }
       }
 
@@ -253,7 +254,8 @@ async function loadUserVotes() {
       const select = document.getElementById("communityFandomSelect");
       if (select && typeof communityPostsLoaded !== 'undefined' && !communityPostsLoaded) {
         if (!select.value) select.value = currentUserFav;
-        if (typeof loadCommunityPosts === "function") loadCommunityPosts();
+        if (typeof loadFandomCategoryOverview === 'function') loadFandomCategoryOverview(currentUserFav);
+        else if (typeof loadCommunityPosts === "function") loadCommunityPosts();
       }
     }
 
