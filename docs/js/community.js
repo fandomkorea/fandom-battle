@@ -1618,7 +1618,10 @@ function _showCommunityVoteRewardModal(writtenFandom) {
   // 닫기 버튼
   box.querySelector("#communityRewardCloseBtn").onclick = () => overlay.remove();
 
-  // 5초 후 자동 닫기
+  // 뒤로가기 버튼으로 닫기
+  registerModalBackClose("communityRewardModal", () => overlay.remove());
+
+  // 6초 후 자동 닫기
   setTimeout(() => { if (document.getElementById("communityRewardModal")) overlay.remove(); }, 6000);
 }
 
@@ -2206,6 +2209,7 @@ function deleteComment(fandom, postId, commentId) {
     modal.remove();
     _executeDeleteComment(fandom, postId, commentId);
   };
+  registerModalBackClose('deleteCommentModal', () => document.getElementById('deleteCommentModal')?.remove());
 }
 
 async function _executeDeleteComment(fandom, postId, commentId) {
@@ -2431,6 +2435,7 @@ function reportPost(fandom, postId) {
     modal.remove();
     _executeReportPost(fandom, postId, selected.value);
   };
+  registerModalBackClose('reportPostModal', () => document.getElementById('reportPostModal')?.remove());
 }
 
 async function _executeReportPost(fandom, postId, reason) {

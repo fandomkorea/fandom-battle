@@ -41,6 +41,7 @@ function showNoVotesBuyModal() {
   `;
   modal.addEventListener("click", e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
+  registerModalBackClose("noVotesBuyModal", () => document.getElementById("noVotesBuyModal")?.remove());
 }
 
 // ── 투표권 구매 모달 ──
@@ -161,6 +162,7 @@ function showVotePurchaseModal() {
 
   document.body.appendChild(modal);
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  registerModalBackClose("votePurchaseModal", () => document.getElementById("votePurchaseModal")?.remove());
 }
 
 function purchaseVotePackage(packageId) {
@@ -225,6 +227,7 @@ function showComingSoonModal(pkg) {
   document.body.appendChild(modal);
   document.getElementById("comingSoonClose").onclick = () => modal.remove();
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  registerModalBackClose("comingSoonModal", () => document.getElementById("comingSoonModal")?.remove());
 }
 
 // ── 투표 완료 모달 ──
@@ -380,6 +383,7 @@ function showVoteCompleteModal(type, group, emoji, param3, param4) {
 
   const closeFn = () => { clearTimeout(autoCloseTimer); modal.remove(); };
   document.getElementById("voteCompleteClose").onclick = closeFn;
+  registerModalBackClose("voteCompleteModal", closeFn);
 
   const communityBtn = document.getElementById("voteCompleteCommunityBtn");
   if (communityBtn) {

@@ -1,4 +1,15 @@
-﻿// ── 공유 ──
+﻿// ── 모달 뒤로가기 공통 헬퍼 ──
+// 모달 열 때 history state를 push하고 back 버튼 누르면 closeFn 호출
+function registerModalBackClose(id, closeFn) {
+  history.pushState({ modal: id }, '', '');
+  const handler = function() {
+    window.removeEventListener('popstate', handler);
+    if (document.getElementById(id)) closeFn();
+  };
+  window.addEventListener('popstate', handler);
+}
+
+// ── 공유 ──
 const SITE_URL = "https://fandomkorea.github.io/fandom-battle/";
 
 function getShareText() {

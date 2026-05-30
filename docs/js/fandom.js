@@ -83,6 +83,7 @@ function showFandomChangeConfirmModal(fandom, emoji, currentFandom = null) {
     const handleEsc = (e) => { if (e.key === "Escape") closeModal(false); };
     document.addEventListener("keydown", handleEsc);
     modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(false); });
+    registerModalBackClose("fandomChangeModal", () => closeModal(false));
   });
 }
 
@@ -165,6 +166,7 @@ function showFandomChangeSuccessModal(fandom, emoji) {
       modal.remove();
       resolve();
     };
+    registerModalBackClose("fandomChangeSuccessModal", () => { modal.remove(); resolve(); });
 
     // ESC 키로 닫기
     modal.onclick = (e) => {
@@ -227,6 +229,7 @@ function showWrongFandomModal(myFandom, selectedFandom) {
   });
 
   modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+  registerModalBackClose("wrongFandomModal", close);
   const handleEsc = (e) => { if (e.key === "Escape") close(); };
   document.addEventListener("keydown", handleEsc);
 }
@@ -433,6 +436,7 @@ function showPostRestrictionModal(hoursLeft, minutesLeft, secondsLeft = 0) {
 
   modal.appendChild(content);
   document.body.appendChild(modal);
+  registerModalBackClose("postRestrictionModal", () => document.getElementById("postRestrictionModal")?.remove());
 
   // 실시간 타이머 업데이트
   let currentSeconds = hoursLeft * 3600 + minutesLeft * 60 + secondsLeft;
@@ -576,6 +580,7 @@ function showVoteRestrictionModal(hoursLeft, minutesLeft, secondsLeft = 0) {
 
   modal.appendChild(content);
   document.body.appendChild(modal);
+  registerModalBackClose("voteRestrictionModal", () => document.getElementById("voteRestrictionModal")?.remove());
 
   // 실시간 타이머 업데이트
   let currentSeconds = hoursLeft * 3600 + minutesLeft * 60 + secondsLeft;
@@ -654,6 +659,7 @@ function showGroupRequestModal() {
   `;
 
   document.body.appendChild(modal);
+  registerModalBackClose("groupRequestModal", () => closeGroupRequestModal());
 
   const handleEsc = (e) => { if (e.key === "Escape") closeGroupRequestModal(); };
   document.addEventListener("keydown", handleEsc);
