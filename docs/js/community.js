@@ -10,9 +10,10 @@ function resolveAuthorNickname(item) {
 function refreshCommunityPosts() {
   if (currentSelectedTab === 'all') {
     showToast("🔄 새로고침 중...");
-    if (currentAllSubTab === 'best') { loadBestPosts(true); }
-    else if (currentAllSubTab === 'grouped') { loadAllFandomPosts(true); }
-    else { loadCategoryPosts(currentAllSubTab, true); }
+    if (currentAllSubTab === 'overview')       { loadCategoryOverview(true); }
+    else if (currentAllSubTab === 'best')      { loadBestPosts(true); }
+    else if (currentAllSubTab === 'grouped')   { _loadGroupedFeed(true); }
+    else                                       { loadCategoryPosts(currentAllSubTab, true); }
     return;
   }
   const selectedFandom = document.getElementById("communityFandomSelect").value;
@@ -48,7 +49,10 @@ let _savedCommunityScrollY = 0; // 뒤로가기 스크롤 위치 복원용
 let currentOtherFandom = null; // 팬덤 찾기로 선택한 타 팬덤
 
 // ── 전체 피드 서브탭 상태 ──
-let currentAllSubTab = 'grouped'; // 'grouped' | 'best' | 'humor' | 'daily' | 'music' | 'chat'
+// 'overview' = 카테고리별 그룹 미리보기(기본)
+// 'best' | 'humor' | 'daily' | 'music' | 'chat' = 해당 카테고리 전체 목록
+// 'grouped' = 팬덤별 그룹뷰 (레거시)
+let currentAllSubTab = 'overview';
 
 // ── 글쓰기 카테고리 선택 ──
 let selectedPostCategory = 'general';
@@ -57,8 +61,11 @@ let selectedPostCategory = 'general';
 let _bestPostsCache = null;
 let _bestPostsCacheAt = 0;
 let _categoryPostsCache = {}; // { category: { posts, loadedAt } }
-const _BEST_POSTS_CACHE_TTL = 5 * 60 * 1000;   // 5분
+let _overviewCache = null;
+let _overviewCacheAt = 0;
+const _BEST_POSTS_CACHE_TTL    = 5 * 60 * 1000; // 5분
 const _CATEGORY_POSTS_CACHE_TTL = 3 * 60 * 1000; // 3분
+const _OVERVIEW_CACHE_TTL      = 5 * 60 * 1000; // 5분
 
 // ── 게시글 이미지 URL 및 public_id 저장소 ──
 let postImageUrl = null;
@@ -2662,6 +2669,8 @@ function _invalidateAllFeedCache() {
   _bestPostsCache = null;
   _bestPostsCacheAt = 0;
   _categoryPostsCache = {};
+  _overviewCache = null;
+  _overviewCacheAt = 0;
 }
 
 // ── 전체 피드 진입점 — 서브탭 바 보여주고 현재 탭 로드 ──
@@ -2678,7 +2687,9 @@ async function loadAllFandomPosts(forceRefresh = false) {
   }
 
   // 현재 서브탭에 맞는 로더 호출
-  if (currentAllSubTab === 'best') {
+  if (currentAllSubTab === 'overview') {
+    await loadCategoryOverview(forceRefresh);
+  } else if (currentAllSubTab === 'best') {
     await loadBestPosts(forceRefresh);
   } else if (currentAllSubTab === 'grouped') {
     await _loadGroupedFeed(forceRefresh);
@@ -2794,12 +2805,12 @@ function _renderAllSubTabBar() {
   const bar = document.getElementById("allFeedSubTabBar");
   if (!bar) return;
   const tabs = [
-    { id: 'grouped', label: '📋 팬덤별' },
-    { id: 'best',    label: '🏆 베스트' },
-    { id: 'humor',   label: '😂 유머' },
-    { id: 'daily',   label: '🌸 일상' },
-    { id: 'music',   label: '🎵 음악' },
-    { id: 'chat',    label: '💬 잡담' },
+    { id: 'overview', label: '📋 전체' },
+    { id: 'best',     label: '🏆 베스트' },
+    { id: 'humor',    label: '😂 유머' },
+    { id: 'daily',    label: '🌸 일상' },
+    { id: 'music',    label: '🎵 음악' },
+    { id: 'chat',     label: '💬 잡담' },
   ];
   bar.innerHTML = tabs.map(t =>
     `<button class="all-subtab-btn${t.id === currentAllSubTab ? ' active' : ''}" data-subtab="${t.id}" onclick="switchAllSubTab('${t.id}')">${t.label}</button>`
@@ -2814,9 +2825,10 @@ async function switchAllSubTab(tabId) {
   document.querySelectorAll('.all-subtab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.subtab === tabId);
   });
-  if (tabId === 'best')    { await loadBestPosts(false); }
+  if (tabId === 'overview')      { await loadCategoryOverview(false); }
+  else if (tabId === 'best')    { await loadBestPosts(false); }
   else if (tabId === 'grouped') { await _loadGroupedFeed(false); }
-  else                     { await loadCategoryPosts(tabId, false); }
+  else                          { await loadCategoryPosts(tabId, false); }
 }
 
 // ── 베스트 글 로드 (좋아요+댓글 가중치, 7일 이내) ──
@@ -3004,6 +3016,133 @@ function _renderCategoryPosts(posts, category) {
           <span class="grouped-post-time">${escHtml(ago)}</span>
         </div>
         ${counts ? `<div class="grouped-post-counts" style="margin-top:2px">${counts}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+// ── 카테고리별 그룹 개요 로드 (기본 전체 탭 뷰) ──
+// 상위 10개 팬덤 데이터를 한 번에 받아 베스트·유머·일상·음악·잡담 섹션으로 분류
+async function loadCategoryOverview(forceRefresh = false) {
+  const postsList = document.getElementById("communityPostsList");
+
+  if (!forceRefresh && _overviewCache && Date.now() - _overviewCacheAt < _OVERVIEW_CACHE_TTL) {
+    _renderCategoryOverview(_overviewCache);
+    communityPostsLoaded = true;
+    return;
+  }
+
+  postsList.innerHTML = `
+    <div class="community-empty">
+      <div class="spinner" style="display:inline-block;margin-bottom:12px"></div>
+      <div class="community-empty-text">전체 피드를 불러오는 중...</div>
+    </div>
+  `;
+
+  const top10 = _getTop10Fandoms();
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+  try {
+    // 팬덤당 최신 50개 — 한 번 로드해서 모든 카테고리에 재활용
+    const snapshots = await Promise.all(
+      top10.map(fandom =>
+        db.ref(`community/${fandom}`)
+          .orderByChild('timestamp')
+          .limitToLast(50)
+          .once("value")
+      )
+    );
+
+    const allPosts = [];
+    top10.forEach((fandom, i) => {
+      const val = snapshots[i].val() || {};
+      Object.entries(val).forEach(([postId, post]) => {
+        if (!post.isHidden) allPosts.push({ fandom, postId, post });
+      });
+    });
+
+    // 베스트: 7일 이내, 좋아요×2+댓글 가중치
+    const bestPosts = allPosts
+      .filter(p => (p.post.timestamp || 0) > sevenDaysAgo)
+      .sort((a, b) => {
+        const sA = (a.post.likesCount || 0) * 2 + (a.post.commentsCount || 0);
+        const sB = (b.post.likesCount || 0) * 2 + (b.post.commentsCount || 0);
+        return sB - sA || (b.post.timestamp || 0) - (a.post.timestamp || 0);
+      })
+      .slice(0, 5);
+
+    // 카테고리별: category 필드 기준, 최신순 Top 5
+    const byCat = (cat) => allPosts
+      .filter(p => p.post.category === cat)
+      .sort((a, b) => (b.post.timestamp || 0) - (a.post.timestamp || 0))
+      .slice(0, 5);
+
+    const sections = [
+      { id: 'best',  label: '🏆 베스트',    posts: bestPosts },
+      { id: 'humor', label: '😂 유머',      posts: byCat('humor') },
+      { id: 'daily', label: '🌸 일상',      posts: byCat('daily') },
+      { id: 'music', label: '🎵 음악/무대', posts: byCat('music') },
+      { id: 'chat',  label: '💬 잡담',      posts: byCat('chat') },
+    ];
+
+    _overviewCache = sections;
+    _overviewCacheAt = Date.now();
+    communityPostsLoaded = true;
+    _renderCategoryOverview(sections);
+  } catch (e) {
+    console.error("카테고리 개요 로드 실패:", e);
+    postsList.innerHTML = `
+      <div class="community-empty">
+        <div class="community-empty-icon">⚠️</div>
+        <div class="community-empty-text">피드를 불러오지 못했어요<br>잠시 후 다시 시도해주세요</div>
+      </div>
+    `;
+  }
+}
+
+// ── 카테고리별 그룹 개요 렌더링 ──
+function _renderCategoryOverview(sections) {
+  const postsList = document.getElementById("communityPostsList");
+
+  const visibleSections = sections.filter(s => s.posts.length > 0);
+  if (visibleSections.length === 0) {
+    postsList.innerHTML = `
+      <div class="community-empty">
+        <div class="community-empty-icon">📭</div>
+        <div class="community-empty-text">아직 게시물이 없어요<br><span style="font-size:0.82rem;opacity:0.7">글을 쓰고 카테고리를 선택해보세요!</span></div>
+      </div>
+    `;
+    return;
+  }
+
+  postsList.innerHTML = visibleSections.map(({ id, label, posts }) => {
+    const postsHtml = posts.map(({ fandom, postId, post }) => {
+      const meta  = GROUP_META[fandom] || { emoji: '🌟', kr: fandom, color: '#7c4dff' };
+      const ago   = getRelativeTime(post.timestamp);
+      const likes = post.likesCount || 0;
+      const cmts  = post.commentsCount || 0;
+      const counts = [cmts ? `💬 ${cmts}` : '', likes ? `❤️ ${likes}` : ''].filter(Boolean).join(' · ');
+      return `
+        <div class="grouped-post-item" onclick="showPostDetail('${escAttr(fandom)}','${escAttr(postId)}')">
+          <div class="grouped-post-row1">
+            <div class="grouped-post-left">
+              <span style="font-size:0.75rem;flex-shrink:0" title="${escAttr(meta.kr||fandom)}">${escHtml(meta.emoji||'🌟')}</span>
+              <span class="grouped-post-title">${escHtml(post.title)}</span>
+              ${counts ? `<span class="grouped-post-counts">${counts}</span>` : ''}
+            </div>
+            <span class="grouped-post-time">${escHtml(ago)}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="fandom-group-section">
+        <div class="fandom-group-header">
+          <span class="fandom-group-title">${label}</span>
+          <button class="fandom-group-more" onclick="switchAllSubTab('${id}')">더보기 ›</button>
+        </div>
+        <div class="fandom-group-posts">${postsHtml}</div>
       </div>
     `;
   }).join('');
