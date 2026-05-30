@@ -1712,6 +1712,8 @@ function closePostCreateModal() {
   postImageUrl = null;
   document.getElementById("postImagePreview").style.display = "none";
   document.getElementById("postImagePreviewImg").src = "";
+
+  if (!window._modalFromPopstate) window.history.back();
 }
 
 // ── 글쓰기 카테고리 선택 ──
@@ -1958,11 +1960,13 @@ function editPost(fandom, postId, title, content) {
   document.getElementById('editPostContentCount').textContent = content.length;
   document.getElementById('editPostModal').style.display = 'flex';
   setTimeout(() => titleEl.focus(), 100);
+  window.history.pushState({ modal: 'editPost' }, '');
 }
 
 function closeEditPostModal() {
   document.getElementById('editPostModal').style.display = 'none';
   editPostState = { fandom: null, postId: null };
+  if (!window._modalFromPopstate) window.history.back();
 }
 
 async function saveEditPost() {
@@ -2241,6 +2245,7 @@ function editComment(fandom, postId, commentId, currentContent) {
   textarea.select();
 
   modal.style.display = "flex";
+  window.history.pushState({ modal: 'editComment' }, '');
 }
 
 // ── 댓글 수정 모달 닫기 ──
@@ -2250,6 +2255,7 @@ function closeEditCommentModal() {
 
   // 상태 초기화
   editCommentState = { fandom: null, postId: null, commentId: null };
+  if (!window._modalFromPopstate) window.history.back();
 }
 
 // ── 댓글 수정 저장 ──
@@ -2482,8 +2488,17 @@ window.addEventListener('popstate', (e) => {
     closePostDetail();
     window.popstateActive = false;
   } else if (e.state && e.state.modal === 'postCreate') {
-    // popstate 이벤트 발생 - 모달이 열려 있으면 닫기
+    window._modalFromPopstate = true;
     closePostCreateModal();
+    window._modalFromPopstate = false;
+  } else if (e.state && e.state.modal === 'editPost') {
+    window._modalFromPopstate = true;
+    closeEditPostModal();
+    window._modalFromPopstate = false;
+  } else if (e.state && e.state.modal === 'editComment') {
+    window._modalFromPopstate = true;
+    closeEditCommentModal();
+    window._modalFromPopstate = false;
   }
 });
 
