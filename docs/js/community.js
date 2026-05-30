@@ -886,7 +886,7 @@ function loadDetailComments(fandom, postId) {
         const commentFandomName = comment.authorFandom;
         const commentFandomMeta = commentFandomName ? (GROUP_META[commentFandomName] || null) : null;
         const commentFandomBadge = commentFandomMeta
-          ? `<span style="font-size:0.62rem;padding:1px 6px;border-radius:4px;background:${hexToRgba(commentFandomMeta.color || '#7c4dff', 0.15)};color:${commentFandomMeta.color || '#7c4dff'};border:1px solid ${hexToRgba(commentFandomMeta.color || '#7c4dff', 0.3)};font-weight:700;white-space:nowrap">${commentFandomMeta.emoji || ''} ${escHtml(commentFandomName)}</span>`
+          ? `<span style="font-size:0.62rem;padding:1px 6px;border-radius:4px;background:${hexToRgba(commentFandomMeta.color || '#7c4dff', 0.15)};color:${commentFandomMeta.color || '#7c4dff'};border:1px solid ${hexToRgba(commentFandomMeta.color || '#7c4dff', 0.3)};font-weight:700;white-space:nowrap;flex-shrink:0">${commentFandomMeta.emoji || ''} ${escHtml(commentFandomName)}</span>`
           : '';
 
         const commentEl = document.createElement("div");
@@ -902,10 +902,10 @@ function loadDetailComments(fandom, postId) {
         commentEl.innerHTML = `
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px">
             <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-                <span style="font-weight:700;color:var(--text);font-size:0.95rem">${escHtml(resolveAuthorNickname(comment))}</span>
+              <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;overflow:hidden">
+                <span style="font-weight:700;color:var(--text);font-size:0.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex-shrink:1">${escHtml(resolveAuthorNickname(comment))}</span>
                 ${commentFandomBadge}
-                ${isCommentAuthor ? `<span style="background:linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,150,255,0.2) 100%);color:var(--primary);font-size:0.7rem;padding:2px 6px;border-radius:4px;font-weight:600">내가 쓴 댓글</span>` : ''}
+                ${isCommentAuthor ? `<span style="background:linear-gradient(135deg,rgba(124,77,255,0.3) 0%,rgba(100,150,255,0.2) 100%);color:var(--primary);font-size:0.7rem;padding:2px 6px;border-radius:4px;font-weight:600;white-space:nowrap;flex-shrink:0">내가 쓴 댓글</span>` : ''}
               </div>
               <div style="font-size:0.75rem;color:var(--muted)">${timeStr}</div>
             </div>
