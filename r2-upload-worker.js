@@ -20,8 +20,11 @@
 
 const FIREBASE_API_KEY = 'AIzaSyAzUVrCc7-gmdYyXu0wFBm8XRi-1OHb2r4';
 const ALLOWED_ORIGINS = [
+  'https://fanpick.kr',
+  'https://www.fanpick.kr',
   'https://fandombattle.com',
   'https://lucky-tstore.github.io',
+  'https://fandom-battle.pages.dev',
   'http://localhost',
   'http://127.0.0.1',
 ];
