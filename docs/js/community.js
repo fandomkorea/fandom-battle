@@ -932,9 +932,12 @@ function loadDetailComments(fandom, postId) {
           </div>
           <div style="color:var(--text);line-height:1.6;word-break:break-word;margin-bottom:8px">${escHtml(comment.content)}</div>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-            <button class="reply-toggle-btn" id="reply-toggle-${escAttr(commentId)}" onclick="toggleReplySection('${escAttr(fandom)}','${escAttr(postId)}','${escAttr(commentId)}'); event.stopPropagation()">
-              💬 답글 <span id="reply-count-${escAttr(commentId)}">0</span>개
-            </button>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="reply-toggle-btn" id="reply-toggle-${escAttr(commentId)}" onclick="toggleReplySection('${escAttr(fandom)}','${escAttr(postId)}','${escAttr(commentId)}'); event.stopPropagation()">
+                💬 답글 <span id="reply-count-${escAttr(commentId)}">0</span>개
+              </button>
+              ${isLoggedIn ? `<button onclick="openReplyInput('${escAttr(fandom)}','${escAttr(postId)}','${escAttr(commentId)}'); event.stopPropagation()" style="font-size:0.78rem;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 4px;font-weight:600">↳ 답글 달기</button>` : ''}
+            </div>
             <button onclick="toggleCommentLike('${escAttr(fandom)}', '${escAttr(postId)}', '${escAttr(commentId)}'); event.stopPropagation()" style="display:flex;align-items:center;gap:4px;background:${hasLikedComment ? 'rgba(255,80,80,0.2)' : 'rgba(255,100,100,0.06)'};border:1px solid ${hasLikedComment ? 'rgba(255,80,80,0.45)' : 'rgba(255,100,100,0.15)'};border-radius:20px;padding:4px 10px;cursor:pointer;transition:all 0.2s;font-size:0.8rem" onmouseover="this.style.background='rgba(255,100,100,0.2)';this.style.borderColor='rgba(255,100,100,0.4)'" onmouseout="this.style.background='${hasLikedComment ? 'rgba(255,80,80,0.2)' : 'rgba(255,100,100,0.06)'}';this.style.borderColor='${hasLikedComment ? 'rgba(255,80,80,0.45)' : 'rgba(255,100,100,0.15)'}'">
               <span>${hasLikedComment ? '❤️' : '🤍'}</span>
               <span style="color:${hasLikedComment ? 'rgb(255,100,100)' : 'var(--muted)'}; font-weight:600">${commentLikeCount > 0 ? commentLikeCount : ''}</span>
@@ -979,6 +982,22 @@ function loadReplyCount(fandom, postId, commentId) {
     const el = document.getElementById(`reply-count-${commentId}`);
     if (el) el.textContent = count;
   });
+}
+
+// ── 답글 달기 버튼 → 섹션 열고 입력창 포커스 ──
+function openReplyInput(fandom, postId, commentId) {
+  const section = document.getElementById(`reply-section-${commentId}`);
+  if (!section) return;
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    const inputArea = document.getElementById(`reply-input-area-${commentId}`);
+    if (inputArea) inputArea.classList.add('open');
+    loadReplies(fandom, postId, commentId);
+  }
+  setTimeout(() => {
+    const textarea = document.getElementById(`reply-textarea-${commentId}`);
+    if (textarea) textarea.focus();
+  }, 50);
 }
 
 // ── 답글 섹션 토글 ──
